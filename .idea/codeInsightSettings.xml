@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="JavaProjectCodeInsightSettings">
+    <included-static-names>
+      <name>androidx.compose.foundation.*</name>
+      <name>androidx.compose.material3.*</name>
+    </included-static-names>
+  </component>
+</project>
