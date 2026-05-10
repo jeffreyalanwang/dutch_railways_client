@@ -1,5 +1,5 @@
 [versions]
-agp = "9.2.0"
+agp = "9.2.1"
 coreKtx = "1.18.0"
 junit = "4.13.2"
 junitVersion = "1.3.0"
@@ -10,8 +10,12 @@ kotlin = "2.2.10"
 composeBom = "2025.12.00"
 material3 = "1.4.0"
 material3Version = "1.5.0-alpha18"
+secretsGradlePlugin = "2.0.1"
 ui = "1.11.0"
 foundation = "1.11.0"
+uiToolingPreview = "1.11.0"
+uiTooling = "1.11.0"
+maps = "3.1.0-beta"
 
 [libraries]
 androidx-compose-material3-v150alpha18 = { module = "androidx.compose.material3:material3", version.ref = "material3Version" }
@@ -33,6 +37,10 @@ androidx-compose-material3-adaptive-navigation-suite = { group = "androidx.compo
 androidx-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3" }
 androidx-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "ui" }
 androidx-compose-foundation = { group = "androidx.compose.foundation", name = "foundation", version.ref = "foundation" }
+androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview", version.ref = "uiToolingPreview" }
+androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "uiTooling" }
+maps = { group = "com.google.android.libraries.maps", name = "maps", version.ref = "maps" }
+secrets-gradle-plugin = { module = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin:secrets-gradle-plugin", version.ref = "secretsGradlePlugin" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

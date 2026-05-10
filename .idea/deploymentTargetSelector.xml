@@ -6,6 +6,18 @@
         <option name="selectionMode" value="DROPDOWN" />
         <DialogSelection />
       </SelectionState>
+      <SelectionState runConfigName="StationSearchScreen">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-05-05T15:47:04.582986491Z">
+          <Target type="BOOT_WITH_SNAPSHOT">
+            <handle>
+              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Pixel_5.avd" />
+            </handle>
+            <Snapshot name="snap_2026-05-05_11-37-52" path="$USER_HOME$/.android/avd/Pixel_5.avd/snapshots/snap_2026-05-05_11-37-52" />
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
     </selectionStates>
   </component>
 </project>
