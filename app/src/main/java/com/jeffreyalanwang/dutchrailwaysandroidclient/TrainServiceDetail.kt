@@ -39,11 +39,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -251,14 +249,6 @@ private fun Stop(
 ) {
     val isFirstStop = arriveTime == null
     val isLastStop  = departTime == null
-
-    val textMeasurer = rememberTextMeasurer()
-    val textLayoutResult = textMeasurer.measure(
-        text = "Your potential text",
-        style = MaterialTheme.typography.bodyLarge
-    )
-    val widthPx = textLayoutResult.size.width
-    val widthDp = with(LocalDensity.current) { widthPx.toDp() }
 
     Row(modifier.height(IntrinsicSize.Min)) {
         StopsLineSegment(

@@ -1,9 +1,11 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -20,10 +22,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -98,55 +100,66 @@ fun StationDetail(station: Station, modifier: Modifier = Modifier) {
 }
 
 @Composable
+fun TimetableRow(
+    stop: ServiceStop,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        horizontalArrangement = Arrangement
+            .spacedBy(5.dp),
+        modifier=modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+    ) {
+        Icon(
+            painterResource(AppIcons.Trainset(stop.getService().trainset)), // TODO be more efficient with getting trainset (don't get all properties of the service)
+            contentDescription = null,
+            modifier=Modifier
+                .fillMaxHeight()
+                .width(24.dp)
+        )
+        Text(
+            stop.getService().title,
+            modifier=Modifier
+                .fillMaxHeight()
+                .wrapContentHeight()
+                .weight(1f)
+        )
+        Text(
+            UIStrings.Time(stop.arrival),
+            softWrap = false,
+            modifier=Modifier
+                .fillMaxHeight()
+                .wrapContentHeight()
+        )
+        Text(
+            UIStrings.Time(stop.departure),
+            softWrap = false,
+            modifier=Modifier
+                .fillMaxHeight()
+                .wrapContentHeight()
+        )
+    }
+}
+
+@Composable
 fun StationTimetable(stops: List<ServiceStop>, modifier: Modifier = Modifier) {
     Row(modifier = modifier.fillMaxWidth()) {
-        val spacerWidth = 10.dp
-        val rowHeight = 35.dp
-        Column {
-            Text("", fontWeight = FontWeight.Bold) // header
-            stops.forEach {
-                Icon(
-                    painterResource(AppIcons.Trainset(it.getService().trainset)), // TODO be more efficient with getting trainset (don't get all properties of the service)
-                    contentDescription = null,
-                    modifier=Modifier.height(rowHeight)
-                )
-            }
+        Row(modifier = modifier.fillMaxWidth()) {
+            Spacer(Modifier.width(24.dp))
+            Spacer(Modifier.width(5.dp))
+            Text("Train", fontWeight = FontWeight.Bold, modifier=Modifier.weight(1f))
+            Spacer(Modifier.width(5.dp))
+            Text("Arrival", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Spacer(Modifier.width(5.dp))
+            Text("Departure", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
         }
-        Spacer(Modifier.width(spacerWidth))
-        Column(Modifier.weight(1f)) {
-            Text("Train", fontWeight = FontWeight.Bold)
-            stops.forEach {
-                Text(
-                    it.getService().title,
-                    modifier=Modifier
-                        .height(rowHeight)
-                        .wrapContentHeight()
-                )
-            }
-        }
-        Spacer(Modifier.width(spacerWidth))
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Arrival", fontWeight = FontWeight.Bold)
-            stops.forEach{
-                Text(
-                    UIStrings.Time(it.arrival),
-                    modifier=Modifier
-                        .height(rowHeight)
-                        .wrapContentHeight()
-                )
-            }
-        }
-        Spacer(Modifier.width(spacerWidth))
-        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-            Text("Departure", fontWeight = FontWeight.Bold)
-            stops.forEach{
-                Text(
-                    UIStrings.Time(it.departure),
-                    modifier=Modifier
-                        .height(rowHeight)
-                        .wrapContentHeight()
-                )
-            }
+        for (stop in stops) {
+            Spacer(Modifier.height(5.dp))
+            TimetableRow(
+                stop,
+                modifier=Modifier.padding(horizontal=10.dp),
+            )
         }
     }
 }
