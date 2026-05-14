@@ -64,8 +64,8 @@ class Station(
 }
 
 class ServiceStop(
-    val arrival: ZonedDateTime,
-    val departure: ZonedDateTime,
+    val arrival: ZonedDateTime?,
+    val departure: ZonedDateTime?,
     val passServiceId: UInt,
     val stationId: UInt,
 ) {
@@ -113,9 +113,9 @@ object BackendApi {
 
     private val dummyService = PassService(119u, "Intercity 2263 to Rotterdam Centraal", Trainset.VIRM, EnumSet.allOf(TrainAmenity::class.java))
     private val dummyServiceStops = listOf(
-        ServiceStop(passServiceId=119u,arrival=parseAmsTime("2026-05-08T00:00:00.000000"),departure=parseAmsTime("2026-05-08T18:36:00.000000"),stationId=358u),
+        ServiceStop(passServiceId=119u,arrival=null                                      ,departure=parseAmsTime("2026-05-08T18:36:00.000000"),stationId=358u),
         ServiceStop(passServiceId=119u,arrival=parseAmsTime("2026-05-08T19:28:00.000000"),departure=parseAmsTime("2026-05-08T19:30:00.000000"),stationId=376u),
-        ServiceStop(passServiceId=119u,arrival=parseAmsTime("2026-05-08T19:49:00.000000"),departure=parseAmsTime("2026-05-09T00:00:00.000000"),stationId=361u),
+        ServiceStop(passServiceId=119u,arrival=parseAmsTime("2026-05-08T19:49:00.000000"),departure=null                                      ,stationId=361u),
     )
     private val dummyAreas = listOf(
         Area(1u, "Nederland"),

@@ -35,6 +35,8 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 
+const val EM_DASH = "—"
+
 @Preview
 @Composable
 fun StationDetailTest() {
@@ -128,18 +130,18 @@ fun TimetableRow(
                 .fill()
         )
         Text(
-            UIStrings.Time(stop.arrival),
+            if (stop.arrival == null) EM_DASH else UIStrings.Time(stop.arrival),
             softWrap = false,
             modifier=Modifier
-                .cellAlign(Alignment.CenterHorizontally)
                 .wrapContentHeight()
+                .cellAlign(Alignment.CenterHorizontally)
         )
         Text(
-            UIStrings.Time(stop.departure),
+            if (stop.departure == null) EM_DASH else UIStrings.Time(stop.departure),
             softWrap = false,
             modifier=Modifier
-                .cellAlign(Alignment.CenterHorizontally)
                 .wrapContentHeight()
+                .cellAlign(Alignment.CenterHorizontally)
         )
     }
 }
