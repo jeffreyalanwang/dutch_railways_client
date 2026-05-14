@@ -247,7 +247,7 @@ private fun Stop(
     arriveTime: ZonedDateTime?,
     departTime: ZonedDateTime?,
     isCurrStop: Boolean,
-    arrivalWidth: Dp,
+    discreteGridControl: DiscreteGridControl,
     modifier: Modifier = Modifier,
     itemPadding: Dp = 5.dp,
     lineWidth: Dp = 20.dp,
@@ -275,24 +275,15 @@ private fun Stop(
         Column(Modifier.weight(1f)) { // TODO text color by time
             if (!isFirstStop) Spacer(Modifier.height(itemPadding))
             Text(stationName, fontWeight = FontWeight.Bold)
-            Row {
-                if (!isFirstStop) {
-                    Text(
-                        "Arrival: ${UIStrings.Time(arriveTime)}",
-                        Modifier
-                            .alpha(.5f)
-                            .widthIn(min=arrivalWidth),
-                    )
-                } else {
-                    Spacer(Modifier.width(arrivalWidth))
-                }
-                Spacer(Modifier.width(5.dp))
-                if (!isLastStop) {
-                    Text(
-                        "Departure: ${UIStrings.Time(departTime)}",
-                        Modifier.alpha(.5f),
-                    )
-                }
+            DiscreteGridRow(discreteGridControl, gap=10.dp) {
+                if (isFirstStop) Spacer(Modifier) else Text(
+                    "Arrival: ${UIStrings.Time(arriveTime)}",
+                    Modifier.alpha(.5f),
+                )
+                if (isLastStop) Spacer(Modifier) else Text(
+                    "Departure: ${UIStrings.Time(departTime)}",
+                    Modifier.alpha(.5f)
+                )
             }
             if (!isLastStop) Spacer(Modifier.height(itemPadding))
         }
@@ -301,35 +292,32 @@ private fun Stop(
 
 @OptIn(ExperimentalTime::class)
 private fun getCurrStop(stops: List<ServiceStop>): IndexedValue<ServiceStop> {
-    stops.forEachIndexed { index, stop ->
-        if (stop.departure.toInstant() > now()) {
-            return IndexedValue(index, stop)
-        }
+    for ((index, stop) in stops.dropLast(1).withIndex()) {
+        val time = stop.departure ?: stop.arrival
+        if (time == null)
+            if ((stop.departure ?: stop.arrival)!!.toInstant() > now()) {
+                return IndexedValue(index, stop)
+            }
     }
+
     return IndexedValue(stops.size-1, stops.last())
 }
 
 @Composable
 fun Stops(stops: List<ServiceStop>, modifier: Modifier = Modifier) {
-    val textMeasurer = rememberTextMeasurer()
-    val textLayoutResult = textMeasurer.measure(
-        text = "Arrival: 00:00 AM",
-        style = LocalTextStyle.current,
-    )
-    val arrivalWidth = with(LocalDensity.current) { textLayoutResult.size.width.toDp() }
-
-    val currStopState by remember { mutableIntStateOf(getCurrStop(stops).index) }
+    val currStopState by mutableIntStateOf(getCurrStop(stops).index)
+    val subtitlesGridControl = remember(stops) { DiscreteGridControl() }
     // TODO on stop departure, update currStopState and set the timer for the next stop down
 
     Column(modifier) {
         stops.forEachIndexed { i, stop ->
             Stop(
-                arriveTime = if (i == 0) null else stop.arrival,
+                arriveTime = if (i == 0)            null else stop.arrival,
                 departTime = if (i == stops.size-1) null else stop.departure,
                 stationName = stop.getStation().name,
                 isCurrStop = (i == currStopState),
-                arrivalWidth = arrivalWidth,
                 modifier=Modifier.fillMaxWidth(), // TODO make clickable
+                discreteGridControl = subtitlesGridControl,
             )
         }
     }
