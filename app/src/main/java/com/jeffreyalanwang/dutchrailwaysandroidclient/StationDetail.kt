@@ -1,9 +1,8 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -22,10 +21,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -103,13 +103,15 @@ fun StationDetail(station: Station, modifier: Modifier = Modifier) {
 fun TimetableRow(
     stop: ServiceStop,
     modifier: Modifier = Modifier,
+    discreteGridControl: DiscreteGridControl,
+    gap: Dp,
 ) {
-    Row(
-        horizontalArrangement = Arrangement
-            .spacedBy(5.dp),
-        modifier=modifier
+    DiscreteGridRow(
+        discreteGridControl,
+        modifier = modifier
             .fillMaxWidth()
-            .height(IntrinsicSize.Min)
+            .height(IntrinsicSize.Min),
+        gap = gap,
     ) {
         Icon(
             painterResource(AppIcons.Trainset(stop.getService().trainset)), // TODO be more efficient with getting trainset (don't get all properties of the service)
@@ -121,22 +123,22 @@ fun TimetableRow(
         Text(
             stop.getService().title,
             modifier=Modifier
-                .fillMaxHeight()
                 .wrapContentHeight()
-                .weight(1f)
+                .cellAlign(Alignment.Start)
+                .fill()
         )
         Text(
             UIStrings.Time(stop.arrival),
             softWrap = false,
             modifier=Modifier
-                .fillMaxHeight()
+                .cellAlign(Alignment.CenterHorizontally)
                 .wrapContentHeight()
         )
         Text(
             UIStrings.Time(stop.departure),
             softWrap = false,
             modifier=Modifier
-                .fillMaxHeight()
+                .cellAlign(Alignment.CenterHorizontally)
                 .wrapContentHeight()
         )
     }
@@ -144,21 +146,38 @@ fun TimetableRow(
 
 @Composable
 fun StationTimetable(stops: List<ServiceStop>, modifier: Modifier = Modifier) {
-    Row(modifier = modifier.fillMaxWidth()) {
-        Row(modifier = modifier.fillMaxWidth()) {
+    val gap = 10.dp
+    val gridControl = remember(stops) { DiscreteGridControl() }
+
+    Column(modifier.fillMaxWidth()) {
+        DiscreteGridRow(
+            gridControl,
+            Modifier.fillMaxWidth(),
+            gap,
+        ) {
             Spacer(Modifier.width(24.dp))
-            Spacer(Modifier.width(5.dp))
-            Text("Train", fontWeight = FontWeight.Bold, modifier=Modifier.weight(1f))
-            Spacer(Modifier.width(5.dp))
-            Text("Arrival", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
-            Spacer(Modifier.width(5.dp))
-            Text("Departure", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center)
+            Text(
+                "Train",
+                fontWeight = FontWeight.Bold,
+                modifier=Modifier.cellAlign(Alignment.Start).fill()
+            )
+            Text(
+                "Arrival",
+                fontWeight = FontWeight.Bold,
+                modifier=Modifier.cellAlign(Alignment.CenterHorizontally)
+            )
+            Text(
+                "Departure",
+                fontWeight = FontWeight.Bold,
+                modifier=Modifier.cellAlign(Alignment.CenterHorizontally)
+            )
         }
         for (stop in stops) {
             Spacer(Modifier.height(5.dp))
             TimetableRow(
                 stop,
-                modifier=Modifier.padding(horizontal=10.dp),
+                discreteGridControl = gridControl,
+                gap = gap,
             )
         }
     }

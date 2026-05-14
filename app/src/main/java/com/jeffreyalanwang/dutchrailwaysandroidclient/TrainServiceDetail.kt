@@ -17,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
@@ -28,9 +27,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -244,7 +241,7 @@ private fun Stop(
     arriveTime: ZonedDateTime?,
     departTime: ZonedDateTime?,
     isCurrStop: Boolean,
-    subAlignSynchronizer: AlignSynchronizer,
+    discreteGridControl: DiscreteGridControl,
     modifier: Modifier = Modifier,
     itemPadding: Dp = 5.dp,
     lineWidth: Dp = 20.dp,
@@ -272,17 +269,15 @@ private fun Stop(
         Column(Modifier.weight(1f)) { // TODO text color by time
             if (!isFirstStop) Spacer(Modifier.height(itemPadding))
             Text(stationName, fontWeight = FontWeight.Bold)
-            HorizontallyAlignedSubchildren(subAlignSynchronizer, gap=10.dp) {
-                if (!isFirstStop) Text(
+            DiscreteGridRow(discreteGridControl, gap=10.dp) {
+                if (isFirstStop) Spacer(Modifier) else Text(
                     "Arrival: ${UIStrings.Time(arriveTime)}",
-                    Modifier
-                        .alpha(.5f),
-                ) else Spacer(Modifier)
-                if (!isLastStop) Text(
+                    Modifier.alpha(.5f),
+                )
+                if (isLastStop) Spacer(Modifier) else Text(
                     "Departure: ${UIStrings.Time(departTime)}",
-                    modifier = Modifier
-                        .alpha(.5f)
-                ) else Spacer(Modifier)
+                    Modifier.alpha(.5f)
+                )
             }
             if (!isLastStop) Spacer(Modifier.height(itemPadding))
         }
@@ -301,8 +296,8 @@ private fun getCurrStop(stops: List<ServiceStop>): IndexedValue<ServiceStop> {
 
 @Composable
 fun Stops(stops: List<ServiceStop>, modifier: Modifier = Modifier) {
-    val currStopState by remember { mutableIntStateOf(getCurrStop(stops).index) }
-    val subAlignSynchronizer = AlignSynchronizer()
+    val currStopState by mutableIntStateOf(getCurrStop(stops).index)
+    val subtitlesGridControl = remember(stops) { DiscreteGridControl() }
     // TODO on stop departure, update currStopState and set the timer for the next stop down
 
     Column(modifier) {
@@ -313,7 +308,7 @@ fun Stops(stops: List<ServiceStop>, modifier: Modifier = Modifier) {
                 stationName = stop.getStation().name,
                 isCurrStop = (i == currStopState),
                 modifier=Modifier.fillMaxWidth(), // TODO make clickable
-                subAlignSynchronizer = subAlignSynchronizer,
+                discreteGridControl = subtitlesGridControl,
             )
         }
     }

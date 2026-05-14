@@ -16,6 +16,7 @@ foundation = "1.11.0"
 uiToolingPreview = "1.11.0"
 uiTooling = "1.11.0"
 maps = "3.1.0-beta"
+foundationLayout = "1.11.1"
 
 [libraries]
 androidx-compose-material3-v150alpha18 = { module = "androidx.compose.material3:material3", version.ref = "material3Version" }
@@ -41,6 +42,7 @@ androidx-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-toolin
 androidx-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling", version.ref = "uiTooling" }
 maps = { group = "com.google.android.libraries.maps", name = "maps", version.ref = "maps" }
 secrets-gradle-plugin = { module = "com.google.android.libraries.mapsplatform.secrets-gradle-plugin:secrets-gradle-plugin", version.ref = "secretsGradlePlugin" }
+androidx-compose-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
