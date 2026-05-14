@@ -20,7 +20,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -56,49 +55,45 @@ fun StationDetailTest() {
 
 @Composable
 fun StationDetail(station: Station, modifier: Modifier = Modifier) {
+    val stationMarkerState = rememberUpdatedMarkerState(position = station.geom)
+    val cameraPositionState = rememberCameraPositionState {
+        position = CameraPosition.fromLatLngZoom(station.geom, 10f)
+    }
 
-    key(station.id) { //TODO3 will this ever matter (and if so, put it everywhere)
+    Card (modifier.fillMaxWidth()) {
+        Spacer(Modifier.height(20.dp))
 
-        val stationMarkerState = rememberUpdatedMarkerState(position = station.geom)
-        val cameraPositionState = rememberCameraPositionState {
-            position = CameraPosition.fromLatLngZoom(station.geom, 10f)
-        }
+        Icon(
+            painterResource(R.drawable.ic_dr_station),
+            "Station icon",
+            Modifier.size(72.dp + 20.dp)
+        )
+        Text(station.name, style=MaterialTheme.typography.displaySmall, modifier=Modifier.padding(horizontal=10.dp))
+        Spacer(Modifier.height(10.dp))
+        Text(station.address, Modifier.padding(horizontal=10.dp))
 
-        Card (modifier.fillMaxWidth()) {
-            Spacer(Modifier.height(20.dp))
+        Spacer(Modifier.height(10.dp))
+        HorizontalDivider(thickness = Dp.Hairline)
 
-            Icon(
-                painterResource(R.drawable.ic_dr_station),
-                "Station icon",
-                Modifier.size(72.dp + 20.dp)
+        GoogleMap(
+            cameraPositionState = cameraPositionState,
+            contentDescription = "Station on map",
+            modifier = Modifier
+                .fillMaxWidth()
+                .sizeIn(minHeight = 200.dp)
+        ) {
+            Marker(
+                state = stationMarkerState,
+                title = station.name,
             )
-            Text(station.name, style=MaterialTheme.typography.displaySmall, modifier=Modifier.padding(horizontal=10.dp))
-            Spacer(Modifier.height(10.dp))
-            Text(station.address, Modifier.padding(horizontal=10.dp))
-
-            Spacer(Modifier.height(10.dp))
-            HorizontalDivider(thickness = Dp.Hairline)
-
-            GoogleMap(
-                cameraPositionState = cameraPositionState,
-                contentDescription = "Station on map",
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .sizeIn(minHeight = 200.dp)
-            ) {
-                Marker(
-                    state = stationMarkerState,
-                    title = station.name,
-                )
-            }
-
-            HorizontalDivider(thickness = Dp.Hairline)
-            Spacer(Modifier.height(10.dp))
-
-            StationTimetable(station.getStops(), Modifier.padding(horizontal=10.dp))
-
-            Spacer(Modifier.height(20.dp))
         }
+
+        HorizontalDivider(thickness = Dp.Hairline)
+        Spacer(Modifier.height(10.dp))
+
+        StationTimetable(station.getStops(), Modifier.padding(horizontal=10.dp))
+
+        Spacer(Modifier.height(20.dp))
     }
 }
 

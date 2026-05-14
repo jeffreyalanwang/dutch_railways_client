@@ -158,7 +158,7 @@ fun AmenityBadgeSet(
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy( //TODO just squeeze each child to a smaller x-dimension (made possible by disabling clip)
+        horizontalArrangement = Arrangement.spacedBy(
             (-1 * (1 - badgeContentProportion) * height.value / 2).dp
         ),
     ) {

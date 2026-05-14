@@ -4,12 +4,12 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-05-13T04:50:50.084531726Z">
+        <DropdownSelection timestamp="2026-05-14T05:27:27.401349316Z">
           <Target type="BOOT_WITH_SNAPSHOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7_GApps.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7.avd" />
             </handle>
-            <Snapshot name="snap_2026-05-10_17-35-03" path="$USER_HOME$/.android/avd/Virtual_Pixel_7_GApps.avd/snapshots/snap_2026-05-10_17-35-03" />
+            <Snapshot name="snap_2026-05-10_15-50-01" path="$USER_HOME$/.android/avd/Virtual_Pixel_7.avd/snapshots/snap_2026-05-10_15-50-01" />
           </Target>
         </DropdownSelection>
         <DialogSelection />
