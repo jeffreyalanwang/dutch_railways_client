@@ -305,7 +305,7 @@ private fun getCurrStop(stops: List<ServiceStop>): IndexedValue<ServiceStop> {
 
 @Composable
 fun Stops(stops: List<ServiceStop>, modifier: Modifier = Modifier) {
-    val currStopState by mutableIntStateOf(getCurrStop(stops).index)
+    val currStopState by remember { mutableIntStateOf(getCurrStop(stops).index) }
     val subtitlesGridControl = remember(stops) { DiscreteGridControl() }
     // TODO on stop departure, update currStopState and set the timer for the next stop down
 
