@@ -22,5 +22,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Dutch Railways Android(Client"
+rootProject.name = "Dutch Railways Android Client"
 include(":app")

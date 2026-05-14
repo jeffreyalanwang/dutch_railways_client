@@ -2,6 +2,7 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -82,11 +83,13 @@ fun StationSearchScreen() {
         },
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
-        if (stationState == null) NoStationDetail()
-        else StationDetail(
-            stationState!!,
-            modifier = Modifier.padding(innerPadding).fillMaxSize(),
-        )
+        if (stationState == null) NoStationDetail(Modifier.padding(innerPadding))
+        else Box(Modifier.fillMaxSize().padding(innerPadding).padding(all=10.dp)){
+            StationDetail(
+                stationState!!,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
     }
 }
 

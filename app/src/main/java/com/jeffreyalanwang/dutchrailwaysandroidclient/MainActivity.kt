@@ -44,8 +44,8 @@ fun DutchRailwaysAndroidClientApp() {
                         )
                     },
                     label = { Text(it.label) },
-                    selected = it == currentDestination,
-                    onClick = { currentDestination = it }
+                    selected = (it == currentDestination),
+                    onClick = { currentDestination = it },
                 )
             }
     }

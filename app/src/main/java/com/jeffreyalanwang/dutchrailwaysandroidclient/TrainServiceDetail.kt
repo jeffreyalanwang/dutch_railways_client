@@ -17,11 +17,13 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.LocalTextStyle
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -39,9 +41,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -57,7 +61,6 @@ fun TrainServiceDetailTest() {
     val scrollState = rememberScrollState()
     Box(Modifier
         .verticalScroll(scrollState)
-        .height(1000.dp)
         .width(550.dp)
     ) {
         TrainServiceDetail(
@@ -82,7 +85,10 @@ fun TrainServiceDetail(service: PassService, modifier: Modifier = Modifier) {
             )
 
             // Amenities TODO add popup with names + rolling stock name
-            AmenityBadgeSet(service.amenities, modifier=Modifier.offset(x=-25.dp, y=-7.5.dp))
+            AmenityBadgeSet(
+                service.amenities,
+                modifier=Modifier.offset(x=-25.dp, y=-7.5.dp)
+            )
         }
         // Name
         Text(
@@ -152,7 +158,7 @@ fun AmenityBadgeSet(
 
     Row(
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(
+        horizontalArrangement = Arrangement.spacedBy( //TODO just squeeze each child to a smaller x-dimension (made possible by disabling clip)
             (-1 * (1 - badgeContentProportion) * height.value / 2).dp
         ),
     ) {
@@ -241,7 +247,7 @@ private fun Stop(
     arriveTime: ZonedDateTime?,
     departTime: ZonedDateTime?,
     isCurrStop: Boolean,
-    discreteGridControl: DiscreteGridControl,
+    arrivalWidth: Dp,
     modifier: Modifier = Modifier,
     itemPadding: Dp = 5.dp,
     lineWidth: Dp = 20.dp,
@@ -269,15 +275,24 @@ private fun Stop(
         Column(Modifier.weight(1f)) { // TODO text color by time
             if (!isFirstStop) Spacer(Modifier.height(itemPadding))
             Text(stationName, fontWeight = FontWeight.Bold)
-            DiscreteGridRow(discreteGridControl, gap=10.dp) {
-                if (isFirstStop) Spacer(Modifier) else Text(
-                    "Arrival: ${UIStrings.Time(arriveTime)}",
-                    Modifier.alpha(.5f),
-                )
-                if (isLastStop) Spacer(Modifier) else Text(
-                    "Departure: ${UIStrings.Time(departTime)}",
-                    Modifier.alpha(.5f)
-                )
+            Row {
+                if (!isFirstStop) {
+                    Text(
+                        "Arrival: ${UIStrings.Time(arriveTime)}",
+                        Modifier
+                            .alpha(.5f)
+                            .widthIn(min=arrivalWidth),
+                    )
+                } else {
+                    Spacer(Modifier.width(arrivalWidth))
+                }
+                Spacer(Modifier.width(5.dp))
+                if (!isLastStop) {
+                    Text(
+                        "Departure: ${UIStrings.Time(departTime)}",
+                        Modifier.alpha(.5f),
+                    )
+                }
             }
             if (!isLastStop) Spacer(Modifier.height(itemPadding))
         }
@@ -285,33 +300,36 @@ private fun Stop(
 }
 
 @OptIn(ExperimentalTime::class)
-fun getCurrStop(stops: List<ServiceStop>): IndexedValue<ServiceStop> {
-    for ((index, stop) in stops.dropLast(1).withIndex()) {
-        val time = stop.departure ?: stop.arrival
-        if (time == null)
-        if ((stop.departure ?: stop.arrival)!!.toInstant() > now()) {
+private fun getCurrStop(stops: List<ServiceStop>): IndexedValue<ServiceStop> {
+    stops.forEachIndexed { index, stop ->
+        if (stop.departure.toInstant() > now()) {
             return IndexedValue(index, stop)
         }
     }
-
     return IndexedValue(stops.size-1, stops.last())
 }
 
 @Composable
 fun Stops(stops: List<ServiceStop>, modifier: Modifier = Modifier) {
-    val currStopState by mutableIntStateOf(getCurrStop(stops).index)
-    val subtitlesGridControl = remember(stops) { DiscreteGridControl() }
+    val textMeasurer = rememberTextMeasurer()
+    val textLayoutResult = textMeasurer.measure(
+        text = "Arrival: 00:00 AM",
+        style = LocalTextStyle.current,
+    )
+    val arrivalWidth = with(LocalDensity.current) { textLayoutResult.size.width.toDp() }
+
+    val currStopState by remember { mutableIntStateOf(getCurrStop(stops).index) }
     // TODO on stop departure, update currStopState and set the timer for the next stop down
 
     Column(modifier) {
         stops.forEachIndexed { i, stop ->
             Stop(
-                arriveTime = if (i == 0)            null else stop.arrival,
+                arriveTime = if (i == 0) null else stop.arrival,
                 departTime = if (i == stops.size-1) null else stop.departure,
                 stationName = stop.getStation().name,
                 isCurrStop = (i == currStopState),
+                arrivalWidth = arrivalWidth,
                 modifier=Modifier.fillMaxWidth(), // TODO make clickable
-                discreteGridControl = subtitlesGridControl,
             )
         }
     }

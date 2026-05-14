@@ -78,8 +78,8 @@ class DiscreteGridControl {
         Alignment.Start -> left
         Alignment.End   -> right - width
         Alignment.CenterHorizontally -> (
-            left + (right - left - width) / 2
-        )
+                left + (right - left - width) / 2
+                )
         else -> throw IllegalArgumentException() // doesn't exist anyway
     }
 
@@ -223,7 +223,7 @@ object DiscreteGridRowScope {
      */
     @Stable
     fun Modifier.fill(): Modifier
-        = this.then(FillModifierElement)
+            = this.then(FillModifierElement)
 
     /**
      * Alignment of an item within its "grid cell"
@@ -264,11 +264,11 @@ fun DiscreteGridRow(
 
         // Determine preferredHeight (max of intrinsics of all children)
         val rigidsMaxTotalW = constraints.maxWidth - (
-            centerIdx
-                ?.let { i -> measurables[i] }
-                ?.minIntrinsicWidth(constraints.maxHeight)
-                ?: 0
-        )
+                centerIdx
+                    ?.let { i -> measurables[i] }
+                    ?.minIntrinsicWidth(constraints.maxHeight)
+                    ?: 0
+                )
         val rigidsMaxH = max(
             measurables.maxOf { it.minIntrinsicHeight(rigidsMaxTotalW) },
             constraints.minHeight

@@ -24,6 +24,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,6 +35,7 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
+import java.time.ZonedDateTime
 
 const val EM_DASH = "—"
 
@@ -43,7 +45,6 @@ fun StationDetailTest() {
     val scrollState = rememberScrollState()
     Box(Modifier
         .verticalScroll(scrollState)
-        .height(1000.dp)
         .width(550.dp)
     ) {
         StationDetail(
@@ -102,8 +103,11 @@ fun StationDetail(station: Station, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun TimetableRow(
-    stop: ServiceStop,
+private fun TimetableRow(
+    icon: Painter,
+    title: String,
+    arriveTime: ZonedDateTime?,
+    departTime: ZonedDateTime?,
     modifier: Modifier = Modifier,
     discreteGridControl: DiscreteGridControl,
     gap: Dp,
@@ -116,28 +120,28 @@ fun TimetableRow(
         gap = gap,
     ) {
         Icon(
-            painterResource(AppIcons.Trainset(stop.getService().trainset)), // TODO be more efficient with getting trainset (don't get all properties of the service)
-            contentDescription = null,
+            icon, // TODO be more efficient with getting trainset (don't get all properties of the service)
+            contentDescription = null, // Explained by "Train" column
             modifier=Modifier
                 .fillMaxHeight()
                 .width(24.dp)
         )
         Text(
-            stop.getService().title,
+            title,
             modifier=Modifier
                 .wrapContentHeight()
                 .cellAlign(Alignment.Start)
                 .fill()
         )
         Text(
-            if (stop.arrival == null) EM_DASH else UIStrings.Time(stop.arrival),
+            if (arriveTime == null) EM_DASH else UIStrings.Time(arriveTime),
             softWrap = false,
             modifier=Modifier
                 .wrapContentHeight()
                 .cellAlign(Alignment.CenterHorizontally)
         )
         Text(
-            if (stop.departure == null) EM_DASH else UIStrings.Time(stop.departure),
+            if (departTime == null) EM_DASH else UIStrings.Time(departTime),
             softWrap = false,
             modifier=Modifier
                 .wrapContentHeight()
@@ -177,7 +181,10 @@ fun StationTimetable(stops: List<ServiceStop>, modifier: Modifier = Modifier) {
         for (stop in stops) {
             Spacer(Modifier.height(5.dp))
             TimetableRow(
-                stop,
+                painterResource(AppIcons.Trainset(stop.getService().trainset)),
+                stop.getService().title,
+                arriveTime = stop.arrival,
+                departTime = stop.departure,
                 discreteGridControl = gridControl,
                 gap = gap,
             )
