@@ -1,5 +1,7 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.minus
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
@@ -65,3 +67,12 @@ class ReadOnlyLateInit<T> : ReadWriteProperty<Any?, T> {
         isInitialized = true
     }
 }
+
+fun PaddingValues.verticalOnly()
+    = PaddingValues(
+        top = this.calculateTopPadding(),
+        bottom = this.calculateBottomPadding(),
+    )
+
+fun PaddingValues.horizontalOnly()
+    = this.minus(this.verticalOnly())

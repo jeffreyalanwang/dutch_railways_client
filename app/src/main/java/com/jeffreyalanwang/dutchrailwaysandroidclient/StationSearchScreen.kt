@@ -40,14 +40,20 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import java.util.EnumSet
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Preview
 @Composable
-fun StationSearchScreen() {
+fun StationSearchScreenTest() {
+    StationSearchScreen({})
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun StationSearchScreen(onNavigate: (Any)->Unit) {
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
     var stationState by remember { mutableStateOf<Station?>(null) }
     val scope = rememberCoroutineScope()
+
     val inputField = @Composable {
         SearchBarDefaults.InputField(
             textFieldState = textFieldState,
@@ -84,10 +90,14 @@ fun StationSearchScreen() {
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
         if (stationState == null) NoStationDetail(Modifier.padding(innerPadding))
-        else Box(Modifier.fillMaxSize().padding(innerPadding).padding(all=10.dp)){
+        else Box(Modifier
+            .fillMaxSize()
+            .padding(innerPadding)
+            .padding(all = 10.dp)){
             StationDetail(
                 stationState!!,
                 modifier = Modifier.fillMaxWidth(),
+                onNavigate = onNavigate,
             )
         }
     }

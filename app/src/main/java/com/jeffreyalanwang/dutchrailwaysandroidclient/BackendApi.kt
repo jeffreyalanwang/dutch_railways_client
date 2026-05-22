@@ -108,6 +108,11 @@ class PassService(
 private fun parseAmsTime(s: String)
     = ZonedDateTime.of(LocalDateTime.parse(s), ZoneId.of("Europe/Amsterdam"))
 
+//val apolloClient = ApolloClient.Builder()
+//    .serverUrl("https://example.com/graphql")
+//    .httpBatching()
+//    .build()
+
 object BackendApi {
     private const val BACKEND_URL = "http://msword-jw125.duckdns.org";
 

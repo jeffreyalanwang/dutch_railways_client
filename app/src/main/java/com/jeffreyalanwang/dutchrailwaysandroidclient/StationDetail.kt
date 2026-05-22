@@ -1,8 +1,10 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -18,9 +20,12 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.painter.Painter
@@ -34,6 +39,7 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
+import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 
 const val EM_DASH = "—"
@@ -42,19 +48,36 @@ const val EM_DASH = "—"
 @Composable
 fun StationDetailTest() {
     val scrollState = rememberScrollState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarEffectScope = rememberCoroutineScope()
+
     Box(Modifier
         .verticalScroll(scrollState)
         .width(550.dp)
     ) {
         StationDetail(
             BackendApi.get_station_info(358u),
-            modifier = Modifier.padding(10.dp)
+            Modifier.padding(10.dp),
+            onNavigate = { passService ->
+                snackbarEffectScope.launch {
+                    snackbarHostState.showSnackbar(
+                        passService.toString(),
+                        withDismissAction = true
+                    )
+                }
+            },
         )
     }
+
+    SnackbarHost(hostState = snackbarHostState)
 }
 
 @Composable
-fun StationDetail(station: Station, modifier: Modifier = Modifier) {
+fun StationDetail(
+    station: Station,
+    modifier: Modifier = Modifier,
+    onNavigate: (Any)-> Unit
+) {
     val stationMarkerState = rememberUpdatedMarkerState(position = station.geom)
     val cameraPositionState = rememberCameraPositionState {
         position = CameraPosition.fromLatLngZoom(station.geom, 10f)
@@ -91,9 +114,71 @@ fun StationDetail(station: Station, modifier: Modifier = Modifier) {
         HorizontalDivider(thickness = Dp.Hairline)
         Spacer(Modifier.height(10.dp))
 
-        StationTimetable(station.getStops(), Modifier.padding(horizontal=10.dp))
+        StationTimetable(
+            station.getStops(),
+            padding = PaddingValues(horizontal=10.dp),
+            onNavigate = onNavigate
+        )
 
         Spacer(Modifier.height(20.dp))
+    }
+}
+
+@Composable
+fun StationTimetable(
+    stops: List<ServiceStop>,
+    modifier: Modifier = Modifier,
+    padding: PaddingValues = PaddingValues.Zero,
+    onNavigate: (Any) -> Unit
+) {
+    val gap = 10.dp
+    val gridControl = remember(stops) { DiscreteGridControl() }
+
+    Column(modifier
+        .fillMaxWidth()
+        .padding(padding.verticalOnly())
+    ) {
+        DiscreteGridRow(
+            gridControl,
+            Modifier
+                .fillMaxWidth()
+                .padding(padding.horizontalOnly()),
+            gap,
+        ) {
+            Spacer(Modifier.width(24.dp))
+            Text(
+                "Train",
+                fontWeight = FontWeight.Bold,
+                modifier=Modifier
+                    .cellAlign(Alignment.Start)
+                    .fill()
+            )
+            Text(
+                "Arrival",
+                fontWeight = FontWeight.Bold,
+                modifier=Modifier.cellAlign(Alignment.CenterHorizontally)
+            )
+            Text(
+                "Departure",
+                fontWeight = FontWeight.Bold,
+                modifier=Modifier.cellAlign(Alignment.CenterHorizontally)
+            )
+        }
+        for (stop in stops) {
+            Spacer(Modifier.height(5.dp))
+            TimetableRow(
+                painterResource(AppIcons.Trainset(stop.getService().trainset)),
+                stop.getService().title,
+                arriveTime = stop.arrival,
+                departTime = stop.departure,
+                Modifier
+                    .fillMaxWidth()
+                    .clickable { onNavigate(stop.getService()) }
+                    .padding(padding.horizontalOnly()),
+                discreteGridControl = gridControl,
+                gap = gap,
+            )
+        }
     }
 }
 
@@ -142,47 +227,5 @@ private fun TimetableRow(
                 .wrapContentHeight()
                 .cellAlign(Alignment.CenterHorizontally)
         )
-    }
-}
-
-@Composable
-fun StationTimetable(stops: List<ServiceStop>, modifier: Modifier = Modifier) {
-    val gap = 10.dp
-    val gridControl = remember(stops) { DiscreteGridControl() }
-
-    Column(modifier.fillMaxWidth()) {
-        DiscreteGridRow(
-            gridControl,
-            Modifier.fillMaxWidth(),
-            gap,
-        ) {
-            Spacer(Modifier.width(24.dp))
-            Text(
-                "Train",
-                fontWeight = FontWeight.Bold,
-                modifier=Modifier.cellAlign(Alignment.Start).fill()
-            )
-            Text(
-                "Arrival",
-                fontWeight = FontWeight.Bold,
-                modifier=Modifier.cellAlign(Alignment.CenterHorizontally)
-            )
-            Text(
-                "Departure",
-                fontWeight = FontWeight.Bold,
-                modifier=Modifier.cellAlign(Alignment.CenterHorizontally)
-            )
-        }
-        for (stop in stops) {
-            Spacer(Modifier.height(5.dp))
-            TimetableRow(
-                painterResource(AppIcons.Trainset(stop.getService().trainset)),
-                stop.getService().title,
-                arriveTime = stop.arrival,
-                departTime = stop.departure,
-                discreteGridControl = gridControl,
-                gap = gap,
-            )
-        }
     }
 }
