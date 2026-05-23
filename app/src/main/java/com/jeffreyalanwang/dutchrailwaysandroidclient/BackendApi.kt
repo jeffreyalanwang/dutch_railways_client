@@ -32,7 +32,7 @@ enum class TrainAmenity(val friendlyName: String) {
 enum class PlaceSubclass { Area, Station }
 
 open class Place(
-    val id: UInt,
+    val id: Int,
     val name: String
 ) {
     override fun equals(other: Any?): Boolean {
@@ -44,12 +44,12 @@ open class Place(
 }
 
 class Area(
-    id: UInt,
+    id: Int,
     name: String,
 ) : Place(id, name)
 
 class Station(
-    id: UInt,
+    id: Int,
     name: String,
     val address: String,
     val geom: LatLng,
@@ -66,8 +66,8 @@ class Station(
 class ServiceStop(
     val arrival: ZonedDateTime?,
     val departure: ZonedDateTime?,
-    val passServiceId: UInt,
-    val stationId: UInt,
+    val passServiceId: Int,
+    val stationId: Int,
 ) {
     private var passService: PassService? = null
     private var station: Station? = null
@@ -77,11 +77,11 @@ class ServiceStop(
         this.passService = passService
         this.station = station
     }
-    constructor(arrival: ZonedDateTime, departure: ZonedDateTime, passServiceId: UInt, station: Station)
+    constructor(arrival: ZonedDateTime, departure: ZonedDateTime, passServiceId: Int, station: Station)
             : this(arrival, departure, passServiceId=passServiceId, stationId=station.id) {
         this.station = station
     }
-    constructor(arrival: ZonedDateTime, departure: ZonedDateTime, passService: PassService, stationId: UInt)
+    constructor(arrival: ZonedDateTime, departure: ZonedDateTime, passService: PassService, stationId: Int)
             : this(arrival, departure, passServiceId=passService.id, stationId=stationId) {
         this.passService = passService
     }
@@ -91,7 +91,7 @@ class ServiceStop(
 }
 
 class PassService(
-    val id: UInt,
+    val id: Int,
     val title: String,
     val trainset: Trainset,
     val amenities: EnumSet<TrainAmenity>,
@@ -116,24 +116,24 @@ private fun parseAmsTime(s: String)
 object BackendApi {
     private const val BACKEND_URL = "http://msword-jw125.duckdns.org";
 
-    private val dummyService = PassService(119u, "Intercity 2263 to Rotterdam Centraal", Trainset.VIRM, EnumSet.allOf(TrainAmenity::class.java))
+    private val dummyService = PassService(119, "Intercity 2263 to Rotterdam Centraal", Trainset.VIRM, EnumSet.allOf(TrainAmenity::class.java))
     private val dummyServiceStops = listOf(
-        ServiceStop(passServiceId=119u,arrival=null                                      ,departure=parseAmsTime("2026-05-08T18:36:00.000000"),stationId=358u),
-        ServiceStop(passServiceId=119u,arrival=parseAmsTime("2026-05-08T19:28:00.000000"),departure=parseAmsTime("2026-05-08T19:30:00.000000"),stationId=376u),
-        ServiceStop(passServiceId=119u,arrival=parseAmsTime("2026-05-08T19:49:00.000000"),departure=null                                      ,stationId=361u),
+        ServiceStop(passServiceId=119,arrival=null                                      ,departure=parseAmsTime("2026-05-08T18:36:00.000000"),stationId=358),
+        ServiceStop(passServiceId=119,arrival=parseAmsTime("2026-05-08T19:28:00.000000"),departure=parseAmsTime("2026-05-08T19:30:00.000000"),stationId=376),
+        ServiceStop(passServiceId=119,arrival=parseAmsTime("2026-05-08T19:49:00.000000"),departure=null                                      ,stationId=361),
     )
     private val dummyAreas = listOf(
-        Area(1u, "Nederland"),
-        Area(10u, "Noord-Holland"),
-        Area(9u, "Zuid-Holland"),
-        Area(319u, "Rotterdam"),
-        Area(287u, "'s-Gravenhage"),
-        Area(145u, "Amsterdam"),
+        Area(1, "Nederland"),
+        Area(10, "Noord-Holland"),
+        Area(9, "Zuid-Holland"),
+        Area(319, "Rotterdam"),
+        Area(287, "'s-Gravenhage"),
+        Area(145, "Amsterdam"),
     )
     private val dummyStations = listOf(
-        Station(358u, "Amsterdam Centraal", "5a, IJ-hal, Centrum, Amsterdam, Noord-Holland, Nederland, 1012 AA, Nederland", LatLng(52.37888718232718, 4.900277682877522)),
-        Station(361u, "Rotterdam Centraal", "Spoor 8, Stationssingel, Provenierswijk, Noord, Rotterdam, Zuid-Holland, Nederland, 3033 HB, Nederland", LatLng(51.92499923833714, 4.468888827643443)),
-        Station(376u, "Den Haag HS", "Stationsplein, Stationsbuurt, Centrum, Den Haag, Zuid-Holland, Nederland, 2515 RT, Nederland", LatLng(52.06972122391006, 4.322500294829242)),
+        Station(358, "Amsterdam Centraal", "5a, IJ-hal, Centrum, Amsterdam, Noord-Holland, Nederland, 1012 AA, Nederland", LatLng(52.37888718232718, 4.900277682877522)),
+        Station(361, "Rotterdam Centraal", "Spoor 8, Stationssingel, Provenierswijk, Noord, Rotterdam, Zuid-Holland, Nederland, 3033 HB, Nederland", LatLng(51.92499923833714, 4.468888827643443)),
+        Station(376, "Den Haag HS", "Stationsplein, Stationsbuurt, Centrum, Den Haag, Zuid-Holland, Nederland, 2515 RT, Nederland", LatLng(52.06972122391006, 4.322500294829242)),
     )
 
     fun autocomplete_place(query: String, subclasses: EnumSet<PlaceSubclass>): List<Place> { //TODO this should not be loading entire stations. just the data we need
@@ -150,12 +150,12 @@ object BackendApi {
         return candidates.sortedByDescending{ it.second }.take(10).map{ it.first }
     }
 
-    fun get_pass_service(id: UInt): PassService {
+    fun get_pass_service(id: Int): PassService {
         assert(id == dummyService.id)
         return dummyService
     }
 
-    fun get_station_info(id: UInt): Station {
+    fun get_station_info(id: Int): Station {
         dummyStations.forEach {
             if (it.id == id) return it
         }
@@ -164,19 +164,19 @@ object BackendApi {
 
     // Must sort by arrival time before return
 
-    fun get_stops_of_service(service_id: UInt): List<ServiceStop>
+    fun get_stops_of_service(service_id: Int): List<ServiceStop>
         = dummyServiceStops
             .filter { it.passServiceId == service_id }
             .sortedBy { it.arrival }
     fun get_stops_of_service(service: PassService) = get_stops_of_service(service.id)
 
-    fun get_stops_at_station(station_id: UInt): List<ServiceStop>
+    fun get_stops_at_station(station_id: Int): List<ServiceStop>
         = dummyServiceStops
             .filter { it.stationId == station_id }
             .sortedBy { it.arrival }
     fun get_stops_at_station(station: Station) = get_stops_at_station(station.id)
 
-    fun get_stops(service_id: UInt, station_id: UInt): ServiceStop
+    fun get_stops(service_id: Int, station_id: Int): ServiceStop
         = dummyServiceStops
             .filter { it.passServiceId == service_id }
             .filter { it.stationId == station_id }

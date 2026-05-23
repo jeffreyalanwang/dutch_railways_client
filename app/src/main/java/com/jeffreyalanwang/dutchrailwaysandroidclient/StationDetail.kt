@@ -1,12 +1,12 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -14,15 +14,16 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -47,36 +48,68 @@ const val EM_DASH = "—"
 @Preview
 @Composable
 fun StationDetailTest() {
-    val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 
-    Box(Modifier
-        .verticalScroll(scrollState)
-        .width(550.dp)
-    ) {
-        StationDetail(
-            BackendApi.get_station_info(358u),
-            Modifier.padding(10.dp),
-            onNavigate = { passService ->
-                snackbarEffectScope.launch {
-                    snackbarHostState.showSnackbar(
-                        passService.toString(),
-                        withDismissAction = true
-                    )
-                }
-            },
-        )
-    }
+    StationDetailScreen(
+        BackendApi.get_station_info(358),
+        onNavigate = { passServiceRoute ->
+            snackbarEffectScope.launch {
+                snackbarHostState.showSnackbar(
+                    passServiceRoute.toString(),
+                    withDismissAction = true
+                )
+            }
+        },
+        onNavigateBack = {
+            snackbarEffectScope.launch {
+                snackbarHostState.showSnackbar(
+                    "Back",
+                    withDismissAction = true
+                )
+            }
+        },
+    )
 
     SnackbarHost(hostState = snackbarHostState)
+}
+
+@Composable
+fun StationDetailScreen(
+    station: Station,
+    onNavigate: (Any) -> Unit,
+    onNavigateBack: () -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Station") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            painterResource(R.drawable.ic_back),
+                            contentDescription = "Back"
+                        )
+                    }
+
+                }
+            )
+        },
+        modifier = Modifier.fillMaxSize(),
+    ) { innerPadding ->
+        StationDetail(
+            station,
+            Modifier.padding(innerPadding).padding(10.dp),
+            onNavigate,
+        )
+    }
 }
 
 @Composable
 fun StationDetail(
     station: Station,
     modifier: Modifier = Modifier,
-    onNavigate: (Any)-> Unit
+    onNavigate: (Any) -> Unit
 ) {
     val stationMarkerState = rememberUpdatedMarkerState(position = station.geom)
     val cameraPositionState = rememberCameraPositionState {
@@ -173,7 +206,7 @@ fun StationTimetable(
                 departTime = stop.departure,
                 Modifier
                     .fillMaxWidth()
-                    .clickable { onNavigate(stop.getService()) }
+                    .clickable { onNavigate(TrainServiceDetailRoute(stop.passServiceId)) }
                     .padding(padding.horizontalOnly()),
                 discreteGridControl = gridControl,
                 gap = gap,

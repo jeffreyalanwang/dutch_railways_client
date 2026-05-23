@@ -20,6 +20,8 @@ import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
@@ -43,7 +45,19 @@ import java.util.EnumSet
 @Preview
 @Composable
 fun StationSearchScreenTest() {
-    StationSearchScreen({})
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarEffectScope = rememberCoroutineScope()
+
+    StationSearchScreen{ newRoute ->
+        snackbarEffectScope.launch {
+            snackbarHostState.showSnackbar(
+                newRoute.toString(),
+                withDismissAction = true
+            )
+        }
+    }
+
+    SnackbarHost(hostState = snackbarHostState)
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -74,7 +88,7 @@ fun StationSearchScreen(onNavigate: (Any)->Unit) {
     }
 
     Scaffold(
-        topBar = @Composable {
+        topBar = {
             AppBarWithSearch(state = searchBarState, inputField = inputField)
             ExpandedFullScreenSearchBar(state = searchBarState, inputField = inputField) {
                 StationSearchResults(
@@ -104,7 +118,7 @@ fun StationSearchScreen(onNavigate: (Any)->Unit) {
 }
 
 @Composable
-private fun StationSearchResults(query: String, onResultClick: (UInt, String) -> Unit, modifier: Modifier = Modifier) {
+private fun StationSearchResults(query: String, onResultClick: (Int, String) -> Unit, modifier: Modifier = Modifier) {
     Column(modifier.verticalScroll(rememberScrollState())) {
         (BackendApi.autocomplete_place(query, EnumSet.of(PlaceSubclass.Station)) as List<Station>).forEach {
             ListItem(

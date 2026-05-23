@@ -20,19 +20,19 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -41,15 +41,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.launch
 import java.time.Instant.now
 import java.time.ZonedDateTime
@@ -59,33 +56,69 @@ import kotlin.time.ExperimentalTime
 @Preview
 @Composable
 fun TrainServiceDetailTest() {
-    val scrollState = rememberScrollState()
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 
-    Box(Modifier
-        .verticalScroll(scrollState)
-        .width(550.dp)
-    ) {
-        TrainServiceDetail(
-            BackendApi.get_pass_service(119u),
-            onNavigate = { station ->
-                snackbarEffectScope.launch {
-                    snackbarHostState.showSnackbar(
-                        station.toString(),
-                        withDismissAction = true
-                    )
-                }
-            },
-            modifier = Modifier.padding(10.dp),
-        )
-    }
+    TrainServiceDetailScreen(
+        BackendApi.get_pass_service(119),
+        onNavigate = { stationRoute ->
+            snackbarEffectScope.launch {
+                snackbarHostState.showSnackbar(
+                    stationRoute.toString(),
+                    withDismissAction = true
+                )
+            }
+        },
+        onNavigateBack = {
+            snackbarEffectScope.launch {
+                snackbarHostState.showSnackbar(
+                    "Back",
+                    withDismissAction = true
+                )
+            }
+        },
+    )
 
     SnackbarHost(hostState = snackbarHostState)
 }
 
 @Composable
-fun TrainServiceDetail(service: PassService, onNavigate: (Any)-> Unit, modifier: Modifier = Modifier) {
+fun TrainServiceDetailScreen(
+    service: PassService,
+    onNavigate: (Any) -> Unit,
+    onNavigateBack: () -> Unit,
+) {
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text("Train") },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(
+                            painterResource(R.drawable.ic_back),
+                            contentDescription = "Back"
+                        )
+                    }
+
+                }
+            )
+        },
+        modifier = Modifier.fillMaxSize(),
+    ) { innerPadding ->
+        TrainServiceDetail(
+            service,
+            Modifier.padding(innerPadding).padding(10.dp),
+            onNavigate
+        )
+    }
+}
+
+@Composable
+fun TrainServiceDetail(
+    service: PassService,
+    modifier: Modifier = Modifier,
+    onNavigate: (Any)-> Unit
+) {
     Card(modifier) {
         Spacer(Modifier.height(20.dp))
 
@@ -221,7 +254,7 @@ fun Stops(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        onNavigate(stop.getStation())
+                        onNavigate(StationDetailRoute(stop.stationId))
                     }
                     .padding(padding.horizontalOnly()),
                 discreteGridControl = timetableGridControl,

@@ -14,6 +14,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.rememberNavController
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.theme.DutchRailwaysAndroidClientTheme
 
 class MainActivity : ComponentActivity() {
@@ -48,9 +50,47 @@ fun DutchRailwaysAndroidClientApp() {
                     onClick = { currentDestination = it },
                 )
             }
-    }
+        }
     ) {
-        StationSearchScreen()
+        val tabNavController = rememberNavController()
+        NavHost(
+            tabNavController,
+            startDestination = when (currentDestination) {
+                AppDestinations.HOME -> StationSearchRoute
+                AppDestinations.TRIP -> TrainServiceDetailRoute(119)
+                AppDestinations.STATIONS -> StationSearchRoute
+                AppDestinations.EDIT -> StationDetailRoute(358)
+            }
+        ) {
+            // Top-level pages
+            addStationSearchRoute { newPage ->
+                tabNavController.navigate(newPage) {
+                    popUpTo(tabNavController.graph.startDestinationRoute!!) {
+                        saveState = true //TODO cannot get state to restore
+                    }
+                    restoreState = true
+                    launchSingleTop = true
+                }
+            }
+
+            // Below: Child pages (do not pop up when navigating to them)
+            addStationDetailRoute (
+                onNavigate = { newPage ->
+                    tabNavController.navigate(newPage) {
+                        restoreState = true
+                    }
+                },
+                onNavigateBack = { tabNavController.popBackStack() },
+            )
+            addTrainServiceDetailRoute (
+                onNavigate = { newPage ->
+                    tabNavController.navigate(newPage) {
+                        restoreState = true
+                    }
+                },
+                onNavigateBack = { tabNavController.popBackStack() },
+            )
+        }
     }
 }
 
@@ -59,7 +99,7 @@ enum class AppDestinations(
     val icon: Int,
 ) {
     HOME("Home", R.drawable.ic_home),
-    FAVORITES("Trip", R.drawable.ic_directions),
-    PROFILE("Stations", R.drawable.ic_dr_station),
-    PROFILE2("Edit", R.drawable.ic_edit),
+    TRIP("Trip", R.drawable.ic_directions),
+    STATIONS("Stations", R.drawable.ic_dr_station),
+    EDIT("Edit", R.drawable.ic_edit),
 }
