@@ -1,4 +1,4 @@
-package com.jeffreyalanwang.dutchrailwaysandroidclient
+package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -16,8 +16,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -47,6 +45,20 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
+import com.jeffreyalanwang.dutchrailwaysandroidclient.R
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.LineSegmentWithPoint
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStrings
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import kotlinx.coroutines.launch
 import java.time.Instant.now
 import java.time.ZonedDateTime
@@ -288,13 +300,13 @@ private fun Stop(
         Column(Modifier.weight(1f)) { // TODO text color by time
             if (!isFirstStop) Spacer(Modifier.height(itemPadding))
             Text(stationName, fontWeight = FontWeight.Bold)
-            DiscreteGridRow(discreteGridControl, gap=10.dp) {
+            DiscreteGridRow(discreteGridControl, gap = 10.dp) {
                 if (isFirstStop) Spacer(Modifier) else Text(
-                    "Arrival: ${UIStrings.Time(arriveTime)}",
+                    "Arrival: ${AppStrings.Time(arriveTime)}",
                     Modifier.alpha(.5f),
                 )
                 if (isLastStop) Spacer(Modifier) else Text(
-                    "Departure: ${UIStrings.Time(departTime)}",
+                    "Departure: ${AppStrings.Time(departTime)}",
                     Modifier.alpha(.5f)
                 )
             }

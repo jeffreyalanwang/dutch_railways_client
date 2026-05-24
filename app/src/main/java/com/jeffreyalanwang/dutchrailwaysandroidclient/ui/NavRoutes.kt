@@ -1,4 +1,4 @@
-package com.jeffreyalanwang.dutchrailwaysandroidclient
+package com.jeffreyalanwang.dutchrailwaysandroidclient.ui
 
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.AnimatedContentTransitionScope
@@ -14,6 +14,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.TrainServiceDetailScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.StationSearchScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.TrainQueryScreen
 import kotlinx.serialization.Serializable
 
 

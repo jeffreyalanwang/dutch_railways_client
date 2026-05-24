@@ -1,4 +1,4 @@
-package com.jeffreyalanwang.dutchrailwaysandroidclient
+package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable

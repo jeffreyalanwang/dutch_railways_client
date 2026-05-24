@@ -1,4 +1,9 @@
-package com.jeffreyalanwang.dutchrailwaysandroidclient
+package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util
+
+import com.jeffreyalanwang.dutchrailwaysandroidclient.R
+import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Trainset
+import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainsetQuality
 
 object AppIcons {
     fun Trainset(trainset: Trainset) = when (trainset.quality) {

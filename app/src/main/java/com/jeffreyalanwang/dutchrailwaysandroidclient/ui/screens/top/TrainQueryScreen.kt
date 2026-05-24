@@ -1,4 +1,4 @@
-package com.jeffreyalanwang.dutchrailwaysandroidclient
+package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -30,6 +30,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import kotlinx.coroutines.launch
 
 @Preview

@@ -27,7 +27,6 @@ android {
         versionCode = 1
         versionName = "1.0"
 
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -67,7 +66,6 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.ui)
     implementation(libs.androidx.ui.tooling.preview)
-    implementation("org.jetbrains.kotlin:kotlin-android-extensions-runtime:2.2.10")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.maps.android:maps-compose:8.3.0")
     implementation("ca.solo-studios:kt-fuzzy:0.1.+")

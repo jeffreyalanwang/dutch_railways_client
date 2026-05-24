@@ -1,15 +1,7 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 
-import android.R.attr.x
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.minus
-import androidx.navigation.NavBackStackEntry
-import androidx.navigation.NavDestination.Companion.hierarchy
 import kotlin.properties.ReadWriteProperty
-import kotlin.reflect.KClass
 import kotlin.reflect.KProperty
-import androidx.navigation.NavDestination.Companion.hasRoute
-import androidx.navigation.NavDestination.Companion.hierarchy
 
 fun <T> List<T>.update(index: Int, value: T): List<T> {
     val newList = this.toMutableList()
@@ -74,16 +66,3 @@ class ReadOnlyLateInit<T> : ReadWriteProperty<Any?, T> {
     }
 }
 
-fun PaddingValues.verticalOnly()
-    = PaddingValues(
-        top = this.calculateTopPadding(),
-        bottom = this.calculateBottomPadding(),
-    )
-
-fun PaddingValues.horizontalOnly()
-    = this.minus(this.verticalOnly())
-
-fun <T : Any> NavBackStackEntry.hasRoute(route: KClass<T>)
-    = this.destination.hierarchy.any {
-        it.hasRoute(route)
-    }

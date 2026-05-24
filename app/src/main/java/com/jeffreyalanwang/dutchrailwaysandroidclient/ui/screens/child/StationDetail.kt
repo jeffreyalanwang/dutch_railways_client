@@ -1,4 +1,4 @@
-package com.jeffreyalanwang.dutchrailwaysandroidclient
+package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
@@ -40,6 +40,18 @@ import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
+import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.R
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainServiceDetailRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStrings
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 
@@ -182,19 +194,19 @@ private fun StationTimetable(
             Text(
                 "Train",
                 fontWeight = FontWeight.Bold,
-                modifier=Modifier
+                modifier = Modifier
                     .cellAlign(Alignment.Start)
                     .fill()
             )
             Text(
                 "Arrival",
                 fontWeight = FontWeight.Bold,
-                modifier=Modifier.cellAlign(Alignment.CenterHorizontally)
+                modifier = Modifier.cellAlign(Alignment.CenterHorizontally)
             )
             Text(
                 "Departure",
                 fontWeight = FontWeight.Bold,
-                modifier=Modifier.cellAlign(Alignment.CenterHorizontally)
+                modifier = Modifier.cellAlign(Alignment.CenterHorizontally)
             )
         }
         for (stop in stops) {
@@ -235,28 +247,28 @@ private fun TimetableRow(
         Icon(
             icon, // TODO be more efficient with getting trainset (don't get all properties of the service)
             contentDescription = null, // Explained by "Train" column
-            modifier=Modifier
+            modifier = Modifier
                 .fillMaxHeight()
                 .width(24.dp)
         )
         Text(
             title,
-            modifier=Modifier
+            modifier = Modifier
                 .wrapContentHeight()
                 .cellAlign(Alignment.Start)
                 .fill()
         )
         Text(
-            if (arriveTime == null) EM_DASH else UIStrings.Time(arriveTime),
+            if (arriveTime == null) EM_DASH else AppStrings.Time(arriveTime),
             softWrap = false,
-            modifier=Modifier
+            modifier = Modifier
                 .wrapContentHeight()
                 .cellAlign(Alignment.CenterHorizontally)
         )
         Text(
-            if (departTime == null) EM_DASH else UIStrings.Time(departTime),
+            if (departTime == null) EM_DASH else AppStrings.Time(departTime),
             softWrap = false,
-            modifier=Modifier
+            modifier = Modifier
                 .wrapContentHeight()
                 .cellAlign(Alignment.CenterHorizontally)
         )
