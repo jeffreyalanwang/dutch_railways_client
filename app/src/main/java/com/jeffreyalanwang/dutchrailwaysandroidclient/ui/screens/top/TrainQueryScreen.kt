@@ -30,8 +30,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.topOnly
 import kotlinx.coroutines.launch
 
 @Preview
@@ -104,7 +105,7 @@ fun TrainQueryScreen(onNavigate: (NavRoute)->Unit) {
         Box(
             Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
+                .padding(innerPadding.topOnly()),
             contentAlignment = Alignment.Center,
         ) {
             Icon(

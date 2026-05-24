@@ -7,11 +7,21 @@ import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavDestination.Companion.hierarchy
 import kotlin.reflect.KClass
 
+fun PaddingValues.topOnly()
+    = PaddingValues(
+        top = this.calculateTopPadding(),
+    )
+
+fun PaddingValues.bottomOnly()
+    = PaddingValues(
+        bottom = this.calculateBottomPadding(),
+    )
+
 fun PaddingValues.verticalOnly()
     = PaddingValues(
-    top = this.calculateTopPadding(),
-    bottom = this.calculateBottomPadding(),
-)
+        top = this.calculateTopPadding(),
+        bottom = this.calculateBottomPadding(),
+    )
 
 fun PaddingValues.horizontalOnly()
     = this.minus(this.verticalOnly())

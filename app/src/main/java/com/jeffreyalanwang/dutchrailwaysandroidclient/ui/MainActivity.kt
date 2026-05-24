@@ -21,6 +21,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.theme.DutchRailwaysAndroidClientTheme
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.bottomOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.hasRoute
 
 class MainActivity : ComponentActivity() {
@@ -68,7 +69,7 @@ fun DutchRailwaysAndroidClientApp() {
     ) { innerPadding ->
         NavHost(
             topNavController,
-            modifier = Modifier.padding(innerPadding),
+            modifier = Modifier.padding(innerPadding.bottomOnly()),
             startDestination = AppDestinations.TRIP.route
         ) {
             topNavGraph()

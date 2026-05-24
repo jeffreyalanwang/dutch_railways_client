@@ -41,11 +41,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PlaceSubclass
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetail
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.topOnly
 import kotlinx.coroutines.launch
 import java.util.EnumSet
 
@@ -110,10 +111,10 @@ fun StationSearchScreen(onNavigate: (NavRoute)->Unit) { //TODO document each onN
         },
         modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
-        if (stationState == null) NoStationDetail(Modifier.padding(innerPadding))
+        if (stationState == null) NoStationDetail(Modifier.padding(innerPadding.topOnly()))
         else Box(Modifier
             .fillMaxSize()
-            .padding(innerPadding)
+            .padding(innerPadding.topOnly())
             .padding(all = 10.dp)){
             StationDetail(
                 stationState!!,
