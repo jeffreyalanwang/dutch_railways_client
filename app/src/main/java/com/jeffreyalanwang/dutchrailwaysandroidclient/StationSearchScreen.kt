@@ -29,6 +29,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -44,11 +45,11 @@ import java.util.EnumSet
 
 @Preview
 @Composable
-fun StationSearchScreenTest() {
+private fun StationSearchScreenTest() {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 
-    StationSearchScreen{ newRoute ->
+    StationSearchScreen { newRoute ->
         snackbarEffectScope.launch {
             snackbarHostState.showSnackbar(
                 newRoute.toString(),
@@ -62,10 +63,10 @@ fun StationSearchScreenTest() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun StationSearchScreen(onNavigate: (Any)->Unit) {
+fun StationSearchScreen(onNavigate: (NavRoute)->Unit) { //TODO document each onNavigate
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
-    var stationState by remember { mutableStateOf<Station?>(null) }
+    var stationState by rememberSaveable { mutableStateOf<Station?>(null) }
     val scope = rememberCoroutineScope()
 
     val inputField = @Composable {

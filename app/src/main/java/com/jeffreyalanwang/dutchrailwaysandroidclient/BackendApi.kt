@@ -1,12 +1,15 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 import android.content.res.Resources
+import android.os.Parcelable
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.parcelize.Parcelize
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.EnumSet
 import kotlin.math.max
 import ca.solostudios.fuzzykt.FuzzyKt.ratio as fuzzratio
+
 
 enum class TrainsetQuality {OLD, NEW}
 enum class Trainset(val quality: TrainsetQuality) {
@@ -31,30 +34,36 @@ enum class TrainAmenity(val friendlyName: String) {
 
 enum class PlaceSubclass { Area, Station }
 
+@Parcelize
 open class Place(
     val id: Int,
     val name: String
-) {
+) : Parcelable {
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
         if (other !is Place) return false
 
         return this.id == other.id
     }
+
+    override fun hashCode(): Int
+        = id.hashCode()
 }
 
+@Parcelize
 class Area(
     id: Int,
     name: String,
-) : Place(id, name)
+) : Place(id, name), Parcelable
 
+@Parcelize
 class Station(
     id: Int,
     name: String,
     val address: String,
     val geom: LatLng,
     private var stops: List<ServiceStop>? = null,
-) : Place(id, name) {
+) : Place(id, name), Parcelable {
     fun getStops(): List<ServiceStop> {
         if (stops == null) {
             stops = BackendApi.get_stops_at_station(this)
@@ -63,12 +72,13 @@ class Station(
     }
 }
 
+@Parcelize
 class ServiceStop(
     val arrival: ZonedDateTime?,
     val departure: ZonedDateTime?,
     val passServiceId: Int,
     val stationId: Int,
-) {
+) : Parcelable {
     private var passService: PassService? = null
     private var station: Station? = null
 
@@ -90,13 +100,14 @@ class ServiceStop(
     fun getService() = BackendApi.get_pass_service(passServiceId)
 }
 
+@Parcelize
 class PassService(
     val id: Int,
     val title: String,
     val trainset: Trainset,
     val amenities: EnumSet<TrainAmenity>,
     private var stops: List<ServiceStop>? = null,
-) {
+) : Parcelable {
     fun getStops(): List<ServiceStop> {
         if (stops == null) {
             stops = BackendApi.get_stops_of_service(this)

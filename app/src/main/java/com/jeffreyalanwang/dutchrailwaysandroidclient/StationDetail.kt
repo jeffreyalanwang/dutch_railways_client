@@ -47,7 +47,7 @@ const val EM_DASH = "—"
 
 @Preview
 @Composable
-fun StationDetailTest() {
+private fun StationDetailTest() {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 
@@ -77,7 +77,7 @@ fun StationDetailTest() {
 @Composable
 fun StationDetailScreen(
     station: Station,
-    onNavigate: (Any) -> Unit,
+    onNavigate: (NavRoute) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     Scaffold(
@@ -109,7 +109,7 @@ fun StationDetailScreen(
 fun StationDetail(
     station: Station,
     modifier: Modifier = Modifier,
-    onNavigate: (Any) -> Unit
+    onNavigate: (NavRoute) -> Unit
 ) {
     val stationMarkerState = rememberUpdatedMarkerState(position = station.geom)
     val cameraPositionState = rememberCameraPositionState {
@@ -158,11 +158,11 @@ fun StationDetail(
 }
 
 @Composable
-fun StationTimetable(
+private fun StationTimetable(
     stops: List<ServiceStop>,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues.Zero,
-    onNavigate: (Any) -> Unit
+    onNavigate: (NavRoute) -> Unit
 ) {
     val gap = 10.dp
     val gridControl = remember(stops) { DiscreteGridControl() }

@@ -55,7 +55,7 @@ import kotlin.time.ExperimentalTime
 
 @Preview
 @Composable
-fun TrainServiceDetailTest() {
+private fun TrainServiceDetailTest() {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 
@@ -85,7 +85,7 @@ fun TrainServiceDetailTest() {
 @Composable
 fun TrainServiceDetailScreen(
     service: PassService,
-    onNavigate: (Any) -> Unit,
+    onNavigate: (NavRoute) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     Scaffold(
@@ -117,7 +117,7 @@ fun TrainServiceDetailScreen(
 fun TrainServiceDetail(
     service: PassService,
     modifier: Modifier = Modifier,
-    onNavigate: (Any)-> Unit
+    onNavigate: (NavRoute)-> Unit
 ) {
     Card(modifier) {
         Spacer(Modifier.height(20.dp))
@@ -153,10 +153,10 @@ fun TrainServiceDetail(
     }
 }
 
-const val badgeContentProportion = .7f
+private const val badgeContentProportion = .7f
 
 @Composable
-fun AmenityBadgeSet(
+private fun AmenityBadgeSet(
     amenities: EnumSet<TrainAmenity>,
     modifier: Modifier = Modifier,
     height: Dp = 15.dp,
@@ -188,7 +188,7 @@ fun AmenityBadgeSet(
 }
 
 @Composable
-fun AmenityBadge(
+private fun AmenityBadge(
     amenity: TrainAmenity,
     modifier: Modifier = Modifier,
     color: Color = LocalContentColor.current,
@@ -234,9 +234,9 @@ private fun getCurrStop(stops: List<ServiceStop>): IndexedValue<ServiceStop> {
 }
 
 @Composable
-fun Stops(
+private fun Stops(
     stops: List<ServiceStop>,
-    onNavigate: (Any)-> Unit,
+    onNavigate: (NavRoute)-> Unit,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues.Zero,
 ) {
