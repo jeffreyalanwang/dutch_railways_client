@@ -44,23 +44,26 @@ fun DutchRailwaysAndroidClientApp() {
 
     Scaffold(
         bottomBar = { NavigationBar {
-            AppDestinations.entries.forEach { tabProperties ->
+            AppDestinations.entries.forEach { appTab ->
                 NavigationBarItem(
                     icon = { Icon(
-                        painterResource(tabProperties.icon),
-                        contentDescription = tabProperties.label,
+                        painterResource(appTab.icon),
+                        contentDescription = appTab.label,
                     ) },
-                    label = { Text(tabProperties.label) },
+                    label = { Text(appTab.label) },
                     selected = navBackStackEntry
-                        ?.hasRoute(tabProperties.route::class)
+                        ?.hasRoute(appTab.route::class)
                         ?: false,
                     onClick = {
-                        topNavController.navigate(tabProperties.route) {
+                        val alreadySelected = navBackStackEntry
+                            ?.hasRoute(appTab.route::class)
+                            ?: false
+                        topNavController.navigate(appTab.route) {
                             popUpTo(
                                 topNavController.graph.findStartDestination().id
-                            ) { saveState = true }
+                            ) { saveState = !alreadySelected }
+                            restoreState = !alreadySelected
                             launchSingleTop = true
-                            restoreState = true
                         }
                     },
                 )
