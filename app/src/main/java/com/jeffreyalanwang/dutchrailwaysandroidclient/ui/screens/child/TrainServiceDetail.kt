@@ -46,12 +46,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.LineSegmentWithPoint
@@ -234,12 +234,10 @@ private fun AmenityBadge(
 
 @OptIn(ExperimentalTime::class)
 private fun getCurrStop(stops: List<ServiceStop>): IndexedValue<ServiceStop> {
-    for ((index, stop) in stops.dropLast(1).withIndex()) {
-        val time = stop.departure ?: stop.arrival
-        if (time == null)
-            if ((stop.departure ?: stop.arrival)!!.toInstant() > now()) {
-                return IndexedValue(index, stop)
-            }
+    for (item in stops.dropLast(1).withIndex()) {
+        if (item.value.departure!!.toInstant() > now()) {
+            return item
+        }
     }
 
     return IndexedValue(stops.size-1, stops.last())
