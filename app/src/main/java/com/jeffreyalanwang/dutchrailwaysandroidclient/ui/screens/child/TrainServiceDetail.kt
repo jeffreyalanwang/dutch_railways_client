@@ -56,7 +56,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGrid
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.LineSegmentWithPoint
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStrings
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import kotlinx.coroutines.launch
@@ -302,11 +302,11 @@ private fun Stop(
             Text(stationName, fontWeight = FontWeight.Bold)
             DiscreteGridRow(discreteGridControl, gap = 10.dp) {
                 if (isFirstStop) Spacer(Modifier) else Text(
-                    "Arrival: ${AppStrings.Time(arriveTime)}",
+                    "Arrival: ${AppStringFormats.Time(arriveTime)}",
                     Modifier.alpha(.5f),
                 )
                 if (isLastStop) Spacer(Modifier) else Text(
-                    "Departure: ${AppStrings.Time(departTime)}",
+                    "Departure: ${AppStringFormats.Time(departTime)}",
                     Modifier.alpha(.5f)
                 )
             }

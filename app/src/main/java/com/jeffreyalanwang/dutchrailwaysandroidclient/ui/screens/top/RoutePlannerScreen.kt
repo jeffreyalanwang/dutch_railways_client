@@ -37,11 +37,11 @@ import kotlinx.coroutines.launch
 
 @Preview
 @Composable
-private fun TrainQueryScreenTest() {
+private fun RoutePlannerScreenTest() {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 
-    TrainQueryScreen (
+    RoutePlannerScreen (
         onNavigate = { newRoute ->
             snackbarEffectScope.launch {
                 snackbarHostState.showSnackbar(
@@ -57,7 +57,7 @@ private fun TrainQueryScreenTest() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun TrainQueryScreen(onNavigate: (NavRoute)->Unit) {
+fun RoutePlannerScreen(onNavigate: (NavRoute)->Unit) {
     val textFieldState = rememberTextFieldState()
     val searchBarState = rememberSearchBarState()
     val scope = rememberCoroutineScope()

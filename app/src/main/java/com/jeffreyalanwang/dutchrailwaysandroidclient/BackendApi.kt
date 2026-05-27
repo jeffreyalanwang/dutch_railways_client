@@ -1,13 +1,19 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 import android.content.res.Resources
 import android.os.Parcelable
+import androidx.compose.runtime.Immutable
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.parcelize.Parcelize
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.EnumSet
 import kotlin.math.max
+import kotlin.reflect.KClass
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 import ca.solostudios.fuzzykt.FuzzyKt.ratio as fuzzratio
 
 
@@ -32,7 +38,16 @@ enum class TrainAmenity(val friendlyName: String) {
     unknown("Unknown")
 }
 
-enum class PlaceSubclass { Area, Station }
+@Immutable
+data class RoutePlan(
+    val stops: ImmutableList<ServiceStop>
+)
+
+operator fun RoutePlan.plus(other: ServiceStop)
+    = RoutePlan((this.stops + other).toImmutableList())
+
+operator fun ServiceStop.plus(other: RoutePlan)
+    = RoutePlan(other.stops.plusInsert(0, this).toImmutableList())
 
 @Parcelize
 open class Place(
@@ -73,6 +88,7 @@ class Station(
 }
 
 @Parcelize
+@Immutable
 class ServiceStop(
     val arrival: ZonedDateTime?,
     val departure: ZonedDateTime?,
@@ -96,8 +112,18 @@ class ServiceStop(
         this.passService = passService
     }
 
-    fun getStation() = BackendApi.get_station_info(stationId)
-    fun getService() = BackendApi.get_pass_service(passServiceId)
+    fun getStation(): Station {
+        if (station == null) {
+            station = BackendApi.get_station_info(stationId)
+        }
+        return station!!
+    }
+    fun getService(): PassService {
+        if (passService == null) {
+            passService = BackendApi.get_pass_service(passServiceId)
+        }
+        return passService!!
+    }
 }
 
 @Parcelize
@@ -147,14 +173,17 @@ object BackendApi {
         Station(376, "Den Haag HS", "Stationsplein, Stationsbuurt, Centrum, Den Haag, Zuid-Holland, Nederland, 2515 RT, Nederland", LatLng(52.06972122391006, 4.322500294829242)),
     )
 
-    fun autocomplete_place(query: String, subclasses: EnumSet<PlaceSubclass>): List<Place> { //TODO this should not be loading entire stations. just the data we need
+    fun <T: Place> autocomplete_place(cls: KClass<T>, query: String): List<Place> { //TODO this should not be loading entire stations. just the data we need
         val candidates = ArrayList<Pair<Place, Double>>();
 
-        if (PlaceSubclass.Station in subclasses) {
-            candidates.addAll(dummyStations.map { Pair(it, max(fuzzratio(query, it.name), fuzzratio(query, it.address))) })
+        if (cls.java.isAssignableFrom(Station::class.java)) {
+            candidates.addAll(dummyStations.map {  Pair(it, max(
+                fuzzratio(query, it.name),
+                fuzzratio(query, it.address),
+            ))})
         }
 
-        if (PlaceSubclass.Area in subclasses) {
+        if (cls.java.isAssignableFrom(Area::class.java)) {
             candidates.addAll(dummyAreas.map { Pair(it, fuzzratio(query, it.name)) })
         }
 
@@ -172,6 +201,67 @@ object BackendApi {
         }
         throw Resources.NotFoundException("Id not found: $id");
     }
+
+    @OptIn(ExperimentalTime::class)
+    fun get_routes(
+        origin: Place,
+        destination: Place,
+        departTime: Instant? = null,
+        arriveTime: Instant? = null,
+    ): Sequence<RoutePlan> {
+        // These may be in order of distance in cm, if origin or destination is a LatLng
+        val originStationOptions: List<Pair<UInt, Station>> = find_best_station(origin)
+        val destinationStationOptions: List<Pair<UInt, Station>> = find_best_station(destination)
+
+        // Sorted to minimize total distance between
+        // requested origin/destination and the stations
+        // (prioritizing destination distance)
+        val endpointMatrix: Sequence<Pair<Station, Station>>
+            = timesSorted(
+                destinationStationOptions,
+                originStationOptions,
+                selector = { it.first },
+                combine = { a, b -> a + b },
+            )
+            .map { (a, b) -> b to a }
+            .map { (a, b) -> a.second to b.second }
+
+        val stationEdges = listOf(dummyService)
+            .flatMap {  service ->
+                dummyServiceStops
+                    .filter { stop ->
+                        stop.passServiceId == service.id
+                    }
+                    .zipWithNext()
+                    .edgesWithin(departTime, arriveTime)
+            }
+        val routes: Sequence<RoutePlan>
+            = endpointMatrix.map { (originStation, destinationStation) ->
+                get_routes_min_total_time(originStation.id, destinationStation.id, stationEdges)
+            }
+            .toList()
+            .flattenRoundRobin()
+
+        return routes
+    }
+
+    private fun find_best_station(it: Place)
+        = when(it) {
+            is Station -> listOf(it)
+            is Area -> stations_in_area(it)
+            else -> emptyList()
+        }.map { Pair(0u, it) }
+
+    private fun stations_in_area(it: Area)
+        = when(it) {
+            Area(id = 1, "Nederland") -> dummyStations
+            Area(10, "Noord-Holland") -> listOf(dummyStations[0])
+            Area(9, "Zuid-Holland") -> dummyStations.subList(1, 3)
+            Area(319, "Rotterdam") -> listOf(dummyStations[1])
+            Area(287, "'s-Gravenhage") -> listOf(dummyStations[2])
+            Area(145, "Amsterdam") -> listOf(dummyStations[0])
+            else -> emptyList()
+        }
 
     // Must sort by arrival time before return
 

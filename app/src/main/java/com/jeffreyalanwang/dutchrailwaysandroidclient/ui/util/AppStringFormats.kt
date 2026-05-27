@@ -4,7 +4,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 
-object AppStrings {
+object AppStringFormats {
     fun Time(time: ZonedDateTime)
         = time.format(DateTimeFormatter.ofLocalizedTime(FormatStyle.SHORT))
 }

@@ -18,7 +18,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.TrainServiceDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.StationSearchScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.TrainQueryScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.RoutePlannerScreen
 import kotlinx.serialization.Serializable
 
 
@@ -42,7 +42,7 @@ data class TrainServiceDetailRoute(val id: Int) : NavRoute
  */
 fun NavGraphBuilder.topNavGraph() {
     composableTopRoute<TrainQueryRoute> { backStackEntry, onNavigate ->
-        TrainQueryScreen(onNavigate = onNavigate)
+        RoutePlannerScreen(onNavigate = onNavigate)
     }
     composableTopRoute<StationSearchRoute> { backStackEntry, onNavigate ->
         StationSearchScreen(onNavigate = onNavigate)

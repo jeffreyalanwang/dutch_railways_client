@@ -49,7 +49,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainServiceDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStrings
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import kotlinx.coroutines.launch
@@ -259,14 +259,14 @@ private fun TimetableRow(
                 .fill()
         )
         Text(
-            if (arriveTime == null) EM_DASH else AppStrings.Time(arriveTime),
+            if (arriveTime == null) EM_DASH else AppStringFormats.Time(arriveTime),
             softWrap = false,
             modifier = Modifier
                 .wrapContentHeight()
                 .cellAlign(Alignment.CenterHorizontally)
         )
         Text(
-            if (departTime == null) EM_DASH else AppStrings.Time(departTime),
+            if (departTime == null) EM_DASH else AppStringFormats.Time(departTime),
             softWrap = false,
             modifier = Modifier
                 .wrapContentHeight()
