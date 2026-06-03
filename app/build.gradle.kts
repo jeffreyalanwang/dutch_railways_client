@@ -8,7 +8,11 @@ plugins {
 
 kotlin {
     compilerOptions {
-        freeCompilerArgs.addAll("-P", "plugin:org.jetbrains.kotlin.parcelize:experimentalCodeGeneration=true")
+        freeCompilerArgs.addAll(
+            "-P",
+            "plugin:org.jetbrains.kotlin.parcelize:experimentalCodeGeneration=true",
+            "-XXLanguage:+ContextParameters",
+        )
     }
 }
 
