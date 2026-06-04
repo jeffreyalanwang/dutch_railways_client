@@ -8,6 +8,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.NavHost
@@ -17,8 +18,9 @@ import androidx.navigation.toRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.TrainServiceDetailScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.StationSearchScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.RoutePlannerScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.StationSearchScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.RoutePlannerViewModel
 import kotlinx.serialization.Serializable
 
 
@@ -42,7 +44,11 @@ data class TrainServiceDetailRoute(val id: Int) : NavRoute
  */
 fun NavGraphBuilder.topNavGraph() {
     composableTopRoute<TrainQueryRoute> { backStackEntry, onNavigate ->
-        RoutePlannerScreen(onNavigate = onNavigate)
+        val tabViewModel = viewModel<RoutePlannerViewModel>(backStackEntry)
+        RoutePlannerScreen(
+            viewModel = tabViewModel,
+            onNavigate = onNavigate,
+        )
     }
     composableTopRoute<StationSearchRoute> { backStackEntry, onNavigate ->
         StationSearchScreen(onNavigate = onNavigate)

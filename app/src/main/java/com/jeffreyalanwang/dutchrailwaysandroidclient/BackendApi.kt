@@ -202,6 +202,16 @@ object BackendApi {
         throw Resources.NotFoundException("Id not found: $id");
     }
 
+    fun get_place_info(id: Int): Place {
+        dummyStations.forEach {
+            if (it.id == id) return it
+        }
+        dummyAreas.forEach {
+            if (it.id == id) return it
+        }
+        throw Resources.NotFoundException("Id not found: $id");
+    }
+
     @OptIn(ExperimentalTime::class)
     fun get_routes(
         origin: Place,

@@ -66,7 +66,5 @@ class RoutePlannerViewModel : ViewModel() {
                 ).take(10).toList()
             )
         }
-
-
     }
 }

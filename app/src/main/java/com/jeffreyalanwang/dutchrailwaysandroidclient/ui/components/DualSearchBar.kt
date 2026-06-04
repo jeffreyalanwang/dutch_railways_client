@@ -3,7 +3,6 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components
 
 import android.annotation.SuppressLint
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -27,7 +26,6 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarColors
@@ -40,7 +38,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.contentColorFor
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -85,26 +82,16 @@ private fun DualSearchBarPreview() {
                         contentDescription = null,
                     )
                 },
-                divider = {
-                    HorizontalDivider(
-                        Modifier.padding(
-                            start = with(LocalDensity.current) {
-                                appBarDividerPos
-                                    .run { first - second }
-                                    .toDp()
-                            },
-                            end = 16.dp,
-                        )
-                    )
-                },
                 inputFieldBuilder = { textFieldState, searchBarState, leadingIcon ->
                     SearchBarDefaults.InputField(
                         textFieldState,
                         searchBarState,
                         modifier =  Modifier
                             .fillMaxWidth()
-                            .onGloballyPositioned { appBarDividerPos = appBarDividerPos
-                                .copy(second = it.positionInWindow().x) },
+                            .onGloballyPositioned {
+                                appBarDividerPos = appBarDividerPos
+                                    .copy(second = it.positionInWindow().x)
+                            },
                         leadingIcon = leadingIcon,
                         placeholder = { Text(
                             "Placeholder text",
@@ -151,6 +138,18 @@ private fun DualSearchBarPreview() {
                         }
                     }
                 },
+                divider = {
+                    HorizontalDivider(
+                        Modifier.padding(
+                            start = with(LocalDensity.current) {
+                                appBarDividerPos
+                                    .run { first - second }
+                                    .toDp()
+                            },
+                            end = 16.dp,
+                        )
+                    )
+                },
             )
         },
         snackbarHost = { SnackbarHost(snackbarHostState) }
@@ -164,11 +163,45 @@ private fun DualSearchBarPreview() {
 fun AppBarWithDualSearch(
     state: DualSearchBarState,
     leadingIcon: (@Composable () -> Unit)? = null,
-    inputFieldBuilder: @Composable (TextFieldState, SearchBarState, (@Composable ()->Unit)?) -> Unit,
-    expandedSearchBuilder: @Composable (TextFieldState, SearchBarState, @Composable ()->Unit) -> Unit,
+    inputFieldBuilder: @Composable (TextFieldState, SearchBarState, (@Composable () -> Unit)?) -> Unit,
+    expandedSearchBuilder: @Composable (TextFieldState, SearchBarState, @Composable () -> Unit) -> Unit,
     divider: @Composable ColumnScope.() -> Unit = {},
     modifier: Modifier = Modifier,
-    navigationIcon: @Composable (() -> Unit)? = null,
+    shape: Shape = CardDefaults.elevatedShape,
+    colors: AppBarWithSearchColors = SearchBarDefaults.appBarWithSearchColors(),
+    tonalElevation: Dp = SearchBarDefaults.TonalElevation,
+    shadowElevation: Dp = SearchBarDefaults.ShadowElevation,
+    contentPadding: PaddingValues = SearchBarDefaults.AppBarContentPadding,
+    windowInsets: WindowInsets = SearchBarDefaults.windowInsets,
+) = AppBarWithDualSearch(
+    state,
+    leadingIcon = leadingIcon,
+    inputField1 = inputFieldBuilder,
+    inputField2 = inputFieldBuilder,
+    expandedSearch1 = expandedSearchBuilder,
+    expandedSearch2 = expandedSearchBuilder,
+    divider = divider,
+    modifier,
+    shape,
+    colors,
+    tonalElevation,
+    shadowElevation,
+    contentPadding,
+    windowInsets,
+)
+
+
+@SuppressLint("ModifierParameter")
+@Composable
+fun AppBarWithDualSearch(
+    state: DualSearchBarState,
+    leadingIcon: (@Composable () -> Unit)? = null,
+    inputField1: @Composable (TextFieldState, SearchBarState, (@Composable () -> Unit)?) -> Unit,
+    inputField2: @Composable (TextFieldState, SearchBarState, (@Composable () -> Unit)?) -> Unit,
+    expandedSearch1: @Composable (TextFieldState, SearchBarState, @Composable () -> Unit) -> Unit,
+    expandedSearch2: @Composable (TextFieldState, SearchBarState, @Composable () -> Unit) -> Unit,
+    divider: @Composable ColumnScope.() -> Unit = {},
+    modifier: Modifier = Modifier,
     shape: Shape = CardDefaults.elevatedShape,
     colors: AppBarWithSearchColors = SearchBarDefaults.appBarWithSearchColors(),
     tonalElevation: Dp = SearchBarDefaults.TonalElevation,
@@ -177,16 +210,10 @@ fun AppBarWithDualSearch(
     windowInsets: WindowInsets = SearchBarDefaults.windowInsets,
 ) {
     val isContainerTransparent =
-        remember(colors) { colors.appBarContainerColor == Color.Transparent }
-
-    val appBarContainerColor by animateColorAsState(
-        colors.appBarContainerColor,
-        animationSpec = MaterialTheme.motionScheme.defaultEffectsSpec()
-    )
-    val searchBarColors = colors.searchBarColors
+        (colors.appBarContainerColor == Color.Transparent)
 
     Surface(
-        color = appBarContainerColor,
+        color = colors.appBarContainerColor,
         modifier = modifier
             .fillMaxWidth()
             .windowInsetsPadding(windowInsets)
@@ -198,14 +225,6 @@ fun AppBarWithDualSearch(
             Modifier.padding(contentPadding),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            navigationIcon?.let {
-                Box(Modifier.padding(start = 4.dp)) {
-                    CompositionLocalProvider(
-                        LocalContentColor provides colors.appBarNavigationIconColor,
-                        content = it,
-                    )
-                }
-            }
             val isVisible = state.currentExpanded.value == SearchBarId.None ||
                     state.targetExpanded.value == SearchBarId.None
             Box(
@@ -216,8 +235,10 @@ fun AppBarWithDualSearch(
                 DualSearchBar(
                     state = state,
                     leadingIcon = leadingIcon,
-                    inputFieldBuilder = inputFieldBuilder,
-                    expandedSearchBuilder = expandedSearchBuilder,
+                    inputField1 = inputField1,
+                    inputField2 = inputField2,
+                    expandedSearch1 = expandedSearch1,
+                    expandedSearch2 = expandedSearch2,
                     divider = divider,
                     modifier =
                         Modifier
@@ -228,7 +249,7 @@ fun AppBarWithDualSearch(
                             .widthIn(min = 360.dp, max = 720.dp)
                             .align(Alignment.Center),
                     shape = shape,
-                    colors = searchBarColors,
+                    colors = colors.searchBarColors,
                     tonalElevation = if (isContainerTransparent) tonalElevation else 0.dp,
                     shadowElevation = if (isContainerTransparent) shadowElevation else 0.dp,
                 )

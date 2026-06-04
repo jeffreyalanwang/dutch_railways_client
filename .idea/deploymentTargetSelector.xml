@@ -62,6 +62,18 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
+      <SelectionState runConfigName="RoutePlannerScreenTest">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-05-22T17:27:16.762599939Z">
+          <Target type="BOOT_WITH_SNAPSHOT">
+            <handle>
+              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7.avd" />
+            </handle>
+            <Snapshot name="snap_2026-05-10_15-50-01" path="$USER_HOME$/.android/avd/Virtual_Pixel_7.avd/snapshots/snap_2026-05-10_15-50-01" />
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
     </selectionStates>
   </component>
 </project>

@@ -41,7 +41,12 @@ private fun <T: Place> ResultIcon(resultItem: T)
     )
 
 @Composable
-fun <T: Place> PlaceSearchResults(cls: KClass<T>, query: String, onResultClick: (Int, String) -> Unit, modifier: Modifier = Modifier) {
+fun <T: Place> PlaceSearchResults(
+    cls: KClass<T>,
+    query: String,
+    onResultClick: (Int, String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
     Column( modifier.verticalScroll(rememberScrollState()) ) {
         BackendApi.autocomplete_place(cls, query).forEach {
             ListItem(
