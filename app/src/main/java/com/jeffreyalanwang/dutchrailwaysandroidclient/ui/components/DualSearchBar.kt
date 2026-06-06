@@ -162,8 +162,8 @@ private fun DualSearchBarPreview() {
 @Composable
 fun AppBarWithDualSearch(
     state: DualSearchBarState,
-    leadingIcon: (@Composable () -> Unit)? = null,
-    inputFieldBuilder: @Composable (TextFieldState, SearchBarState, (@Composable () -> Unit)?) -> Unit,
+    leadingIcon: @Composable (() -> Unit)? = null,
+    inputFieldBuilder: @Composable (TextFieldState, SearchBarState, @Composable (() -> Unit)?) -> Unit,
     expandedSearchBuilder: @Composable (TextFieldState, SearchBarState, @Composable () -> Unit) -> Unit,
     divider: @Composable ColumnScope.() -> Unit = {},
     modifier: Modifier = Modifier,
@@ -195,9 +195,9 @@ fun AppBarWithDualSearch(
 @Composable
 fun AppBarWithDualSearch(
     state: DualSearchBarState,
-    leadingIcon: (@Composable () -> Unit)? = null,
-    inputField1: @Composable (TextFieldState, SearchBarState, (@Composable () -> Unit)?) -> Unit,
-    inputField2: @Composable (TextFieldState, SearchBarState, (@Composable () -> Unit)?) -> Unit,
+    leadingIcon: @Composable (() -> Unit)? = null,
+    inputField1: @Composable (TextFieldState, SearchBarState, @Composable (() -> Unit)?) -> Unit,
+    inputField2: @Composable (TextFieldState, SearchBarState, @Composable (() -> Unit)?) -> Unit,
     expandedSearch1: @Composable (TextFieldState, SearchBarState, @Composable () -> Unit) -> Unit,
     expandedSearch2: @Composable (TextFieldState, SearchBarState, @Composable () -> Unit) -> Unit,
     divider: @Composable ColumnScope.() -> Unit = {},
@@ -262,8 +262,8 @@ fun AppBarWithDualSearch(
 @Composable
 fun DualSearchBar(
     state: DualSearchBarState,
-    leadingIcon: (@Composable () -> Unit)? = null,
-    inputFieldBuilder: @Composable (TextFieldState, SearchBarState, (@Composable ()->Unit)?) -> Unit,
+    leadingIcon: @Composable (() -> Unit)? = null,
+    inputFieldBuilder: @Composable (TextFieldState, SearchBarState, @Composable (()->Unit)?) -> Unit,
     expandedSearchBuilder: @Composable (TextFieldState, SearchBarState, @Composable ()->Unit) -> Unit,
     divider: @Composable ColumnScope.() -> Unit = {},
     modifier: Modifier = Modifier,
@@ -290,9 +290,9 @@ fun DualSearchBar(
 @Composable
 fun DualSearchBar(
     state: DualSearchBarState,
-    leadingIcon: (@Composable () -> Unit)?,
-    inputField1: @Composable (TextFieldState, SearchBarState, (@Composable ()->Unit)?) -> Unit,
-    inputField2: @Composable (TextFieldState, SearchBarState, (@Composable ()->Unit)?) -> Unit,
+    leadingIcon: @Composable (() -> Unit)?,
+    inputField1: @Composable (TextFieldState, SearchBarState, @Composable (()->Unit)?) -> Unit,
+    inputField2: @Composable (TextFieldState, SearchBarState, @Composable (()->Unit)?) -> Unit,
     expandedSearch1: @Composable (TextFieldState, SearchBarState, @Composable ()->Unit) -> Unit,
     expandedSearch2: @Composable (TextFieldState, SearchBarState, @Composable ()->Unit) -> Unit,
     divider: @Composable ColumnScope.() -> Unit,
@@ -343,13 +343,14 @@ fun DualSearchBar(
 
 @Composable
 context(state: SingleSearchState)
-operator fun (@Composable (TextFieldState, SearchBarState) -> Unit).invoke()
-    = this(state.textFieldState, state.searchBarState)
+operator fun (@Composable (TextFieldState, SearchBarState) -> Unit)
+    .invoke()
+        = this(state.textFieldState, state.searchBarState)
 
 @Composable
 context(state: SingleSearchState)
-operator fun <T: (@Composable ()->Unit)?> (@Composable (TextFieldState, SearchBarState, T) -> Unit)
-        .invoke(content: T)
+operator fun <T: @Composable (()->Unit)?> (@Composable (TextFieldState, SearchBarState, T) -> Unit)
+    .invoke(content: T)
         = this(state.textFieldState, state.searchBarState, content)
 
 class SingleSearchState private constructor(

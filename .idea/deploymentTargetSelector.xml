@@ -14,18 +14,6 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="StationSearchScreen">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-05-05T15:47:04.582986491Z">
-          <Target type="BOOT_WITH_SNAPSHOT">
-            <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Pixel_5.avd" />
-            </handle>
-            <Snapshot name="snap_2026-05-05_11-37-52" path="$USER_HOME$/.android/avd/Pixel_5.avd/snapshots/snap_2026-05-05_11-37-52" />
-          </Target>
-        </DropdownSelection>
-        <DialogSelection />
-      </SelectionState>
       <SelectionState runConfigName="TrainServiceDetail">
         <option name="selectionMode" value="DROPDOWN" />
         <DropdownSelection timestamp="2026-05-11T16:12:25.957397364Z">
@@ -34,18 +22,6 @@
               <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7.avd" />
             </handle>
             <Snapshot name="snap_2026-05-10_15-50-01" path="$USER_HOME$/.android/avd/Virtual_Pixel_7.avd/snapshots/snap_2026-05-10_15-50-01" />
-          </Target>
-        </DropdownSelection>
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="Test_1">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-05-13T04:50:50.084531726Z">
-          <Target type="BOOT_WITH_SNAPSHOT">
-            <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7_GApps.avd" />
-            </handle>
-            <Snapshot name="snap_2026-05-10_17-35-03" path="$USER_HOME$/.android/avd/Virtual_Pixel_7_GApps.avd/snapshots/snap_2026-05-10_17-35-03" />
           </Target>
         </DropdownSelection>
         <DialogSelection />
@@ -64,12 +40,36 @@
       </SelectionState>
       <SelectionState runConfigName="RoutePlannerScreenTest">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-05-22T17:27:16.762599939Z">
+        <DropdownSelection timestamp="2026-06-06T18:24:17.314258718Z">
           <Target type="BOOT_WITH_SNAPSHOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7.avd" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7_GApps.avd" />
             </handle>
-            <Snapshot name="snap_2026-05-10_15-50-01" path="$USER_HOME$/.android/avd/Virtual_Pixel_7.avd/snapshots/snap_2026-05-10_15-50-01" />
+            <Snapshot name="snap_2026-05-10_17-35-03" path="$USER_HOME$/.android/avd/Virtual_Pixel_7_GApps.avd/snapshots/snap_2026-05-10_17-35-03" />
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="AreaDetailTest">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-06-06T18:24:17.314258718Z">
+          <Target type="BOOT_WITH_SNAPSHOT">
+            <handle>
+              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7_GApps.avd" />
+            </handle>
+            <Snapshot name="snap_2026-05-10_17-35-03" path="$USER_HOME$/.android/avd/Virtual_Pixel_7_GApps.avd/snapshots/snap_2026-05-10_17-35-03" />
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="StationDetailTest">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-06-06T18:24:17.314258718Z">
+          <Target type="BOOT_WITH_SNAPSHOT">
+            <handle>
+              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7_GApps.avd" />
+            </handle>
+            <Snapshot name="snap_2026-05-10_17-35-03" path="$USER_HOME$/.android/avd/Virtual_Pixel_7_GApps.avd/snapshots/snap_2026-05-10_17-35-03" />
           </Target>
         </DropdownSelection>
         <DialogSelection />

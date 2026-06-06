@@ -66,10 +66,29 @@ open class Place(
 }
 
 @Parcelize
+class PolygonData(
+    val points: List<LatLng>,
+    val holes: List<List<LatLng>> = emptyList(),
+) : Parcelable
+
+@Parcelize
 class Area(
     id: Int,
     name: String,
-) : Place(id, name), Parcelable
+) : Place(id, name), Parcelable {
+    fun getStations(): List<Station>
+        = BackendApi.stations_in_area(this)
+    fun getGeom(): PolygonData
+        = PolygonData(listOf(
+            LatLng(52.3971230, 4.9060153),
+            LatLng(52.3935615, 4.8505417),
+            LatLng(52.3582454, 4.8246081),
+            LatLng(52.3381121, 4.8757882),
+            LatLng(52.3460826, 4.9494669),
+            LatLng(52.3841327, 4.9474059),
+            LatLng(52.3971230, 4.9060153),
+        ))
+}
 
 @Parcelize
 class Station(
@@ -195,6 +214,13 @@ object BackendApi {
         return dummyService
     }
 
+    fun get_area_info(id: Int): Area {
+        dummyAreas.forEach {
+            if (it.id == id) return it
+        }
+        throw Resources.NotFoundException("Id not found: $id");
+    }
+
     fun get_station_info(id: Int): Station {
         dummyStations.forEach {
             if (it.id == id) return it
@@ -262,7 +288,7 @@ object BackendApi {
             else -> emptyList()
         }.map { Pair(0u, it) }
 
-    private fun stations_in_area(it: Area)
+    internal fun stations_in_area(it: Area)
         = when(it) {
             Area(id = 1, "Nederland") -> dummyStations
             Area(10, "Noord-Holland") -> listOf(dummyStations[0])

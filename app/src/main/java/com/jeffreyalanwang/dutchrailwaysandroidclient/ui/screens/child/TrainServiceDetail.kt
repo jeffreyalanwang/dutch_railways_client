@@ -131,6 +131,7 @@ fun TrainServiceDetail(
     modifier: Modifier = Modifier,
     onNavigate: (NavRoute)-> Unit
 ) {
+    val stops = remember { service.getStops() }
     Card(modifier) {
         Spacer(Modifier.height(20.dp))
 
@@ -159,7 +160,7 @@ fun TrainServiceDetail(
         Spacer(Modifier.height(10.dp))
 
         // Stops (arrive; depart; station)
-        Stops(service.getStops(), onNavigate, padding=PaddingValues(horizontal=10.dp))
+        Stops(stops, onNavigate, padding=PaddingValues(horizontal=10.dp))
 
         Spacer(Modifier.height(20.dp))
     }

@@ -16,6 +16,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.TrainServiceDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.RoutePlannerScreen
@@ -31,6 +32,9 @@ object StationSearchRoute : NavRoute
 
 @Serializable
 object TrainQueryRoute : NavRoute
+
+@Serializable
+data class AreaDetailRoute(val id: Int) : NavRoute
 
 @Serializable
 data class StationDetailRoute(val id: Int) : NavRoute
@@ -63,6 +67,14 @@ fun NavGraphBuilder.tabNavGraph(
     onNavigate: (NavRoute) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
+    composableChildRoute<AreaDetailRoute> { backStackEntry ->
+        val routeArgs: AreaDetailRoute = backStackEntry.toRoute()
+        AreaDetailScreen (
+            BackendApi.get_area_info(routeArgs.id),
+            onNavigate = onNavigate,
+            onNavigateBack = onNavigateBack,
+        )
+    }
     composableChildRoute<StationDetailRoute> { backStackEntry ->
         val routeArgs: StationDetailRoute = backStackEntry.toRoute()
         StationDetailScreen(

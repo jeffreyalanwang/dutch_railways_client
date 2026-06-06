@@ -19,6 +19,7 @@ maps = "3.1.0-beta"
 navigationCompose = "2.9.8"
 uiGraphics = "1.11.2"
 runtime = "1.11.2"
+foundationLayout = "1.11.2"
 
 [libraries]
 androidx-compose-material3-v150alpha18 = { module = "androidx.compose.material3:material3", version.ref = "material3Version" }
@@ -47,6 +48,7 @@ secrets-gradle-plugin = { module = "com.google.android.libraries.mapsplatform.se
 androidx-navigation-compose = { group = "androidx.navigation", name = "navigation-compose", version.ref = "navigationCompose" }
 androidx-ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "uiGraphics" }
 androidx-compose-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtime" }
+androidx-compose-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayout" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -59,6 +59,7 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.ui.graphics)
     val nav_version = "2.9.8"

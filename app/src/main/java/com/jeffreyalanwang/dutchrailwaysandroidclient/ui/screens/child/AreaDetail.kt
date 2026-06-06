@@ -1,10 +1,12 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens
 
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -29,50 +31,50 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.painter.Painter
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.GoogleMap
-import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.rememberCameraPositionState
-import com.google.maps.android.compose.rememberUpdatedMarkerState
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.PolygonData
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainServiceDetailRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.cellAlign
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.fill
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import kotlinx.coroutines.launch
-import java.time.ZonedDateTime
-
-const val EM_DASH = "—"
 
 @Preview
 @Composable
-private fun StationDetailTest() {
+private fun AreaDetailTest() {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 
-    StationDetailScreen(
-        BackendApi.get_station_info(358),
-        onNavigate = { passServiceRoute ->
+    AreaDetailScreen(
+        BackendApi.get_area_info(1),
+        onNavigate = { stationRoute ->
             snackbarEffectScope.launch {
                 snackbarHostState.showSnackbar(
-                    passServiceRoute.toString(),
+                    stationRoute.toString(),
                     withDismissAction = true
                 )
             }
@@ -91,15 +93,15 @@ private fun StationDetailTest() {
 }
 
 @Composable
-fun StationDetailScreen(
-    station: Station,
+fun AreaDetailScreen(
+    area: Area,
     onNavigate: (NavRoute) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Station") },
+                title = { Text("Area") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(
@@ -114,10 +116,9 @@ fun StationDetailScreen(
     ) { innerPadding ->
         Box(Modifier.verticalScroll(rememberScrollState())) {
             Card(Modifier.padding(innerPadding + PaddingValues(10.dp))) {
-                StationDetail(
-                    station,
+                AreaDetail(
+                    area,
                     onNavigate,
-                    Modifier.padding(vertical = 20.dp),
                 )
             }
         }
@@ -125,35 +126,59 @@ fun StationDetailScreen(
 }
 
 @Composable
-fun StationDetailWithoutMap(
-    station: Station,
+fun AreaDetailWithoutMap(
+    area: Area,
     onNavigate: (NavRoute) -> Unit,
     modifier: Modifier = Modifier,
-) = StationDetailBase(station, onNavigate, modifier)
+) = AreaDetailBase(area, onNavigate, modifier)
+
+/**
+ * Return the minimum and maximum latitude and longitude of the polygon.
+ */
+fun PolygonData.getBounds(): LatLngBounds
+    = LatLngBounds.builder()
+    .also { it ->
+        for (point in this.points) {
+            it.include(point)
+        }
+    }
+    .build()
 
 @Composable
-fun StationDetail(
-    station: Station,
+fun AreaDetail(
+    area: Area,
     onNavigate: (NavRoute) -> Unit,
     modifier: Modifier = Modifier,
-) = StationDetailBase(station, onNavigate, modifier, {
-    val stationMarkerState = rememberUpdatedMarkerState(position = station.geom)
-    val cameraPositionState = rememberCameraPositionState {
-        position = CameraPosition.fromLatLngZoom(station.geom, 14f)
-    }
+) = AreaDetailBase(area, onNavigate, modifier, {
+    val areaGeom = remember { area.getGeom() }
+    val cameraPositionState = rememberCameraPositionState()
+    var hasPositioned by remember { mutableStateOf(false) }
 
     HorizontalDivider(thickness = Dp.Hairline)
 
     GoogleMap(
         cameraPositionState = cameraPositionState,
-        contentDescription = "Station on map",
+        contentDescription = "Area on map",
         modifier = Modifier
             .fillMaxWidth()
             .sizeIn(minHeight = 200.dp, maxHeight = 400.dp),
+        onMapLoaded = {
+            if (!hasPositioned) {
+                cameraPositionState.move(
+                    CameraUpdateFactory.newLatLngBounds(
+                        areaGeom.getBounds(),
+                        12,
+                    )
+                )
+                hasPositioned = true
+            }
+        },
     ) {
-        Marker(
-            state = stationMarkerState,
-            title = station.name,
+        Polygon(
+            tag = area.name,
+            points = areaGeom.points,
+            holes = areaGeom.holes,
+            fillColor = Color.Transparent,
         )
     }
 
@@ -161,138 +186,93 @@ fun StationDetail(
 })
 
 @Composable
-private fun StationDetailBase(
-    station: Station,
+private fun AreaDetailBase(
+    area: Area,
     onNavigate: (NavRoute) -> Unit,
     modifier: Modifier = Modifier,
     googleMapsSlot: @Composable (() -> Unit)? = null,
 ) {
-    val stops = remember { station.getStops() }
+    val stations = remember { area.getStations() }
 
     Column (modifier.fillMaxWidth()) {
+        Spacer(Modifier.height(20.dp))
+
         Icon(
             painterResource(R.drawable.ic_dr_station),
             "Station icon",
             Modifier.size(72.dp + 20.dp)
         )
-        Text(station.name, style=MaterialTheme.typography.displaySmall, modifier=Modifier.padding(horizontal=10.dp))
-        Spacer(Modifier.height(10.dp))
-        Text(station.address, Modifier.padding(horizontal=10.dp))
+        Text(area.name, style=MaterialTheme.typography.displaySmall, modifier=Modifier.padding(horizontal=10.dp))
 
         Spacer(Modifier.height(10.dp))
         googleMapsSlot?.invoke()
         Spacer(Modifier.height(10.dp))
 
-        StationTimetable(
-            stops,
+        StationList(
+            stations,
             padding = PaddingValues(horizontal=10.dp),
-            onNavigate = onNavigate
+            onNavigate = onNavigate,
         )
+
+        Spacer(Modifier.height(20.dp))
     }
 }
 
 @Composable
-private fun StationTimetable(
-    stops: List<ServiceStop>,
+private fun StationList(
+    stations: List<Station>,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues.Zero,
     onNavigate: (NavRoute) -> Unit
 ) {
     val gap = 10.dp
-    val gridControl = remember(stops) { DiscreteGridControl() }
 
     Column(modifier
         .fillMaxWidth()
         .padding(padding.verticalOnly())
     ) {
-        DiscreteGridRow(
-            gridControl,
+        Row(
             Modifier
                 .fillMaxWidth()
                 .padding(padding.horizontalOnly()),
-            gap,
+            horizontalArrangement = Arrangement.spacedBy(gap, Alignment.Start),
         ) {
             Spacer(Modifier.width(24.dp))
             Text(
-                "Train",
+                "Station",
                 fontWeight = FontWeight.Bold,
                 modifier = Modifier
                     .cellAlign(Alignment.Start)
                     .fill()
             )
-            Text(
-                "Arrival",
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.cellAlign(Alignment.CenterHorizontally)
-            )
-            Text(
-                "Departure",
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.cellAlign(Alignment.CenterHorizontally)
-            )
         }
-        for (stop in stops) {
+        for (station in stations) {
             Spacer(Modifier.height(5.dp))
-            StationRow(
-                painterResource(AppIcons.Trainset(stop.getService().trainset)),
-                stop.getService().title,
-                arriveTime = stop.arrival,
-                departTime = stop.departure,
-                Modifier
+            Row(
+                modifier = modifier
                     .fillMaxWidth()
-                    .clickable { onNavigate(TrainServiceDetailRoute(stop.passServiceId)) }
+                    .height(IntrinsicSize.Min)
+                    .clickable { onNavigate(StationDetailRoute(station.id)) }
                     .padding(padding.horizontalOnly()),
-                discreteGridControl = gridControl,
-                gap = gap,
-            )
+                horizontalArrangement = Arrangement.spacedBy(gap, Alignment.Start),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(
+                    painterResource(AppIcons.PlaceType(Station::class)),
+                    contentDescription = null, // Explained by "Station" column
+                    modifier = Modifier
+                        .fillMaxHeight()
+                        .width(24.dp)
+                )
+                Text(
+                    station.name,
+                    modifier = Modifier
+                        .wrapContentHeight()
+                        .cellAlign(Alignment.Start)
+                        .fill()
+                        .padding(vertical = 6.dp),
+                )
+            }
         }
-    }
-}
-
-@Composable
-private fun StationRow(
-    icon: Painter,
-    title: String,
-    arriveTime: ZonedDateTime?,
-    departTime: ZonedDateTime?,
-    modifier: Modifier = Modifier,
-    discreteGridControl: DiscreteGridControl,
-    gap: Dp,
-) {
-    DiscreteGridRow(
-        discreteGridControl,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min),
-        gap = gap,
-    ) {
-        Icon(
-            icon, // TODO be more efficient with getting trainset (don't get all properties of the service)
-            contentDescription = null, // Explained by "Train" column
-            modifier = Modifier
-                .fillMaxHeight()
-                .width(24.dp)
-        )
-        Text(
-            title,
-            modifier = Modifier
-                .wrapContentHeight()
-                .cellAlign(Alignment.Start)
-                .fill()
-        )
-        Text(
-            if (arriveTime == null) EM_DASH else AppStringFormats.Time(arriveTime),
-            softWrap = false,
-            modifier = Modifier
-                .wrapContentHeight()
-                .cellAlign(Alignment.CenterHorizontally)
-        )
-        Text(
-            if (departTime == null) EM_DASH else AppStringFormats.Time(departTime),
-            softWrap = false,
-            modifier = Modifier
-                .wrapContentHeight()
-                .cellAlign(Alignment.CenterHorizontally)
-        )
     }
 }

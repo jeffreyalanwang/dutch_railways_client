@@ -120,8 +120,8 @@ fun StationSearchScreen(onNavigate: (NavRoute)->Unit) { //TODO document each onN
         ) {
             StationDetail(
                 stationState!!,
-                modifier = Modifier.fillMaxWidth(),
                 onNavigate = onNavigate,
+                modifier = Modifier.fillMaxWidth(),
             )
         }
     }
