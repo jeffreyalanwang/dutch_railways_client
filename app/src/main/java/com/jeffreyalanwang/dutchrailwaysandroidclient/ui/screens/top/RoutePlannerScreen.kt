@@ -17,6 +17,7 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -30,11 +31,17 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.maps.android.compose.GoogleMap
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.Polygon
+import com.google.maps.android.compose.rememberCameraPositionState
+import com.google.maps.android.compose.rememberUpdatedMarkerState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
+import com.jeffreyalanwang.dutchrailwaysandroidclient.mapCameraUpdate
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.AppBarWithDualSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PlaceSearchResults
@@ -46,6 +53,9 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.bottomOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.topOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.RoutePlannerViewModel
 import kotlinx.coroutines.launch
+import kotlin.time.ExperimentalTime
+
+val SHADOW_ELEVATION_ON_MAP = 12.dp
 
 @Preview
 @Composable
@@ -116,20 +126,36 @@ private fun expandedSearchFactory(
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
 fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)->Unit) {
     val scope = rememberCoroutineScope()
+    val routePlannerState by viewModel.uiState.collectAsState()
     val dualSearchBarState = rememberDualSearchBarState()
+    val cameraPositionState = rememberCameraPositionState()
     val bottomSheetState = rememberStandardBottomSheetState()
-    var departEndpointState by rememberSaveable { mutableStateOf<Place?>(null) }
-    var arriveEndpointState by rememberSaveable { mutableStateOf<Place?>(null) }
 
     // Will be [SearchBarId.None] only if no selection has been made yet
-    var lastChanged by rememberSaveable { mutableStateOf(SearchBarId.None) }
+    var currViewing by rememberSaveable { mutableStateOf(SearchBarId.None) }
+    var didInitPosition by remember { mutableStateOf(false) }
 
     fun closeSearch() { scope.launch { dualSearchBarState.animateToCollapsed() } }
-    fun openSheet() { scope.launch { bottomSheetState.show() } }
+
+    // origin/destination referenced by [value] should not be null
+    fun setCurrViewing(value: SearchBarId) {
+        currViewing = value
+        val place = when(value) {
+            SearchBarId.First -> routePlannerState.origin!!
+            SearchBarId.Second -> routePlannerState.destination!!
+            else -> throw NotImplementedError()
+        }
+        scope.launch {
+            bottomSheetState.show()
+        }
+        scope.launch {
+            cameraPositionState.animate(place.mapCameraUpdate)
+        }
+    }
 
     Scaffold (
         modifier = Modifier.fillMaxSize(),
@@ -140,6 +166,7 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
                     appBarContainerColor = Color.Transparent,
                     scrolledAppBarContainerColor = Color.White.copy(alpha=0.5f),
                 ),
+                shadowElevation = SHADOW_ELEVATION_ON_MAP,
                 inputField1 = inputFieldFactory(
                     placeholderText = "Search departure",
                     onFinishSearch = { closeSearch() },
@@ -150,17 +177,25 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
                 ),
                 expandedSearch1 = expandedSearchFactory(
                     onNewSelection = { place ->
-                        departEndpointState = place
-                        lastChanged = SearchBarId.First
-                        openSheet()
+                        viewModel.setEndpoints(
+                            origin = place,
+                            departTime = null,
+                            destination = routePlannerState.destination,
+                            arriveTime = routePlannerState.arriveTime,
+                        )
+                        scope.launch { setCurrViewing(SearchBarId.First) }
                     },
                     onFinishSearch = { closeSearch() },
                 ),
                 expandedSearch2 = expandedSearchFactory(
                     onNewSelection = { place ->
-                        arriveEndpointState = place
-                        lastChanged = SearchBarId.Second
-                        openSheet()
+                        viewModel.setEndpoints(
+                            origin = routePlannerState.origin,
+                            departTime = routePlannerState.departTime,
+                            destination = place,
+                            arriveTime = null,
+                        )
+                        scope.launch { setCurrViewing(SearchBarId.Second) }
                     },
                     onFinishSearch = { closeSearch() },
                 ),
@@ -168,18 +203,63 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
         },
     ) { innerPadding ->
 
-        if (lastChanged != SearchBarId.None) {
-            val place = when(lastChanged) {
-                SearchBarId.First -> departEndpointState
-                SearchBarId.Second -> arriveEndpointState
-                else -> throw NotImplementedError()
+        GoogleMap(
+            cameraPositionState = cameraPositionState,
+            contentDescription = "Trip endpoints map",
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = innerPadding,
+            onMapLoaded = {
+                if (!didInitPosition) { scope.launch {
+                    cameraPositionState.animate(
+                        BackendApi
+                            .get_nl_area()
+                            .mapCameraUpdate
+                    )
+                    didInitPosition = true
+                } }
+            },
+        ) {
+            for (place in listOfNotNull(
+                routePlannerState.origin,
+                routePlannerState.destination,
+            )) {
+                when (place) {
+                    is Station ->
+                        Marker(
+                            title = place.name,
+                            state = rememberUpdatedMarkerState(
+                                position = place.geom
+                            )
+                        )
+                    is Area ->
+                        Polygon(
+                            tag = place.name,
+                            points = place.getGeom().points,
+                            holes = place.getGeom().holes,
+                            fillColor = Color.Transparent,
+                        )
+                    else ->
+                        throw NotImplementedError()
+                }
             }
+        }
+
+        if (currViewing != SearchBarId.None) {
             BottomSheet(
                 state = bottomSheetState,
                 modifier = Modifier.padding(innerPadding.topOnly()),
-                shadowElevation = 12.dp,
+                shadowElevation = SHADOW_ELEVATION_ON_MAP,
             ) {
-                Box(Modifier.padding(innerPadding.bottomOnly())) {
+                Box(
+                    Modifier
+                        .padding(innerPadding.bottomOnly())
+                        .padding(bottom = 10.dp)
+                ) {
+                    val place = when(currViewing) {
+                        SearchBarId.First -> routePlannerState.origin
+                        SearchBarId.Second -> routePlannerState.destination
+                        else -> throw NotImplementedError()
+                    }
                     when (place) {
                         is Station -> StationDetailWithoutMap(
                             station = place,

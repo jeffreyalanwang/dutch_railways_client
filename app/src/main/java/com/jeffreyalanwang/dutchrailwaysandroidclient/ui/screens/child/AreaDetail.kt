@@ -44,7 +44,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Polygon
@@ -54,6 +53,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PolygonData
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
+import com.jeffreyalanwang.dutchrailwaysandroidclient.mapCameraUpdate
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.cellAlign
@@ -152,7 +152,7 @@ fun AreaDetail(
 ) = AreaDetailBase(area, onNavigate, modifier, {
     val areaGeom = remember { area.getGeom() }
     val cameraPositionState = rememberCameraPositionState()
-    var hasPositioned by remember { mutableStateOf(false) }
+    var didInitPosition by remember { mutableStateOf(false) }
 
     HorizontalDivider(thickness = Dp.Hairline)
 
@@ -163,14 +163,9 @@ fun AreaDetail(
             .fillMaxWidth()
             .sizeIn(minHeight = 200.dp, maxHeight = 400.dp),
         onMapLoaded = {
-            if (!hasPositioned) {
-                cameraPositionState.move(
-                    CameraUpdateFactory.newLatLngBounds(
-                        areaGeom.getBounds(),
-                        12,
-                    )
-                )
-                hasPositioned = true
+            if (!didInitPosition) {
+                cameraPositionState.move(area.mapCameraUpdate)
+                didInitPosition = true
             }
         },
     ) {

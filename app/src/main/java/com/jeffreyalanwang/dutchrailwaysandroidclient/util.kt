@@ -1,5 +1,8 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 
+import com.google.android.gms.maps.CameraUpdate
+import com.google.android.gms.maps.CameraUpdateFactory
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.getBounds
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
@@ -253,3 +256,13 @@ class ReadOnlyLateInit<T> : ReadWriteProperty<Any?, T> {
     }
 }
 
+val Place.mapCameraUpdate: CameraUpdate
+    get() = when(this) {
+        is Station -> CameraUpdateFactory.newLatLng(this.geom)
+        is Area -> CameraUpdateFactory.newLatLngBounds(
+            this.getGeom().getBounds(),
+            12
+        )
+
+        else -> throw NotImplementedError()
+    }

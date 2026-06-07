@@ -209,20 +209,14 @@ fun AppBarWithDualSearch(
     contentPadding: PaddingValues = SearchBarDefaults.AppBarContentPadding,
     windowInsets: WindowInsets = SearchBarDefaults.windowInsets,
 ) {
-    val isContainerTransparent =
-        (colors.appBarContainerColor == Color.Transparent)
-
-    Surface(
-        color = colors.appBarContainerColor,
-        modifier = modifier
-            .fillMaxWidth()
-            .windowInsetsPadding(windowInsets)
-            .semantics { isTraversalGroup = true },
-        tonalElevation = tonalElevation,
-        shadowElevation = shadowElevation,
+    @Composable
+    fun content(
+        modifier: Modifier,
+        tonalElevation: Dp,
+        shadowElevation: Dp,
     ) {
         Row(
-            Modifier.padding(contentPadding),
+            modifier,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             val isVisible = state.currentExpanded.value == SearchBarId.None ||
@@ -250,11 +244,38 @@ fun AppBarWithDualSearch(
                             .align(Alignment.Center),
                     shape = shape,
                     colors = colors.searchBarColors,
-                    tonalElevation = if (isContainerTransparent) tonalElevation else 0.dp,
-                    shadowElevation = if (isContainerTransparent) shadowElevation else 0.dp,
+                    tonalElevation = tonalElevation,
+                    shadowElevation = shadowElevation,
                 )
             }
         }
+    }
+
+    if (colors.appBarContainerColor != Color.Transparent) {
+        Surface(
+            color = colors.appBarContainerColor,
+            modifier = modifier.padding(contentPadding)
+                .windowInsetsPadding(windowInsets)
+                .fillMaxWidth()
+                .semantics { isTraversalGroup = true },
+            tonalElevation = tonalElevation,
+            shadowElevation = shadowElevation,
+        ) {
+            content(
+                Modifier,
+                tonalElevation = 0.dp,
+                shadowElevation = 0.dp,
+            )
+        }
+    } else {
+        content(
+            modifier.padding(contentPadding)
+                .windowInsetsPadding(windowInsets)
+                .fillMaxWidth()
+                .semantics { isTraversalGroup = true },
+            tonalElevation = tonalElevation,
+            shadowElevation = shadowElevation,
+        )
     }
 }
 

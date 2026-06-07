@@ -299,6 +299,8 @@ object BackendApi {
             else -> emptyList()
         }
 
+    fun get_nl_area() = get_area_info(1)
+
     // Must sort by arrival time before return
 
     fun get_stops_of_service(service_id: Int): List<ServiceStop>
