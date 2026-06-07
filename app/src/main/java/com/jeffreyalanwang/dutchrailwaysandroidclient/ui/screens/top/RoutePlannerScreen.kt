@@ -9,15 +9,20 @@ import androidx.compose.material3.BottomSheet
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarState
+import androidx.compose.material3.SheetValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +49,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.mapCameraUpdate
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.AppBarWithDualSearch
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ClearableTimePickerDialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PlaceSearchResults
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.SearchBarId
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.rememberDualSearchBarState
@@ -53,13 +59,20 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.bottomOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.topOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.RoutePlannerViewModel
 import kotlinx.coroutines.launch
+import java.time.LocalDate
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
+import java.util.TimeZone
 import kotlin.time.ExperimentalTime
+import kotlin.time.toJavaInstant
+import kotlin.time.toKotlinInstant
 
-val SHADOW_ELEVATION_ON_MAP = 12.dp
+val ON_MAP_SHADOW_ELEVATION = 12.dp
 
 @Preview
 @Composable
-private fun RoutePlannerScreenTest() {
+private fun RoutePlannerScreenPreview() {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 
@@ -78,54 +91,6 @@ private fun RoutePlannerScreenTest() {
     SnackbarHost(hostState = snackbarHostState)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun inputFieldFactory(
-    placeholderText: String,
-    onFinishSearch: () -> Unit,
-): @Composable (TextFieldState, SearchBarState, @Composable (() -> Unit)?) -> Unit {
-    return { textFieldState, searchBarState, leadingIcon ->
-        SearchBarDefaults.InputField(
-            textFieldState = textFieldState,
-            searchBarState = searchBarState,
-            leadingIcon = leadingIcon,
-            onSearch = { onFinishSearch() },
-            placeholder = {
-                Text(
-                    modifier = Modifier.clearAndSetSemantics {},
-                    text = placeholderText,
-                )
-            },
-            trailingIcon = {
-                Icon(painterResource(R.drawable.ic_search),
-                    contentDescription="Search",
-                )
-            },
-        )
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun expandedSearchFactory(
-    onNewSelection: (Place) -> Unit,
-    onFinishSearch: () -> Unit,
-): @Composable (TextFieldState, SearchBarState, @Composable () -> Unit) -> Unit {
-    return { textFieldState, searchBarState, inputField ->
-        ExpandedFullScreenSearchBar(searchBarState, inputField = inputField) {
-            PlaceSearchResults(
-                Place::class,
-                query = textFieldState.text.toString(),
-                onResultClick = { id, name ->
-                    textFieldState.setTextAndPlaceCursorAtEnd(name)
-                    onNewSelection(BackendApi.get_place_info(id))
-                    onFinishSearch()
-                },
-            )
-        }
-    }
-}
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
 fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)->Unit) {
@@ -133,15 +98,28 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
     val routePlannerState by viewModel.uiState.collectAsState()
     val dualSearchBarState = rememberDualSearchBarState()
     val cameraPositionState = rememberCameraPositionState()
-    val bottomSheetState = rememberStandardBottomSheetState()
+    var isDepartTimePickerOpen by remember { mutableStateOf(false) }
+    var isArriveTimePickerOpen by remember { mutableStateOf(false) }
+    val bottomSheetState = rememberStandardBottomSheetState(
+        confirmValueChange = {
+            when (it) {
+                SheetValue.Hidden -> false // Do not allow user to hide a visible sheet
+                else -> true
+            }
+        }
+    )
 
     // Will be [SearchBarId.None] only if no selection has been made yet
     var currViewing by rememberSaveable { mutableStateOf(SearchBarId.None) }
     var didInitPosition by remember { mutableStateOf(false) }
+    val bothEndpointsSet by remember { derivedStateOf {
+        routePlannerState.origin != null && routePlannerState.destination != null
+    } }
 
     fun closeSearch() { scope.launch { dualSearchBarState.animateToCollapsed() } }
 
-    // origin/destination referenced by [value] should not be null
+    // Launch transition animations for content when [currViewing] is changed.
+    // The endpoint (origin/destination) referenced by [value] must not be null.
     fun setCurrViewing(value: SearchBarId) {
         currViewing = value
         val place = when(value) {
@@ -166,16 +144,42 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
                     appBarContainerColor = Color.Transparent,
                     scrolledAppBarContainerColor = Color.White.copy(alpha=0.5f),
                 ),
-                shadowElevation = SHADOW_ELEVATION_ON_MAP,
+                shadowElevation = ON_MAP_SHADOW_ELEVATION,
+                actionIcon = {
+                    IconButton(
+                        enabled = bothEndpointsSet,
+                        colors = IconButtonDefaults.filledIconButtonColors(),
+                        modifier = Modifier.padding(horizontal = 4.dp),
+                        onClick = { viewModel.loadRoutes() },
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.ic_search),
+                            contentDescription = "Search routes"
+                        )
+                    }
+                },
                 inputField1 = inputFieldFactory(
                     placeholderText = "Search departure",
                     onFinishSearch = { closeSearch() },
+                    timeConstraintField = routePlannerState.departTime
+                        ?.toJavaInstant()
+                        ?.atZone(TimeZone.getDefault().toZoneId())
+                        ?.toLocalTime(),
+                    timeButtonContentDescription = "Select departure time",
+                    onTimeConstraintButtonClick = { isDepartTimePickerOpen = true },
                 ),
                 inputField2 = inputFieldFactory(
                     placeholderText = "Search arrival",
                     onFinishSearch = { closeSearch() },
+                    timeConstraintField = routePlannerState.arriveTime
+                        ?.toJavaInstant()
+                        ?.atZone(TimeZone.getDefault().toZoneId())
+                        ?.toLocalTime(),
+                    timeButtonContentDescription = "Select arrival time",
+                    onTimeConstraintButtonClick = { isArriveTimePickerOpen = true },
                 ),
                 expandedSearch1 = expandedSearchFactory(
+                    placeholderText = "Search departure",
                     onNewSelection = { place ->
                         viewModel.setEndpoints(
                             origin = place,
@@ -188,6 +192,7 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
                     onFinishSearch = { closeSearch() },
                 ),
                 expandedSearch2 = expandedSearchFactory(
+                    placeholderText = "Search arrival",
                     onNewSelection = { place ->
                         viewModel.setEndpoints(
                             origin = routePlannerState.origin,
@@ -248,7 +253,7 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
             BottomSheet(
                 state = bottomSheetState,
                 modifier = Modifier.padding(innerPadding.topOnly()),
-                shadowElevation = SHADOW_ELEVATION_ON_MAP,
+                shadowElevation = ON_MAP_SHADOW_ELEVATION,
             ) {
                 Box(
                     Modifier
@@ -277,6 +282,132 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
                     }
                 }
             }
+        }
+
+        if (isDepartTimePickerOpen) {
+            ClearableTimePickerDialog(
+                title = "Select depart time",
+                initialTime = routePlannerState.departTime
+                    ?.toJavaInstant()
+                    ?.atZone(TimeZone.getDefault().toZoneId())
+                    ?.toLocalTime(),
+                onConfirm = {
+                    viewModel.setEndpoints(
+                        origin = routePlannerState.origin,
+                        departTime = it
+                            ?.atDate(LocalDate.now())
+                            ?.atZone(TimeZone.getDefault().toZoneId())
+                            ?.toInstant()
+                            ?.toKotlinInstant(),
+                        destination = routePlannerState.destination,
+                        arriveTime = routePlannerState.arriveTime,
+                    )
+                    isDepartTimePickerOpen = false
+                },
+                onDismiss = { isDepartTimePickerOpen = false },
+            )
+        }
+        if (isArriveTimePickerOpen) {
+            ClearableTimePickerDialog(
+                title = "Select arrive time",
+                initialTime = routePlannerState.arriveTime
+                    ?.toJavaInstant()
+                    ?.atZone(TimeZone.getDefault().toZoneId())
+                    ?.toLocalTime(),
+                onConfirm = {
+                    viewModel.setEndpoints(
+                        origin = routePlannerState.origin,
+                        departTime = routePlannerState.departTime,
+                        destination = routePlannerState.destination,
+                        arriveTime = it
+                            ?.atDate(LocalDate.now())
+                            ?.atZone(TimeZone.getDefault().toZoneId())
+                            ?.toInstant()
+                            ?.toKotlinInstant(),
+                    )
+                    isArriveTimePickerOpen = false
+                },
+                onDismiss = { isArriveTimePickerOpen = false },
+            )
+        }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun inputFieldFactory(
+    placeholderText: String,
+    onFinishSearch: () -> Unit,
+    onTimeConstraintButtonClick: () -> Unit,
+    timeConstraintField: LocalTime?,
+    timeButtonContentDescription: String,
+): @Composable (TextFieldState, SearchBarState) -> Unit {
+    return { textFieldState, searchBarState ->
+        SearchBarDefaults.InputField(
+            textFieldState = textFieldState,
+            searchBarState = searchBarState,
+            onSearch = { onFinishSearch() },
+            placeholder = {
+                Text(
+                    modifier = Modifier.clearAndSetSemantics {},
+                    text = placeholderText,
+                )
+            },
+            trailingIcon = {
+                if (timeConstraintField == null) {
+                    IconButton(onClick = onTimeConstraintButtonClick) {
+                        Icon(
+                            painterResource(R.drawable.ic_time_add),
+                            contentDescription = timeButtonContentDescription,
+                        )
+                    }
+                } else {
+                    TextButton(onClick = onTimeConstraintButtonClick) {
+                        Text(
+                            DateTimeFormatter
+                                .ofLocalizedTime(FormatStyle.SHORT)
+                                .format(timeConstraintField)
+                        )
+                    }
+                }
+            }
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun expandedSearchFactory(
+    placeholderText: String,
+    onNewSelection: (Place) -> Unit,
+    onFinishSearch: () -> Unit,
+): @Composable (TextFieldState, SearchBarState) -> Unit {
+    return { textFieldState, searchBarState ->
+        ExpandedFullScreenSearchBar(
+            searchBarState,
+            inputField = {
+                SearchBarDefaults.InputField(
+                    textFieldState = textFieldState,
+                    searchBarState = searchBarState,
+                    onSearch = { onFinishSearch() },
+                    placeholder = {
+                        Text(
+                            modifier = Modifier.clearAndSetSemantics {},
+                            text = placeholderText,
+                        )
+                    },
+                )
+            }
+        ) {
+            PlaceSearchResults(
+                Place::class,
+                query = textFieldState.text.toString(),
+                onResultClick = { id, name ->
+                    textFieldState.setTextAndPlaceCursorAtEnd(name)
+                    onNewSelection(BackendApi.get_place_info(id))
+                    onFinishSearch()
+                },
+            )
         }
     }
 }

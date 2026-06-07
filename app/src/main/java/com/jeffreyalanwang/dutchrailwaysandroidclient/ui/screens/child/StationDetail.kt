@@ -63,7 +63,7 @@ const val EM_DASH = "—"
 
 @Preview
 @Composable
-private fun StationDetailTest() {
+private fun StationDetailPreview() {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 

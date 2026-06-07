@@ -47,7 +47,7 @@ import kotlinx.coroutines.launch
 
 @Preview
 @Composable
-private fun StationSearchScreenTest() {
+private fun StationSearchScreenPreview() {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 

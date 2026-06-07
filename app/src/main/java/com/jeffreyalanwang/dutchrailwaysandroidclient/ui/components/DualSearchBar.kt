@@ -8,11 +8,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -24,6 +26,8 @@ import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
@@ -53,7 +57,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.isTraversalGroup
 import androidx.compose.ui.semantics.semantics
@@ -71,43 +74,63 @@ private fun DualSearchBarPreview() {
     var appBarDividerPos by remember { mutableStateOf(0f to 0f) }
     val scope = rememberCoroutineScope()
 
+    val inputField = @Composable { textFieldState: TextFieldState, searchBarState: SearchBarState ->
+        SearchBarDefaults.InputField(
+            textFieldState,
+            searchBarState,
+            modifier =  Modifier
+                .fillMaxWidth()
+                .onGloballyPositioned {
+                    appBarDividerPos = appBarDividerPos
+                        .copy(second = it.positionInWindow().x)
+                },
+            placeholder = { Text(
+                "Placeholder text",
+                Modifier.onGloballyPositioned { appBarDividerPos = appBarDividerPos
+                    .copy(first = it.positionInWindow().x) },
+            ) },
+            onSearch = {
+                scope.launch { searchBarState.animateToCollapsed() }
+                scope.launch { snackbarHostState.showSnackbar("onSearch: $it") }
+            },
+        )
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         topBar = {
             AppBarWithDualSearch(
                 dualSearchBarState,
                 leadingIcon = {
-                    Icon(
-                        painter = painterResource(R.drawable.ic_back),
-                        contentDescription = null,
-                    )
+                    IconButton(
+                        onClick = { scope.launch {
+                            snackbarHostState.showSnackbar("Leading icon pushed")
+                        } }
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_back),
+                            contentDescription = "Back",
+                        )
+                    }
                 },
-                inputFieldBuilder = { textFieldState, searchBarState, leadingIcon ->
-                    SearchBarDefaults.InputField(
-                        textFieldState,
-                        searchBarState,
-                        modifier =  Modifier
-                            .fillMaxWidth()
-                            .onGloballyPositioned {
-                                appBarDividerPos = appBarDividerPos
-                                    .copy(second = it.positionInWindow().x)
-                            },
-                        leadingIcon = leadingIcon,
-                        placeholder = { Text(
-                            "Placeholder text",
-                            Modifier.onGloballyPositioned { appBarDividerPos = appBarDividerPos
-                                .copy(first = it.positionInWindow().x) },
-                        ) },
-                        onSearch = {
-                            scope.launch { searchBarState.animateToCollapsed() }
-                            scope.launch { snackbarHostState.showSnackbar("onSearch: $it") }
-                        },
-                    )
+                actionIcon = {
+                    IconButton(
+                        colors = IconButtonDefaults.filledIconButtonColors(),
+                        onClick = { scope.launch {
+                            snackbarHostState.showSnackbar("Action icon pushed")
+                        } }
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_search),
+                            contentDescription = "Search",
+                        )
+                    }
                 },
-                expandedSearchBuilder = { textFieldState, searchBarState, inputField ->
+                inputFieldBuilder = inputField,
+                expandedSearchBuilder = { textFieldState, searchBarState ->
                     ExpandedFullScreenSearchBar(
                         searchBarState,
-                        inputField = inputField,
+                        inputField = { inputField(textFieldState, searchBarState) },
                     ) {
                         for (i in 0..<3) {
                             ListItem(
@@ -139,16 +162,7 @@ private fun DualSearchBarPreview() {
                     }
                 },
                 divider = {
-                    HorizontalDivider(
-                        Modifier.padding(
-                            start = with(LocalDensity.current) {
-                                appBarDividerPos
-                                    .run { first - second }
-                                    .toDp()
-                            },
-                            end = 16.dp,
-                        )
-                    )
+                    HorizontalDivider( Modifier.padding(horizontal = 16.dp) )
                 },
             )
         },
@@ -163,8 +177,9 @@ private fun DualSearchBarPreview() {
 fun AppBarWithDualSearch(
     state: DualSearchBarState,
     leadingIcon: @Composable (() -> Unit)? = null,
-    inputFieldBuilder: @Composable (TextFieldState, SearchBarState, @Composable (() -> Unit)?) -> Unit,
-    expandedSearchBuilder: @Composable (TextFieldState, SearchBarState, @Composable () -> Unit) -> Unit,
+    actionIcon: @Composable (() -> Unit)? = null,
+    inputFieldBuilder: @Composable (TextFieldState, SearchBarState) -> Unit,
+    expandedSearchBuilder: @Composable (TextFieldState, SearchBarState) -> Unit,
     divider: @Composable ColumnScope.() -> Unit = {},
     modifier: Modifier = Modifier,
     shape: Shape = CardDefaults.elevatedShape,
@@ -176,6 +191,7 @@ fun AppBarWithDualSearch(
 ) = AppBarWithDualSearch(
     state,
     leadingIcon = leadingIcon,
+    actionIcon = actionIcon,
     inputField1 = inputFieldBuilder,
     inputField2 = inputFieldBuilder,
     expandedSearch1 = expandedSearchBuilder,
@@ -196,10 +212,11 @@ fun AppBarWithDualSearch(
 fun AppBarWithDualSearch(
     state: DualSearchBarState,
     leadingIcon: @Composable (() -> Unit)? = null,
-    inputField1: @Composable (TextFieldState, SearchBarState, @Composable (() -> Unit)?) -> Unit,
-    inputField2: @Composable (TextFieldState, SearchBarState, @Composable (() -> Unit)?) -> Unit,
-    expandedSearch1: @Composable (TextFieldState, SearchBarState, @Composable () -> Unit) -> Unit,
-    expandedSearch2: @Composable (TextFieldState, SearchBarState, @Composable () -> Unit) -> Unit,
+    actionIcon: @Composable (() -> Unit)? = null,
+    inputField1: @Composable (TextFieldState, SearchBarState) -> Unit,
+    inputField2: @Composable (TextFieldState, SearchBarState) -> Unit,
+    expandedSearch1: @Composable (TextFieldState, SearchBarState) -> Unit,
+    expandedSearch2: @Composable (TextFieldState, SearchBarState) -> Unit,
     divider: @Composable ColumnScope.() -> Unit = {},
     modifier: Modifier = Modifier,
     shape: Shape = CardDefaults.elevatedShape,
@@ -209,73 +226,95 @@ fun AppBarWithDualSearch(
     contentPadding: PaddingValues = SearchBarDefaults.AppBarContentPadding,
     windowInsets: WindowInsets = SearchBarDefaults.windowInsets,
 ) {
-    @Composable
-    fun content(
-        modifier: Modifier,
-        tonalElevation: Dp,
-        shadowElevation: Dp,
-    ) {
-        Row(
-            modifier,
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            val isVisible = state.currentExpanded.value == SearchBarId.None ||
-                    state.targetExpanded.value == SearchBarId.None
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .alpha(if (isVisible) 1f else 0f)
-            ) {
-                DualSearchBar(
-                    state = state,
-                    leadingIcon = leadingIcon,
-                    inputField1 = inputField1,
-                    inputField2 = inputField2,
-                    expandedSearch1 = expandedSearch1,
-                    expandedSearch2 = expandedSearch2,
-                    divider = divider,
-                    modifier =
-                        Modifier
-                            .padding(
-                                horizontal = 8.dp,
-                                vertical = 4.dp,
-                            )
-                            .widthIn(min = 360.dp, max = 720.dp)
-                            .align(Alignment.Center),
-                    shape = shape,
-                    colors = colors.searchBarColors,
-                    tonalElevation = tonalElevation,
-                    shadowElevation = shadowElevation,
-                )
-            }
-        }
-    }
+    val isVisible = state.currentExpanded.value == SearchBarId.None
+                 || state.targetExpanded.value == SearchBarId.None
 
-    if (colors.appBarContainerColor != Color.Transparent) {
-        Surface(
-            color = colors.appBarContainerColor,
-            modifier = modifier.padding(contentPadding)
-                .windowInsetsPadding(windowInsets)
-                .fillMaxWidth()
-                .semantics { isTraversalGroup = true },
-            tonalElevation = tonalElevation,
-            shadowElevation = shadowElevation,
+    WrapNestedSurface(
+        color = colors.appBarContainerColor,
+        modifier = modifier
+            .alpha(if (isVisible) 1f else 0f)
+            .padding(contentPadding)
+            .windowInsetsPadding(windowInsets)
+            .fillMaxWidth()
+            .semantics { isTraversalGroup = true },
+        tonalElevation = tonalElevation,
+        shadowElevation = shadowElevation,
+    ) { modifier, tonalElevation, shadowElevation ->
+
+        MarginButtonsBox(
+            modifier = modifier.height(IntrinsicSize.Min),
+            verticalAlignment = Alignment.CenterVertically,
+            left = leadingIcon?.let {
+                {
+                    Box(
+                        Modifier
+                            .fillMaxHeight(.5f)
+                            .align(Alignment.TopCenter),
+                    ) {
+                        Box(Modifier.align(Alignment.Center)) {
+                            it()
+                        }
+                    }
+                }
+            },
+            right = actionIcon?.let {
+                {
+                    Box(
+                        Modifier
+                            .fillMaxHeight(.5f)
+                            .align(Alignment.BottomCenter),
+                    ) {
+                        Box(Modifier.align(Alignment.Center)) {
+                            it()
+                        }
+                    }
+                }
+            },
         ) {
-            content(
-                Modifier,
-                tonalElevation = 0.dp,
-                shadowElevation = 0.dp,
+            DualSearchBar(
+                state = state,
+                inputField1 = inputField1,
+                inputField2 = inputField2,
+                expandedSearch1 = expandedSearch1,
+                expandedSearch2 = expandedSearch2,
+                divider = divider,
+                modifier = Modifier
+                    .padding(vertical = 4.dp)
+                    .widthIn(min = 360.dp, max = 720.dp),
+                shape = shape,
+                colors = colors.searchBarColors,
+                tonalElevation = tonalElevation,
+                shadowElevation = shadowElevation,
             )
         }
-    } else {
-        content(
-            modifier.padding(contentPadding)
-                .windowInsetsPadding(windowInsets)
-                .fillMaxWidth()
-                .semantics { isTraversalGroup = true },
+    }
+}
+
+/**
+ * Wraps content in a surface with the provided arguments,
+ * unless the surface is requested to be transparent,
+ * in which case [content] is called directly with the provided
+ * surface arguments, to be rendered in its own internal surface.
+ */
+@Composable
+private fun WrapNestedSurface(
+    color: Color,
+    modifier: Modifier = Modifier,
+    tonalElevation: Dp = 0.dp,
+    shadowElevation: Dp = 0.dp,
+    content: @Composable (Modifier, Dp, Dp) -> Unit,
+) {
+    if (color != Color.Transparent) {
+        Surface(
+            color = color,
+            modifier = modifier,
             tonalElevation = tonalElevation,
             shadowElevation = shadowElevation,
-        )
+        ) {
+            content(Modifier, 0.dp, 0.dp)
+        }
+    } else {
+        content(modifier, tonalElevation, shadowElevation)
     }
 }
 
@@ -283,9 +322,8 @@ fun AppBarWithDualSearch(
 @Composable
 fun DualSearchBar(
     state: DualSearchBarState,
-    leadingIcon: @Composable (() -> Unit)? = null,
-    inputFieldBuilder: @Composable (TextFieldState, SearchBarState, @Composable (()->Unit)?) -> Unit,
-    expandedSearchBuilder: @Composable (TextFieldState, SearchBarState, @Composable ()->Unit) -> Unit,
+    inputFieldBuilder: @Composable (TextFieldState, SearchBarState) -> Unit,
+    expandedSearchBuilder: @Composable (TextFieldState, SearchBarState) -> Unit,
     divider: @Composable ColumnScope.() -> Unit = {},
     modifier: Modifier = Modifier,
     shape: Shape = CardDefaults.elevatedShape,
@@ -294,7 +332,6 @@ fun DualSearchBar(
     shadowElevation: Dp = SearchBarDefaults.ShadowElevation,
 ) = DualSearchBar(
     state,
-    leadingIcon = leadingIcon,
     inputField1 = inputFieldBuilder,
     inputField2 = inputFieldBuilder,
     expandedSearch1 = expandedSearchBuilder,
@@ -311,11 +348,10 @@ fun DualSearchBar(
 @Composable
 fun DualSearchBar(
     state: DualSearchBarState,
-    leadingIcon: @Composable (() -> Unit)?,
-    inputField1: @Composable (TextFieldState, SearchBarState, @Composable (()->Unit)?) -> Unit,
-    inputField2: @Composable (TextFieldState, SearchBarState, @Composable (()->Unit)?) -> Unit,
-    expandedSearch1: @Composable (TextFieldState, SearchBarState, @Composable ()->Unit) -> Unit,
-    expandedSearch2: @Composable (TextFieldState, SearchBarState, @Composable ()->Unit) -> Unit,
+    inputField1: @Composable (TextFieldState, SearchBarState) -> Unit,
+    inputField2: @Composable (TextFieldState, SearchBarState) -> Unit,
+    expandedSearch1: @Composable (TextFieldState, SearchBarState) -> Unit,
+    expandedSearch2: @Composable (TextFieldState, SearchBarState) -> Unit,
     divider: @Composable ColumnScope.() -> Unit,
     modifier: Modifier = Modifier,
     shape: Shape = CardDefaults.elevatedShape,
@@ -339,7 +375,7 @@ fun DualSearchBar(
                             searchBarState.collapsedCoords = it
                         },
                 ) {
-                    inputField1(leadingIcon)
+                    inputField1()
                 }
             }
 
@@ -352,14 +388,14 @@ fun DualSearchBar(
                             searchBarState.collapsedCoords = it
                         },
                 ) {
-                    inputField2(leadingIcon?.let { {} })
+                    inputField2()
                 }
             }
         }
     }
 
-    with (state.first) { expandedSearch1 { inputField1(null) } }
-    with (state.second) { expandedSearch2 { inputField2(null) } }
+    with (state.first) { expandedSearch1() }
+    with (state.second) { expandedSearch2() }
 }
 
 @Composable
@@ -367,12 +403,6 @@ context(state: SingleSearchState)
 operator fun (@Composable (TextFieldState, SearchBarState) -> Unit)
     .invoke()
         = this(state.textFieldState, state.searchBarState)
-
-@Composable
-context(state: SingleSearchState)
-operator fun <T: @Composable (()->Unit)?> (@Composable (TextFieldState, SearchBarState, T) -> Unit)
-    .invoke(content: T)
-        = this(state.textFieldState, state.searchBarState, content)
 
 class SingleSearchState private constructor(
     val textFieldState: TextFieldState,

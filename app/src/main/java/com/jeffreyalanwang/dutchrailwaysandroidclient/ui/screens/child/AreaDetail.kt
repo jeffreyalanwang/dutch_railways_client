@@ -65,7 +65,7 @@ import kotlinx.coroutines.launch
 
 @Preview
 @Composable
-private fun AreaDetailTest() {
+private fun AreaDetailPreview() {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 

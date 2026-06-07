@@ -67,7 +67,7 @@ import kotlin.time.ExperimentalTime
 
 @Preview
 @Composable
-private fun TrainServiceDetailTest() {
+private fun TrainServiceDetailPreview() {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 
