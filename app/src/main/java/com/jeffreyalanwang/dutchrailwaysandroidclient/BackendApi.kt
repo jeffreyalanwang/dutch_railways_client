@@ -4,6 +4,7 @@ import android.os.Parcelable
 import androidx.compose.runtime.Immutable
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.parcelize.Parcelize
 import java.time.LocalDateTime
@@ -12,8 +13,10 @@ import java.time.ZonedDateTime
 import java.util.EnumSet
 import kotlin.math.max
 import kotlin.reflect.KClass
+import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
+import kotlin.time.toKotlinInstant
 import ca.solostudios.fuzzykt.FuzzyKt.ratio as fuzzratio
 
 
@@ -41,7 +44,19 @@ enum class TrainAmenity(val friendlyName: String) {
 @Immutable
 data class RoutePlan(
     val stops: ImmutableList<ServiceStop>
-)
+) {
+    val transferCount: Int
+        get() = stops
+            .distinctBy { it.passServiceId }
+            .drop(1)
+            .count()
+    @OptIn(ExperimentalTime::class)
+    val duration: Duration
+        get() = stops.last().arrival!!.toInstant().toKotlinInstant()
+            .minus(
+                stops.first().departure!!.toInstant().toKotlinInstant()
+            )
+}
 
 operator fun RoutePlan.plus(other: ServiceStop)
     = RoutePlan((this.stops + other).toImmutableList())
@@ -244,41 +259,36 @@ object BackendApi {
         destination: Place,
         departTime: Instant? = null,
         arriveTime: Instant? = null,
-    ): Sequence<RoutePlan> {
-        // These may be in order of distance in cm, if origin or destination is a LatLng
-        val originStationOptions: List<Pair<UInt, Station>> = find_best_station(origin)
-        val destinationStationOptions: List<Pair<UInt, Station>> = find_best_station(destination)
+    ) = sequence<RoutePlan> {
+        // as a dummy fixture, we only have the one pass service.
+        // we simply check if it fits the requested parameters
 
-        // Sorted to minimize total distance between
-        // requested origin/destination and the stations
-        // (prioritizing destination distance)
-        val endpointMatrix: Sequence<Pair<Station, Station>>
-            = timesSorted(
-                destinationStationOptions,
-                originStationOptions,
-                selector = { it.first },
-                combine = { a, b -> a + b },
-            )
-            .map { (a, b) -> b to a }
-            .map { (a, b) -> a.second to b.second }
+        check(origin is Station)
+        check(destination is Station)
 
-        val stationEdges = listOf(dummyService)
-            .flatMap {  service ->
-                dummyServiceStops
-                    .filter { stop ->
-                        stop.passServiceId == service.id
-                    }
-                    .zipWithNext()
-                    .edgesWithin(departTime, arriveTime)
+        val (departureStop, arrivalStop) = dummyServiceStops
+            .filter { it.passServiceId == dummyService.id } // actually does nothing because we only know stops for the one service
+            .let {
+                it.firstOrNull {
+                    it.stationId == origin.id
+                } to it.firstOrNull {
+                    it.stationId == destination.id
+                }
             }
-        val routes: Sequence<RoutePlan>
-            = endpointMatrix.map { (originStation, destinationStation) ->
-                get_routes_min_total_time(originStation.id, destinationStation.id, stationEdges)
-            }
-            .toList()
-            .flattenRoundRobin()
 
-        return routes
+        if (departureStop == null || arrivalStop == null) {
+            return@sequence
+        } else if (departureStop.departure == null || arrivalStop.arrival == null) {
+            return@sequence
+        } else if (departureStop.departure >= arrivalStop.arrival) {
+            return@sequence
+        } else if (departTime != null && departTime > departureStop.departure.toInstant().toKotlinInstant()) {
+            return@sequence
+        } else if (arriveTime != null && arriveTime < arrivalStop.arrival.toInstant().toKotlinInstant()) {
+            return@sequence
+        } else {
+            yield(RoutePlan(persistentListOf(departureStop, arrivalStop)))
+        }
     }
 
     private fun find_best_station(it: Place)

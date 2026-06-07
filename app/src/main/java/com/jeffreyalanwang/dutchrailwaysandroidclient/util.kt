@@ -2,7 +2,8 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient
 
 import com.google.android.gms.maps.CameraUpdate
 import com.google.android.gms.maps.CameraUpdateFactory
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.getBounds
+import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 
@@ -255,6 +256,34 @@ class ReadOnlyLateInit<T> : ReadWriteProperty<Any?, T> {
         isInitialized = true
     }
 }
+
+fun List<LatLng>.calculateBounds()
+    = this
+        .fold(
+            LatLngBounds.builder()
+        ) { builder, point ->
+            builder.include(point)
+        }
+        .build()
+
+/**
+ * Return the minimum and maximum latitude and longitude of the polygon.
+ */
+fun PolygonData.getBounds(): LatLngBounds
+    = this.points.calculateBounds()
+
+fun LatLngBounds.asCameraUpdate(padding: Int)
+    = CameraUpdateFactory.newLatLngBounds(this, padding)
+
+/**
+ * For use in finding a combined [LatLngBounds].
+ */
+val Place.points: List<LatLng>
+    get() = when(this) {
+        is Station -> listOf(this.geom)
+        is Area -> this.getGeom().points
+        else -> throw NotImplementedError()
+    }
 
 val Place.mapCameraUpdate: CameraUpdate
     get() = when(this) {

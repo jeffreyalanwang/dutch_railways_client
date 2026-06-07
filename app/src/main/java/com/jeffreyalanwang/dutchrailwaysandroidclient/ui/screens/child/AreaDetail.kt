@@ -44,13 +44,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
-import com.jeffreyalanwang.dutchrailwaysandroidclient.PolygonData
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.mapCameraUpdate
@@ -131,18 +129,6 @@ fun AreaDetailWithoutMap(
     onNavigate: (NavRoute) -> Unit,
     modifier: Modifier = Modifier,
 ) = AreaDetailBase(area, onNavigate, modifier)
-
-/**
- * Return the minimum and maximum latitude and longitude of the polygon.
- */
-fun PolygonData.getBounds(): LatLngBounds
-    = LatLngBounds.builder()
-    .also { it ->
-        for (point in this.points) {
-            it.include(point)
-        }
-    }
-    .build()
 
 @Composable
 fun AreaDetail(

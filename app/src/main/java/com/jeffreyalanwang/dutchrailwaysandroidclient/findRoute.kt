@@ -186,3 +186,48 @@ private fun trace_edges(
 
     return RoutePlan(flattened.toImmutableList())
 }
+
+//@OptIn(ExperimentalTime::class)
+//fun get_routes(
+//    origin: Place,
+//    destination: Place,
+//    departTime: Instant? = null,
+//    arriveTime: Instant? = null,
+//): Sequence<RoutePlan> {
+//    // These may be in order of distance in cm, if origin or destination is a LatLng
+//    val originStationOptions: List<Pair<UInt, Station>> =
+//        BackendApi.find_best_station(origin)
+//    val destinationStationOptions: List<Pair<UInt, Station>> =
+//        BackendApi.find_best_station(destination)
+//
+//    // Sorted to minimize total distance between
+//    // requested origin/destination and the stations
+//    // (prioritizing destination distance)
+//    val endpointMatrix: Sequence<Pair<Station, Station>>
+//        = timesSorted(
+//            destinationStationOptions,
+//            originStationOptions,
+//            selector = { it.first },
+//            combine = { a, b -> a + b },
+//        )
+//        .map { (a, b) -> b to a }
+//        .map { (a, b) -> a.second to b.second }
+//
+//    val stationEdges = listOf(BackendApi.dummyService)
+//        .flatMap {  service ->
+//            BackendApi.dummyServiceStops
+//                .filter { stop ->
+//                    stop.passServiceId == service.id
+//                }
+//                .zipWithNext()
+//                .edgesWithin(departTime, arriveTime)
+//        }
+//    val routes: Sequence<RoutePlan>
+//        = endpointMatrix.map { (originStation, destinationStation) ->
+//            get_routes_min_total_time(originStation.id, destinationStation.id, stationEdges)
+//        }
+//        .toList()
+//        .flattenRoundRobin()
+//
+//    return routes
+//}
