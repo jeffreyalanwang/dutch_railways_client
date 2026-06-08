@@ -50,6 +50,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
+import com.jeffreyalanwang.dutchrailwaysandroidclient.compareTo
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
@@ -60,9 +61,9 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import kotlinx.coroutines.launch
-import java.time.Instant.now
 import java.time.ZonedDateTime
 import java.util.EnumSet
+import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 
 @Preview
@@ -236,7 +237,7 @@ private fun AmenityBadge(
 @OptIn(ExperimentalTime::class)
 private fun getCurrStop(stops: List<ServiceStop>): IndexedValue<ServiceStop> {
     for (item in stops.dropLast(1).withIndex()) {
-        if (item.value.departure!!.toInstant() > now()) {
+        if (item.value.departure!! > Clock.System.now()) {
             return item
         }
     }

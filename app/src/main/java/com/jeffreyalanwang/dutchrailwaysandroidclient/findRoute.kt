@@ -4,8 +4,6 @@ import kotlinx.collections.immutable.toImmutableList
 import java.time.Duration
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
-import kotlin.time.toJavaInstant
-import kotlin.time.toKotlinInstant
 
 @OptIn(ExperimentalTime::class)
 internal fun List<Pair<ServiceStop, ServiceStop>>.edgesWithin(
@@ -14,12 +12,12 @@ internal fun List<Pair<ServiceStop, ServiceStop>>.edgesWithin(
 ) = this
     .letIf (earliest != null) {
         it.filter { (from, to) ->
-            from.departure!!.toKotlinInstant() >= earliest!!
+            from.departure!! >= earliest!!
         }
     }
     .letIf (latest != null) {
         it.filter { (from, to) ->
-            to.arrival!!.toKotlinInstant() <= latest!!
+            to.arrival!! <= latest!!
         }
     }
 
@@ -145,7 +143,7 @@ private fun get_routes_min_arrival_time(
             if (
                 to.stationId !in tentativeEarliestArrival.keys ||
                 (tentativeEarliestArrival[to.stationId]!!.second
-                    > to.arrival!!.toKotlinInstant())
+                    > to.arrival!!)
             ) {
                 tentativeEarliestArrival[to.stationId] = Pair(
                     Pair(from, to),

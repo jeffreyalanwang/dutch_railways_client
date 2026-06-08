@@ -8,6 +8,7 @@ import java.time.ZonedDateTime
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
 import kotlin.time.toKotlinInstant
 
 fun <T, U: Comparable<U>> Iterable<T>.isSorted(selector: (T)->U)
@@ -236,6 +237,18 @@ inline fun <T> T.letIf(condition: Boolean, then: (T)->T): T
 @OptIn(ExperimentalTime::class)
 fun ZonedDateTime.toKotlinInstant()
     = this.toInstant().toKotlinInstant()
+
+@OptIn(ExperimentalTime::class)
+operator fun ZonedDateTime.minus(other: ZonedDateTime)
+    = this.toKotlinInstant().minus(other.toKotlinInstant())
+
+@OptIn(ExperimentalTime::class)
+operator fun ZonedDateTime.compareTo(other: Instant)
+        = this.toKotlinInstant().compareTo(other)
+
+@OptIn(ExperimentalTime::class)
+operator fun Instant.compareTo(other: ZonedDateTime)
+        = this.compareTo(other.toKotlinInstant())
 
 class ReadOnlyLateInit<T> : ReadWriteProperty<Any?, T> {
     private var value: T? = null
