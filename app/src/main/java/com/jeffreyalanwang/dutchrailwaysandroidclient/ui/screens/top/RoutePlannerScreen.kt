@@ -115,6 +115,7 @@ private fun RoutePlannerScreenPreview() {
 fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)->Unit) {
     val routePlannerState by viewModel.uiState.collectAsState()
 
+    val scope = rememberCoroutineScope()
     val dualSearchBarState = rememberDualSearchBarState()
     val mapCameraState = rememberCameraPositionState()
     val bottomSheetState = rememberStandardBottomSheetState(
@@ -122,7 +123,8 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
         skipHiddenState = false,
         confirmValueChange = {
             when (it) {
-                SheetValue.Hidden -> false // Do not allow user to hide a visible sheet
+                // Do not allow user to hide a visible sheet; only programmatically
+                SheetValue.Hidden -> (routePlannerState.uiStage == RoutePlannerStage.NoneSelected)
                 else -> true
             }
         }
@@ -131,7 +133,6 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
     var isDepartTimePickerOpen by remember { mutableStateOf(false) }
     var isArriveTimePickerOpen by remember { mutableStateOf(false) }
 
-    val scope = rememberCoroutineScope()
     fun closeSearch() { scope.launch { dualSearchBarState.animateToCollapsed() } }
 
     // Sync changes in ViewModel state with BottomSheet and GoogleMap
