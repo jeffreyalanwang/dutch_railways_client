@@ -8,6 +8,10 @@ import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavGraphBuilder
@@ -17,6 +21,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.RouteDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.TrainServiceDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.RoutePlannerScreen
@@ -42,6 +47,9 @@ data class StationDetailRoute(val id: Int) : NavRoute
 @Serializable
 data class TrainServiceDetailRoute(val id: Int) : NavRoute
 
+@Serializable
+data class RouteDetailRoute(val index: Int) : NavRoute
+
 
 /**
  * Adds navigation routes for pages in the main screen's bottom navbar.
@@ -64,6 +72,7 @@ fun NavGraphBuilder.topNavGraph() {
  * (thus pushed on top of) top-level pages in the back stack.
  */
 fun NavGraphBuilder.tabNavGraph(
+    topLevelBackStackEntry: () -> NavBackStackEntry,
     onNavigate: (NavRoute) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
@@ -87,6 +96,29 @@ fun NavGraphBuilder.tabNavGraph(
         val routeArgs: TrainServiceDetailRoute = backStackEntry.toRoute()
         TrainServiceDetailScreen(
             BackendApi.get_pass_service(routeArgs.id),
+            onNavigate = onNavigate,
+            onNavigateBack = onNavigateBack,
+        )
+    }
+
+    /**
+     * Can only be called from Trip Query tab (where the parent route provides a viewModel).
+     */
+    composableChildRoute<RouteDetailRoute> { backStackEntry ->
+        val routeArgs: RouteDetailRoute = backStackEntry.toRoute()
+        val tabViewModel = viewModel<RoutePlannerViewModel>(topLevelBackStackEntry())
+        val liveVMState by tabViewModel.uiState.collectAsState()
+
+        val originalVMState = remember { liveVMState }
+
+        LaunchedEffect(liveVMState) {
+            if (liveVMState != originalVMState) {
+                onNavigateBack()
+            }
+        }
+
+        RouteDetailScreen(
+            originalVMState.routes!![routeArgs.index],
             onNavigate = onNavigate,
             onNavigateBack = onNavigateBack,
         )
@@ -120,6 +152,7 @@ private inline fun <reified T: Any> NavGraphBuilder.composableTopRoute(
             )
         }
         tabNavGraph(
+            topLevelBackStackEntry = { tabNavController.getBackStackEntry<T>() },
             onNavigate = { tabNavController.navigate(it) },
             onNavigateBack = { tabNavController.popBackStack() },
         )

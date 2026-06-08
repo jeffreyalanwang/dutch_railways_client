@@ -65,6 +65,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.RoutePlan
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.RouteDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.AppBarWithDualSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ClearableTimePickerDialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PlaceSearchResults
@@ -262,8 +263,12 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
                         LazyColumn {
                             if (routes.isEmpty()) {
                                 item { NoRoutesPlaceholder() }
-                            } else routes.forEach {
-                                item { RouteListing(it, {}) }
+                            } else routes.forEachIndexed { i, it ->
+                                item {
+                                    RouteListing(it,
+                                        { onNavigate(RouteDetailRoute(i)) }
+                                    )
+                                }
                             }
                         }
                     }

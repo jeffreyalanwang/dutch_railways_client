@@ -63,9 +63,10 @@ fun DutchRailwaysAndroidClientApp() {
                         val alreadySelected = navBackStackEntry
                             ?.hasRoute(appTab.route::class)
                             ?: false
+
                         topNavController.navigate(appTab.route) {
                             popUpTo(
-                                topNavController.graph.findStartDestination().id
+                                topNavController.graph.findStartDestination().parent!!.id
                             ) { saveState = !alreadySelected }
                             restoreState = !alreadySelected
                             launchSingleTop = true
