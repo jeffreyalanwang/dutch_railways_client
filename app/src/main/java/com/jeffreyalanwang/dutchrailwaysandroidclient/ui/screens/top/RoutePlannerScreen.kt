@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.BottomSheet
 import androidx.compose.material3.ExpandedFullScreenSearchBar
@@ -138,7 +139,7 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
     routePlannerState.uiStage.let {
         LaunchedEffect(it) { when (it) {
             RoutePlannerStage.NoneSelected,
-                -> bottomSheetState.hide()
+                -> bottomSheetState.hide() // TODO this doesn't work?
 
             RoutePlannerStage.Selecting,
             RoutePlannerStage.Routes,
@@ -370,7 +371,7 @@ private fun inputFieldFactory(
 @Composable
 private fun expandedSearchFactory(
     placeholderText: String,
-    onNewSelection: (Place) -> Unit,
+    onNewSelection: (Place?) -> Unit,
     onFinishSearch: () -> Unit,
 ): @Composable (TextFieldState, SearchBarState) -> Unit {
     return { textFieldState, searchBarState ->
@@ -380,6 +381,27 @@ private fun expandedSearchFactory(
                 SearchBarDefaults.InputField(
                     textFieldState = textFieldState,
                     searchBarState = searchBarState,
+                    leadingIcon = {
+                        IconButton(onClick = { onFinishSearch() }) {
+                            Icon(
+                                painterResource(R.drawable.ic_back),
+                                "Clear search",
+                            )
+                        }
+                    },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                textFieldState.clearText()
+                                onNewSelection(null)
+                            },
+                        ) {
+                            Icon(
+                                painterResource(R.drawable.ic_close),
+                                "Clear search",
+                            )
+                        }
+                    },
                     onSearch = { onFinishSearch() },
                     placeholder = {
                         Text(

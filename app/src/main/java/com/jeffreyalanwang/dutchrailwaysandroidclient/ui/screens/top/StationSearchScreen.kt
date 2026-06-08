@@ -8,13 +8,16 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AppBarWithSearch
+import androidx.compose.material3.Card
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SnackbarHost
@@ -71,7 +74,11 @@ fun StationSearchScreen(onNavigate: (NavRoute)->Unit) { //TODO document each onN
     var stationState by rememberSaveable { mutableStateOf<Station?>(null) }
     val scope = rememberCoroutineScope()
 
-    val inputField = @Composable {
+    @Composable
+    fun inputField(
+        leadingIcon: @Composable (() -> Unit)? = null,
+        trailingIcon: @Composable (() -> Unit)? = null,
+    ) {
         SearchBarDefaults.InputField(
             textFieldState = textFieldState,
             searchBarState = searchBarState,
@@ -82,18 +89,54 @@ fun StationSearchScreen(onNavigate: (NavRoute)->Unit) { //TODO document each onN
                     text = "Search stations"
                 )
             },
-            trailingIcon = {
-                Icon(painterResource(R.drawable.ic_search),
-                    contentDescription="Search",
-                )
-            },
+            leadingIcon = leadingIcon,
+            trailingIcon = trailingIcon,
         )
     }
 
     Scaffold(
         topBar = {
-            AppBarWithSearch(state = searchBarState, inputField = inputField)
-            ExpandedFullScreenSearchBar(state = searchBarState, inputField = inputField) {
+            AppBarWithSearch(
+                state = searchBarState,
+                inputField = { inputField(
+                    trailingIcon = {
+                        Icon(
+                            painterResource(R.drawable.ic_search),
+                            contentDescription="Search",
+                        )
+                    }
+                ) }
+            )
+            ExpandedFullScreenSearchBar(
+                state = searchBarState,
+                inputField = { inputField(
+                    leadingIcon = {
+                        IconButton(
+                            onClick = {
+                                scope.launch { searchBarState.animateToCollapsed() }
+                            }
+                        ) {
+                            Icon(
+                                painterResource(R.drawable.ic_back),
+                                contentDescription = "Close search",
+                            )
+                        }
+                    },
+                    trailingIcon = {
+                        IconButton(
+                            onClick = {
+                                textFieldState.clearText()
+                                stationState = null
+                            }
+                        ) {
+                            Icon(
+                                painterResource(R.drawable.ic_close),
+                                contentDescription = "Clear",
+                            )
+                        }
+                    }
+                ) }
+            ) {
                 PlaceSearchResults(
                     Station::class,
                     textFieldState.text.toString(),
@@ -115,14 +158,20 @@ fun StationSearchScreen(onNavigate: (NavRoute)->Unit) { //TODO document each onN
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(innerPadding.topOnly())
-                .padding(all = 10.dp)
         ) {
-            StationDetail(
-                stationState!!,
-                onNavigate = onNavigate,
-                modifier = Modifier.fillMaxWidth(),
-            )
+            Card(
+                Modifier
+                    .padding(innerPadding)
+                    .padding(10.dp)
+            ) {
+                StationDetail(
+                    stationState!!,
+                    onNavigate = onNavigate,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 20.dp),
+                )
+            }
         }
     }
 }
