@@ -51,6 +51,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
 import com.jeffreyalanwang.dutchrailwaysandroidclient.compareTo
+import com.jeffreyalanwang.dutchrailwaysandroidclient.getCurrStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
@@ -60,6 +61,8 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 import java.util.EnumSet
@@ -132,7 +135,7 @@ fun TrainServiceDetail(
     modifier: Modifier = Modifier,
     onNavigate: (NavRoute)-> Unit
 ) {
-    val stops = remember { service.getStops() }
+    val stops = remember { service.getStops().toImmutableList() }
     Card(modifier) {
         Spacer(Modifier.height(20.dp))
 
@@ -234,20 +237,9 @@ private fun AmenityBadge(
     }
 }
 
-@OptIn(ExperimentalTime::class)
-private fun getCurrStop(stops: List<ServiceStop>): IndexedValue<ServiceStop> {
-    for (item in stops.dropLast(1).withIndex()) {
-        if (item.value.departure!! > Clock.System.now()) {
-            return item
-        }
-    }
-
-    return IndexedValue(stops.size-1, stops.last())
-}
-
 @Composable
 private fun Stops(
-    stops: List<ServiceStop>,
+    stops: ImmutableList<ServiceStop>,
     onNavigate: (NavRoute)-> Unit,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues.Zero,
@@ -294,7 +286,7 @@ private fun Stop(
             lineThickness = lineWidth,
             isStart = isFirstStop,
             isEnd = isLastStop,
-            highlightPoint = isCurrStop,
+            isPointHighlighted = isCurrStop,
         )
         Spacer(Modifier.width(5.dp))
         Column(Modifier.weight(1f)) { // TODO text color by time

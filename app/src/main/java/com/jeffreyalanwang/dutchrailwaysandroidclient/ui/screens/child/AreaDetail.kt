@@ -117,6 +117,7 @@ fun AreaDetailScreen(
                 AreaDetail(
                     area,
                     onNavigate,
+                    Modifier.padding(vertical = 20.dp),
                 )
             }
         }
@@ -179,7 +180,7 @@ private fun AreaDetailBase(
         Spacer(Modifier.height(20.dp))
 
         Icon(
-            painterResource(R.drawable.ic_dr_station),
+            painterResource(R.drawable.ic_dr_area),
             "Station icon",
             Modifier.size(72.dp + 20.dp)
         )

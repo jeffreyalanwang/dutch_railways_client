@@ -100,7 +100,7 @@ fun LineSegmentWithPoint(
     lineThickness: Dp,
     isStart: Boolean,
     isEnd: Boolean,
-    highlightPoint: Boolean,
+    isPointHighlighted: Boolean,
     modifier: Modifier = Modifier,
     pointModifier: Modifier = Modifier,
 ) = LineSegment(
@@ -114,7 +114,7 @@ fun LineSegmentWithPoint(
         color = pointColor,
         lineWidth = lineThickness,
         lineColor = lineColor,
-        highlight = highlightPoint,
+        highlight = isPointHighlighted,
         modifier = pointModifier,
     )
 }

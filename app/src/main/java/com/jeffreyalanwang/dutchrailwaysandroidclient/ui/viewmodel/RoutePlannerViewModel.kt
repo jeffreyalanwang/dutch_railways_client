@@ -112,21 +112,31 @@ class RoutePlannerViewModel : ViewModel() {
     // [setOrigin()] and [setDestination()] need to be separate methods
     // so that we can implicitly set [RoutePlannerState.lastSet].
 
-    fun setOrigin(origin: Place?)
-        = _uiState.update { it.copyWithOrigin(origin) }
+    fun setOrigin(origin: Place?) {
+        if (origin != uiState.value.origin) {
+            _uiState.update { it.copyWithOrigin(origin) }
+        }
+    }
 
-    fun setDestination(destination: Place?)
-        = _uiState.update { it.copyWithDestination(destination) }
+    fun setDestination(destination: Place?) {
+        if (destination != uiState.value.destination) {
+            _uiState.update { it.copyWithDestination(destination) }
+        }
+    }
 
     fun setTimeConstraints(
         departTime: Instant? = uiState.value.departTime,
         arriveTime: Instant? = uiState.value.arriveTime,
-    ) = _uiState.update {
-            it.copyWithQueryParams(
-                departTime = departTime,
-                arriveTime = arriveTime,
-            )
+    ) {
+        if (departTime != uiState.value.departTime || arriveTime != uiState.value.arriveTime) {
+            _uiState.update {
+                it.copyWithQueryParams(
+                    departTime = departTime,
+                    arriveTime = arriveTime,
+                )
+            }
         }
+    }
 
     fun loadRoutes() {
         val routes = with(uiState.value) {

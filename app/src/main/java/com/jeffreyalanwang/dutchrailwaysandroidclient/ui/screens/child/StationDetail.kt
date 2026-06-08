@@ -59,7 +59,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 
-const val EM_DASH = "—"
+private const val EM_DASH = "—"
 
 @Preview
 @Composable

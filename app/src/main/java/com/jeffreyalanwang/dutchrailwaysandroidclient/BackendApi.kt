@@ -16,7 +16,6 @@ import kotlin.reflect.KClass
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
-import kotlin.time.toKotlinInstant
 import ca.solostudios.fuzzykt.FuzzyKt.ratio as fuzzratio
 
 
@@ -50,12 +49,35 @@ data class RoutePlan(
             .distinctBy { it.passServiceId }
             .drop(1)
             .count()
+
     @OptIn(ExperimentalTime::class)
     val duration: Duration
+        get() = stops.last().arrival!! - stops.first().departure!!
+
+    fun stopsByLayover() = stops.byLayover { it.stationId }
+    fun stopsByLeg() = stops.byLeg { it.passServiceId }
+    companion object {
+        fun <T> Iterable<T>.byLayover(
+            stationIdSelector: (T) -> Int
+        ) = this
+            .groupByContinuous(stationIdSelector)
+            .map { (stationId, stops) -> stops }
+
+        fun <T> Iterable<T>.byLeg(
+            passServiceIdSelector: (T) -> Int
+        ) = this
+            .groupByContinuous(passServiceIdSelector)
+            .map { (passServiceId, stops) -> stops.toPair() }
+    }
+
+    val origin
+        get() = stops.first().getStation()
+    val destination
+        get() = stops.last().getStation()
+    val departTime
+        get() = stops.first().departure!!
+    val arriveTime
         get() = stops.last().arrival!!
-            .minus(
-                stops.first().departure!!
-            )
 }
 
 operator fun RoutePlan.plus(other: ServiceStop)

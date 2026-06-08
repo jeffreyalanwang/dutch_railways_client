@@ -144,7 +144,7 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
 
             RoutePlannerStage.Selecting,
             RoutePlannerStage.Routes,
-                -> bottomSheetState.partialExpand()
+                -> bottomSheetState.expand()
         } }
     }
 
@@ -257,16 +257,18 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
                     .padding(bottom = 10.dp)
             ) {
                 when (routePlannerState.uiStage) {
-                    RoutePlannerStage.Routes ->
+                    RoutePlannerStage.Routes -> {
+                        val routes = routePlannerState.routes!!
                         LazyColumn {
-                            val routeOptions = routePlannerState.routes!!
-                            if (routeOptions.isEmpty()) {
+                            if (routes.isEmpty()) {
                                 item { NoRoutesPlaceholder() }
-                            } else for (route in routeOptions) {
-                                item { RouteListing(route, {}) }
+                            } else routes.forEach {
+                                item { RouteListing(it, {}) }
                             }
                         }
-                    RoutePlannerStage.Selecting  ->
+                    }
+
+                    RoutePlannerStage.Selecting ->
                         when (routePlannerState.lastSetEndpoint) {
                             is Station -> StationDetailWithoutMap(
                                 station = routePlannerState.lastSetEndpoint as Station,
@@ -282,6 +284,7 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
 
                             else -> throw NotImplementedError()
                         }
+
                     RoutePlannerStage.NoneSelected -> {} // in this case, sheet is hidden
                 }
             }

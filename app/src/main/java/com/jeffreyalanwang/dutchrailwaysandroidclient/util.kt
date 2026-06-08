@@ -4,12 +4,21 @@ import com.google.android.gms.maps.CameraUpdate
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
+import kotlinx.collections.immutable.ImmutableList
 import java.time.ZonedDateTime
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
+import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 import kotlin.time.toKotlinInstant
+
+fun <T> Iterable<T>.toPair(): Pair<T, T> {
+    val iterator = this.iterator()
+    val out = Pair(iterator.next(), iterator.next())
+    check(!iterator.hasNext())
+    return out
+}
 
 fun <T, U: Comparable<U>> Iterable<T>.isSorted(selector: (T)->U)
     = this
@@ -319,4 +328,15 @@ fun Place.getMapCameraUpdate(): CameraUpdate = when (this) {
     )
 
     else -> throw NotImplementedError()
+}
+
+@OptIn(ExperimentalTime::class)
+fun getCurrStop(stops: ImmutableList<ServiceStop>): IndexedValue<ServiceStop> {
+    for (item in stops.dropLast(1).withIndex()) {
+        if (item.value.departure!! > Clock.System.now()) {
+            return item
+        }
+    }
+
+    return IndexedValue(stops.size-1, stops.last())
 }
