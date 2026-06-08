@@ -4,8 +4,11 @@ import com.google.android.gms.maps.CameraUpdate
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
+import java.time.ZonedDateTime
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
+import kotlin.time.ExperimentalTime
+import kotlin.time.toKotlinInstant
 
 fun <T, U: Comparable<U>> Iterable<T>.isSorted(selector: (T)->U)
     = this
@@ -230,6 +233,10 @@ fun <T, U> List<Pair<T, U>>.withFlatIndex()
 inline fun <T> T.letIf(condition: Boolean, then: (T)->T): T
     = if (!condition) this else then(this)
 
+@OptIn(ExperimentalTime::class)
+fun ZonedDateTime.toKotlinInstant()
+    = this.toInstant().toKotlinInstant()
+
 class ReadOnlyLateInit<T> : ReadWriteProperty<Any?, T> {
     private var value: T? = null
     var isInitialized = false
@@ -266,13 +273,19 @@ fun List<LatLng>.calculateBounds()
         }
         .build()
 
+@JvmName("calculateBoundsForPlaces")
+fun List<Place>.calculateBounds()
+    = this.map { it.points }
+        .reduce { a, b -> a + b }
+        .calculateBounds()
+
 /**
  * Return the minimum and maximum latitude and longitude of the polygon.
  */
 fun PolygonData.getBounds(): LatLngBounds
     = this.points.calculateBounds()
 
-fun LatLngBounds.asCameraUpdate(padding: Int)
+fun LatLngBounds.getMapCameraUpdate(padding: Int)
     = CameraUpdateFactory.newLatLngBounds(this, padding)
 
 /**
@@ -285,13 +298,12 @@ val Place.points: List<LatLng>
         else -> throw NotImplementedError()
     }
 
-val Place.mapCameraUpdate: CameraUpdate
-    get() = when(this) {
-        is Station -> CameraUpdateFactory.newLatLng(this.geom)
-        is Area -> CameraUpdateFactory.newLatLngBounds(
-            this.getGeom().getBounds(),
-            12
-        )
+fun Place.getMapCameraUpdate(): CameraUpdate = when (this) {
+    is Station -> CameraUpdateFactory.newLatLng(this.geom)
+    is Area -> CameraUpdateFactory.newLatLngBounds(
+        this.getGeom().getBounds(),
+        12
+    )
 
-        else -> throw NotImplementedError()
-    }
+    else -> throw NotImplementedError()
+}

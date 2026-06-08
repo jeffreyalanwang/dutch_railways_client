@@ -51,7 +51,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
-import com.jeffreyalanwang.dutchrailwaysandroidclient.mapCameraUpdate
+import com.jeffreyalanwang.dutchrailwaysandroidclient.getMapCameraUpdate
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.cellAlign
@@ -150,7 +150,7 @@ fun AreaDetail(
             .sizeIn(minHeight = 200.dp, maxHeight = 400.dp),
         onMapLoaded = {
             if (!didInitPosition) {
-                cameraPositionState.move(area.mapCameraUpdate)
+                cameraPositionState.move(area.getMapCameraUpdate())
                 didInitPosition = true
             }
         },

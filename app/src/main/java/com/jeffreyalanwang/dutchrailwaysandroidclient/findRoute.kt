@@ -14,12 +14,12 @@ internal fun List<Pair<ServiceStop, ServiceStop>>.edgesWithin(
 ) = this
     .letIf (earliest != null) {
         it.filter { (from, to) ->
-            from.departure!!.toInstant() >= earliest!!.toJavaInstant()
+            from.departure!!.toKotlinInstant() >= earliest!!
         }
     }
     .letIf (latest != null) {
         it.filter { (from, to) ->
-            to.arrival!!.toInstant() <= latest!!.toJavaInstant()
+            to.arrival!!.toKotlinInstant() <= latest!!
         }
     }
 
@@ -67,7 +67,7 @@ internal fun get_routes_min_total_time(
             destination,
             edges
                 .edgesWithin(
-                    earliest = edge.second.arrival!!.toInstant().toKotlinInstant()
+                    earliest = edge.second.arrival!!.toKotlinInstant()
                 )
                 .edgesNotBetween(fromStationId = origin)
         ).map {
@@ -145,11 +145,11 @@ private fun get_routes_min_arrival_time(
             if (
                 to.stationId !in tentativeEarliestArrival.keys ||
                 (tentativeEarliestArrival[to.stationId]!!.second
-                    > to.arrival!!.toInstant().toKotlinInstant())
+                    > to.arrival!!.toKotlinInstant())
             ) {
                 tentativeEarliestArrival[to.stationId] = Pair(
                     Pair(from, to),
-                    to.arrival!!.toInstant().toKotlinInstant()
+                    to.arrival!!.toKotlinInstant()
                 )
             }
         }

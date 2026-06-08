@@ -59,11 +59,10 @@ android {
 }
 
 dependencies {
+    val nav_version = "2.9.8"
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.ui.graphics)
-    val nav_version = "2.9.8"
-
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.foundation)
@@ -83,7 +82,7 @@ dependencies {
     implementation("com.google.maps.android:maps-compose:8.3.0")
     implementation("ca.solo-studios:kt-fuzzy:0.1.+")
     implementation("androidx.navigation:navigation-compose:$nav_version")
-    implementation("io.github.alexandrepiveteau:kotlin-graphs:0.6.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.8.0")
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

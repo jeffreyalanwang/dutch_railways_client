@@ -52,9 +52,9 @@ data class RoutePlan(
             .count()
     @OptIn(ExperimentalTime::class)
     val duration: Duration
-        get() = stops.last().arrival!!.toInstant().toKotlinInstant()
+        get() = stops.last().arrival!!.toKotlinInstant()
             .minus(
-                stops.first().departure!!.toInstant().toKotlinInstant()
+                stops.first().departure!!.toKotlinInstant()
             )
 }
 
@@ -282,9 +282,9 @@ object BackendApi {
             return@sequence
         } else if (departureStop.departure >= arrivalStop.arrival) {
             return@sequence
-        } else if (departTime != null && departTime > departureStop.departure.toInstant().toKotlinInstant()) {
+        } else if (departTime != null && departTime > departureStop.departure.toKotlinInstant()) {
             return@sequence
-        } else if (arriveTime != null && arriveTime < arrivalStop.arrival.toInstant().toKotlinInstant()) {
+        } else if (arriveTime != null && arriveTime < arrivalStop.arrival.toKotlinInstant()) {
             return@sequence
         } else {
             yield(RoutePlan(persistentListOf(departureStop, arrivalStop)))

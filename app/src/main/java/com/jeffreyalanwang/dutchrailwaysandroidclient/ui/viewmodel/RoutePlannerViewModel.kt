@@ -6,6 +6,8 @@ import androidx.lifecycle.ViewModel
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.RoutePlan
+import com.jeffreyalanwang.dutchrailwaysandroidclient.calculateBounds
+import com.jeffreyalanwang.dutchrailwaysandroidclient.getMapCameraUpdate
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,56 +17,125 @@ import kotlinx.coroutines.flow.update
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
-data class RoutePlannerState (
+enum class Endpoint { Origin, Destination }
+enum class RoutePlannerStage { NoneSelected, Selecting, Routes }
+
+data class RoutePlannerState(
     val origin: Place? = null,
     val destination: Place? = null,
     val departTime: Instant? = null,
     val arriveTime: Instant? = null,
+
+    /**
+     * Used to display the most recently selected endpoint [Place].
+     */
+    val lastSet: Endpoint? = null,
+
     val routes: ImmutableList<RoutePlan>? = null,
-)
+) {
+    val lastSetEndpoint = when (lastSet) {
+        Endpoint.Origin -> origin
+        Endpoint.Destination -> destination
+        null -> null
+    }
+
+    val queryAllowed =
+        (origin != null) && (destination != null) && (routes == null)
+
+    val uiStage =
+        if (routes != null)
+            RoutePlannerStage.Routes
+        else if (lastSet != null)
+            RoutePlannerStage.Selecting
+        else
+            RoutePlannerStage.NoneSelected
+
+    @get:Throws(NullPointerException::class)
+    val mapCameraPosition by lazy {
+        when (uiStage) {
+            RoutePlannerStage.Selecting
+                -> lastSetEndpoint!!
+                .getMapCameraUpdate()
+
+            RoutePlannerStage.Routes
+                -> listOf(origin!!, destination!!)
+                .calculateBounds()
+                .getMapCameraUpdate(400)
+
+            RoutePlannerStage.NoneSelected
+                -> BackendApi.get_nl_area()
+                .getMapCameraUpdate()
+        }
+    }
+
+    fun copyWithQueryParams(
+        origin: Place? = this.origin,
+        destination: Place? = this.destination,
+        departTime: Instant? = this.departTime,
+        arriveTime: Instant? = this.arriveTime,
+        lastSet: Endpoint? = this.lastSet,
+    ) = copy(
+        origin = origin,
+        destination = destination,
+        departTime = departTime,
+        arriveTime = arriveTime,
+        lastSet = lastSet,
+        routes = null,
+    )
+
+    fun copyWithOrigin(newOrigin: Place?)
+        = copyWithQueryParams(
+            origin = newOrigin,
+            departTime = null,
+            lastSet =
+                if (newOrigin != null) Endpoint.Origin
+                else if (destination != null) Endpoint.Destination
+                else null,
+        )
+
+    fun copyWithDestination(newDestination: Place?)
+        = copyWithQueryParams(
+            destination = newDestination,
+            arriveTime = null,
+            lastSet =
+                if (newDestination != null) Endpoint.Destination
+                else if (origin != null) Endpoint.Origin
+                else null,
+        )
+}
 
 class RoutePlannerViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(RoutePlannerState())
     val uiState: StateFlow<RoutePlannerState> = _uiState.asStateFlow()
 
-    fun setEndpoints(
-        origin: Place?,
-        destination: Place?,
-        departTime: Instant? = null,
-        arriveTime: Instant? = null,
-    ) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                origin = origin,
-                destination = destination,
+    // [setOrigin()] and [setDestination()] need to be separate methods
+    // so that we can implicitly set [RoutePlannerState.lastSet].
+
+    fun setOrigin(origin: Place?)
+        = _uiState.update { it.copyWithOrigin(origin) }
+
+    fun setDestination(destination: Place?)
+        = _uiState.update { it.copyWithDestination(destination) }
+
+    fun setTimeConstraints(
+        departTime: Instant? = uiState.value.departTime,
+        arriveTime: Instant? = uiState.value.arriveTime,
+    ) = _uiState.update {
+            it.copyWithQueryParams(
                 departTime = departTime,
                 arriveTime = arriveTime,
-                routes = null,
             )
         }
-    }
-
-    private fun setRoutes(routes: List<RoutePlan>) {
-        _uiState.update { currentState ->
-            currentState.copy(
-                routes = routes.toImmutableList(),
-            )
-        }
-    }
 
     fun loadRoutes() {
-        with(uiState.value) {
-            check(origin != null)
-            check(destination != null)
-            setRoutes(
-                BackendApi.get_routes(
-                    origin,
-                    destination,
-                    departTime,
-                    arriveTime,
-                ).take(10).toList()
-            )
+        val routes = with(uiState.value) {
+            check(origin != null && destination != null)
+            BackendApi
+                .get_routes(origin, destination, departTime, arriveTime)
+                .take(10)
+                .toImmutableList()
         }
+        _uiState.update { it.copy(routes = routes) }
     }
 }

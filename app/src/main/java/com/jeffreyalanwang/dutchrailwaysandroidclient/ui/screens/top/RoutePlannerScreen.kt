@@ -5,14 +5,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.text.TextAutoSize
@@ -35,13 +33,12 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -55,7 +52,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.Polygon
@@ -67,10 +63,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.RoutePlan
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
-import com.jeffreyalanwang.dutchrailwaysandroidclient.asCameraUpdate
-import com.jeffreyalanwang.dutchrailwaysandroidclient.calculateBounds
-import com.jeffreyalanwang.dutchrailwaysandroidclient.mapCameraUpdate
-import com.jeffreyalanwang.dutchrailwaysandroidclient.points
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.AppBarWithDualSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ClearableTimePickerDialog
@@ -81,14 +73,18 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDe
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.bottomOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.topOnly
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.RoutePlannerStage
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.RoutePlannerViewModel
 import kotlinx.coroutines.launch
-import java.time.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.atDate
+import kotlinx.datetime.toJavaLocalTime
+import kotlinx.datetime.toKotlinLocalTime
+import kotlinx.datetime.toLocalDateTime
+import kotlinx.datetime.todayIn
 import java.time.LocalTime
-import java.util.TimeZone
+import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
-import kotlin.time.toJavaInstant
-import kotlin.time.toKotlinInstant
 
 val ON_MAP_SHADOW_ELEVATION = 12.dp
 
@@ -113,18 +109,16 @@ private fun RoutePlannerScreenPreview() {
     SnackbarHost(hostState = snackbarHostState)
 }
 
-private enum class BottomSheetShowing { None, Origin, Destination, Routes }
-
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalTime::class)
 @Composable
 fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)->Unit) {
-    val scope = rememberCoroutineScope()
     val routePlannerState by viewModel.uiState.collectAsState()
+
     val dualSearchBarState = rememberDualSearchBarState()
-    val cameraPositionState = rememberCameraPositionState()
-    var isDepartTimePickerOpen by remember { mutableStateOf(false) }
-    var isArriveTimePickerOpen by remember { mutableStateOf(false) }
+    val mapCameraState = rememberCameraPositionState()
     val bottomSheetState = rememberStandardBottomSheetState(
+        initialValue = SheetValue.Hidden,
+        skipHiddenState = false,
         confirmValueChange = {
             when (it) {
                 SheetValue.Hidden -> false // Do not allow user to hide a visible sheet
@@ -133,35 +127,32 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
         }
     )
 
-    // Will be [SearchBarId.None] only if no selection has been made yet
-    var currViewing by rememberSaveable { mutableStateOf(BottomSheetShowing.None) }
-    var didInitPosition by remember { mutableStateOf(false) }
-    val bothEndpointsSet by remember { derivedStateOf {
-        routePlannerState.origin != null && routePlannerState.destination != null
-    } }
+    var isDepartTimePickerOpen by remember { mutableStateOf(false) }
+    var isArriveTimePickerOpen by remember { mutableStateOf(false) }
 
+    val scope = rememberCoroutineScope()
     fun closeSearch() { scope.launch { dualSearchBarState.animateToCollapsed() } }
 
-    // Launch transition animations for content when [currViewing] is changed.
-    // The endpoint (origin/destination) referenced by [value] must not be null.
-    fun setCurrViewing(value: BottomSheetShowing) {
-        currViewing = value
-        scope.launch {
-            bottomSheetState.show()
-        }
-        scope.launch {
-            cameraPositionState.animate(when(value) {
-                BottomSheetShowing.Origin -> routePlannerState.origin!!.mapCameraUpdate
-                BottomSheetShowing.Destination -> routePlannerState.destination!!.mapCameraUpdate
-                BottomSheetShowing.Routes -> emptyList<LatLng>()
-                        .plus(routePlannerState.origin!!.points)
-                        .plus(routePlannerState.destination!!.points)
-                        .calculateBounds()
-                        .asCameraUpdate(400)
-                BottomSheetShowing.None -> throw IllegalStateException()
-            })
-        }
+    // Sync changes in ViewModel state with BottomSheet and GoogleMap
+
+    routePlannerState.uiStage.let {
+        LaunchedEffect(it) { when (it) {
+            RoutePlannerStage.NoneSelected,
+                -> bottomSheetState.hide()
+
+            RoutePlannerStage.Selecting,
+            RoutePlannerStage.Routes,
+                -> bottomSheetState.partialExpand()
+        } }
     }
+
+    runCatching { // If this throws an error, we will move to it [onMapLoaded]
+        routePlannerState.mapCameraPosition
+    }.getOrNull()?.let {
+        LaunchedEffect(it) { mapCameraState.animate(it) }
+    }
+
+    // Build UI
 
     Scaffold (
         modifier = Modifier.fillMaxSize(),
@@ -170,18 +161,14 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
                 dualSearchBarState,
                 colors = SearchBarDefaults.appBarWithSearchColors(
                     appBarContainerColor = Color.Transparent,
-                    scrolledAppBarContainerColor = Color.White.copy(alpha=0.5f),
                 ),
                 shadowElevation = ON_MAP_SHADOW_ELEVATION,
                 actionIcon = {
                     IconButton(
-                        enabled = bothEndpointsSet,
+                        enabled = routePlannerState.queryAllowed,
                         colors = IconButtonDefaults.filledIconButtonColors(),
                         modifier = Modifier.padding(horizontal = 4.dp),
-                        onClick = {
-                            viewModel.loadRoutes()
-                            scope.launch { setCurrViewing(BottomSheetShowing.Routes) }
-                        },
+                        onClick = { viewModel.loadRoutes() },
                     ) {
                         Icon(
                             painterResource(R.drawable.ic_search),
@@ -193,9 +180,9 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
                     placeholderText = "Search departure",
                     onFinishSearch = { closeSearch() },
                     timeConstraintField = routePlannerState.departTime
-                        ?.toJavaInstant()
-                        ?.atZone(TimeZone.getDefault().toZoneId())
-                        ?.toLocalTime(),
+                        ?.toLocalDateTime(TimeZone.currentSystemDefault())
+                        ?.time
+                        ?.toJavaLocalTime(),
                     timeButtonContentDescription = "Select departure time",
                     onTimeConstraintButtonClick = { isDepartTimePickerOpen = true },
                 ),
@@ -203,36 +190,20 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
                     placeholderText = "Search arrival",
                     onFinishSearch = { closeSearch() },
                     timeConstraintField = routePlannerState.arriveTime
-                        ?.toJavaInstant()
-                        ?.atZone(TimeZone.getDefault().toZoneId())
-                        ?.toLocalTime(),
+                        ?.toLocalDateTime(TimeZone.currentSystemDefault())
+                        ?.time
+                        ?.toJavaLocalTime(),
                     timeButtonContentDescription = "Select arrival time",
                     onTimeConstraintButtonClick = { isArriveTimePickerOpen = true },
                 ),
                 expandedSearch1 = expandedSearchFactory(
                     placeholderText = "Search departure",
-                    onNewSelection = { place ->
-                        viewModel.setEndpoints(
-                            origin = place,
-                            departTime = null,
-                            destination = routePlannerState.destination,
-                            arriveTime = routePlannerState.arriveTime,
-                        )
-                        scope.launch { setCurrViewing(BottomSheetShowing.Origin) }
-                    },
+                    onNewSelection = { viewModel.setOrigin(it) },
                     onFinishSearch = { closeSearch() },
                 ),
                 expandedSearch2 = expandedSearchFactory(
                     placeholderText = "Search arrival",
-                    onNewSelection = { place ->
-                        viewModel.setEndpoints(
-                            origin = routePlannerState.origin,
-                            departTime = routePlannerState.departTime,
-                            destination = place,
-                            arriveTime = null,
-                        )
-                        scope.launch { setCurrViewing(BottomSheetShowing.Destination) }
-                    },
+                    onNewSelection = { viewModel.setDestination(it) },
                     onFinishSearch = { closeSearch() },
                 ),
             )
@@ -240,19 +211,12 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
     ) { innerPadding ->
 
         GoogleMap(
-            cameraPositionState = cameraPositionState,
+            cameraPositionState = mapCameraState,
             contentDescription = "Trip endpoints map",
             modifier = Modifier.fillMaxSize(),
             contentPadding = innerPadding,
             onMapLoaded = {
-                if (!didInitPosition) { scope.launch {
-                    cameraPositionState.animate(
-                        BackendApi
-                            .get_nl_area()
-                            .mapCameraUpdate
-                    )
-                    didInitPosition = true
-                } }
+                mapCameraState.move(routePlannerState.mapCameraPosition)
             },
         ) {
             for (place in listOfNotNull(
@@ -280,49 +244,43 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
             }
         }
 
-        if (currViewing != BottomSheetShowing.None) {
-            BottomSheet(
-                state = bottomSheetState,
-                modifier = Modifier.padding(innerPadding.topOnly()),
-                shadowElevation = ON_MAP_SHADOW_ELEVATION,
+        BottomSheet(
+            state = bottomSheetState,
+            modifier = Modifier.padding(innerPadding.topOnly()),
+            shadowElevation = ON_MAP_SHADOW_ELEVATION,
+        ) {
+            Box(
+                Modifier
+                    .padding(innerPadding.bottomOnly())
+                    .padding(bottom = 10.dp)
             ) {
-                Box(
-                    Modifier
-                        .padding(innerPadding.bottomOnly())
-                        .padding(bottom = 10.dp)
-                ) {
-                    if (currViewing == BottomSheetShowing.Routes) {
+                when (routePlannerState.uiStage) {
+                    RoutePlannerStage.Routes ->
                         LazyColumn {
-                            if (routePlannerState.routes!!.size == 0) {
+                            val routeOptions = routePlannerState.routes!!
+                            if (routeOptions.isEmpty()) {
                                 item { NoRoutesPlaceholder() }
-                            } else {
-                                for (route in routePlannerState.routes!!) {
-                                    item { RouteListing(route, {}) }
-                                }
+                            } else for (route in routeOptions) {
+                                item { RouteListing(route, {}) }
                             }
                         }
-                    } else {
-                        val place = when (currViewing) {
-                            BottomSheetShowing.Origin -> routePlannerState.origin!!
-                            BottomSheetShowing.Destination -> routePlannerState.destination!!
-                            else -> throw IllegalStateException()
-                        }
-                        when (place) {
+                    RoutePlannerStage.Selecting  ->
+                        when (routePlannerState.lastSetEndpoint) {
                             is Station -> StationDetailWithoutMap(
-                                station = place,
+                                station = routePlannerState.lastSetEndpoint as Station,
                                 onNavigate = onNavigate,
                                 Modifier.padding(horizontal = 10.dp),
                             )
 
                             is Area -> AreaDetailWithoutMap(
-                                area = place,
+                                area = routePlannerState.lastSetEndpoint as Area,
                                 onNavigate = onNavigate,
                                 Modifier.padding(horizontal = 10.dp),
                             )
 
                             else -> throw NotImplementedError()
                         }
-                    }
+                    RoutePlannerStage.NoneSelected -> {} // in this case, sheet is hidden
                 }
             }
         }
@@ -331,19 +289,16 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
             ClearableTimePickerDialog(
                 title = "Select depart time",
                 initialTime = routePlannerState.departTime
-                    ?.toJavaInstant()
-                    ?.atZone(TimeZone.getDefault().toZoneId())
-                    ?.toLocalTime(),
-                onConfirm = {
-                    viewModel.setEndpoints(
-                        origin = routePlannerState.origin,
-                        departTime = it
-                            ?.atDate(LocalDate.now())
-                            ?.atZone(TimeZone.getDefault().toZoneId())
-                            ?.toInstant()
-                            ?.toKotlinInstant(),
-                        destination = routePlannerState.destination,
-                        arriveTime = routePlannerState.arriveTime,
+                    ?.toLocalDateTime(TimeZone.currentSystemDefault())
+                    ?.time
+                    ?.toJavaLocalTime(),
+                onConfirm = { selectedTime ->
+                    viewModel.setTimeConstraints(
+                        departTime = with(TimeZone.currentSystemDefault()) {
+                            selectedTime?.toKotlinLocalTime()
+                                ?.atDate(Clock.System.now().toLocalDateTime().date)
+                                ?.toInstant()
+                        },
                     )
                     isDepartTimePickerOpen = false
                 },
@@ -354,19 +309,16 @@ fun RoutePlannerScreen(viewModel: RoutePlannerViewModel, onNavigate: (NavRoute)-
             ClearableTimePickerDialog(
                 title = "Select arrive time",
                 initialTime = routePlannerState.arriveTime
-                    ?.toJavaInstant()
-                    ?.atZone(TimeZone.getDefault().toZoneId())
-                    ?.toLocalTime(),
-                onConfirm = {
-                    viewModel.setEndpoints(
-                        origin = routePlannerState.origin,
-                        departTime = routePlannerState.departTime,
-                        destination = routePlannerState.destination,
-                        arriveTime = it
-                            ?.atDate(LocalDate.now())
-                            ?.atZone(TimeZone.getDefault().toZoneId())
-                            ?.toInstant()
-                            ?.toKotlinInstant(),
+                    ?.toLocalDateTime(TimeZone.currentSystemDefault())
+                    ?.time
+                    ?.toJavaLocalTime(),
+                onConfirm = { selectedTime ->
+                    viewModel.setTimeConstraints(
+                        arriveTime = with(TimeZone.currentSystemDefault()) {
+                            selectedTime?.toKotlinLocalTime()
+                                ?.atDate(Clock.System.todayIn(this))
+                                ?.toInstant()
+                        },
                     )
                     isArriveTimePickerOpen = false
                 },
