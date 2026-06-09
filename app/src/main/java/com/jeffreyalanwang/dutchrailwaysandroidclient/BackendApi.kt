@@ -6,8 +6,9 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.toJavaLocalDateTime
 import kotlinx.parcelize.Parcelize
-import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.util.EnumSet
@@ -50,7 +51,6 @@ data class RoutePlan(
             .drop(1)
             .count()
 
-    @OptIn(ExperimentalTime::class)
     val duration: Duration
         get() = stops.last().arrival!! - stops.first().departure!!
 
@@ -198,8 +198,11 @@ class PassService(
     }
 }
 
+
 private fun parseAmsTime(s: String)
-    = ZonedDateTime.of(LocalDateTime.parse(s), ZoneId.of("Europe/Amsterdam"))
+    = LocalDateTime.parse(s)
+        .toJavaLocalDateTime()
+        .atZone(ZoneId.of("Europe/Amsterdam"))
 
 //val apolloClient = ApolloClient.Builder()
 //    .serverUrl("https://example.com/graphql")
@@ -275,7 +278,7 @@ object BackendApi {
         throw Resources.NotFoundException("Id not found: $id");
     }
 
-    @OptIn(ExperimentalTime::class)
+
     fun get_routes(
         origin: Place,
         destination: Place,

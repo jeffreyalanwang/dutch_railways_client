@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PlaceSearchResults
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetail
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.topOnly
@@ -66,9 +66,9 @@ private fun StationSearchScreenPreview() {
     SnackbarHost(hostState = snackbarHostState)
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
-fun StationSearchScreen(onNavigate: (NavRoute)->Unit) { //TODO document each onNavigate
+fun StationSearchScreen(onNavigate: (CommonChildRoute)->Unit) { //TODO document each onNavigate
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
     var stationState by rememberSaveable { mutableStateOf<Station?>(null) }

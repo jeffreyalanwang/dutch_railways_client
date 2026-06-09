@@ -24,7 +24,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
-import java.time.LocalTime
+import com.jeffreyalanwang.dutchrailwaysandroidclient.letWith
+import com.jeffreyalanwang.dutchrailwaysandroidclient.toLocalTime
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlin.time.Clock
+import kotlin.time.ExperimentalTime
 
 @Preview(widthDp = 350, heightDp = 500)
 @Composable
@@ -53,7 +58,7 @@ private fun ClearableTimePickerDialogPreview() {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
+
 @Composable
 fun ClearableTimePickerDialog(
     initialTime: LocalTime?,
@@ -62,7 +67,10 @@ fun ClearableTimePickerDialog(
     modifier: Modifier = Modifier,
     title: String? = null,
 ) {
-    val _initialTime = initialTime ?: LocalTime.now()
+    val _initialTime = initialTime
+        ?: Clock.System.now()
+            .letWith(TimeZone.currentSystemDefault()) { it.toLocalTime() }
+
     val timePickerState = rememberTimePickerState(
         initialHour = _initialTime.hour,
         initialMinute = _initialTime.minute,
@@ -99,7 +107,7 @@ fun ClearableTimePickerDialog(
                     }
 
                     TextButton( onClick = { onConfirm(
-                        LocalTime.of(timePickerState.hour, timePickerState.minute)
+                        LocalTime(timePickerState.hour, timePickerState.minute)
                     ) } ) {
                         Text("OK")
                     }

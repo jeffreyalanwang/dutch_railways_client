@@ -52,7 +52,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.calculateBounds
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getCurrStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getMapCameraUpdate
 import com.jeffreyalanwang.dutchrailwaysandroidclient.minus
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainServiceDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
@@ -66,7 +66,7 @@ import java.time.ZonedDateTime
 import kotlin.time.Duration
 import kotlin.time.ExperimentalTime
 
-@OptIn(ExperimentalTime::class)
+
 @Preview
 @Composable
 private fun RouteDetailPreview() {
@@ -102,7 +102,7 @@ private fun RouteDetailPreview() {
 @Composable
 fun RouteDetailScreen(
     route: RoutePlan,
-    onNavigate: (NavRoute) -> Unit,
+    onNavigate: (CommonChildRoute) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     Scaffold(
@@ -136,14 +136,14 @@ fun RouteDetailScreen(
 @Composable
 fun RouteDetailWithoutMap(
     route: RoutePlan,
-    onNavigate: (NavRoute) -> Unit,
+    onNavigate: (CommonChildRoute) -> Unit,
     modifier: Modifier = Modifier,
 ) = RouteDetailBase(route, onNavigate, modifier)
 
 @Composable
 fun RouteDetail(
     route: RoutePlan,
-    onNavigate: (NavRoute) -> Unit,
+    onNavigate: (CommonChildRoute) -> Unit,
     modifier: Modifier = Modifier,
 ) = RouteDetailBase(route, onNavigate, modifier, {
     val cameraPositionState = rememberCameraPositionState()
@@ -185,7 +185,7 @@ fun RouteDetail(
 @Composable
 private fun RouteDetailBase(
     route: RoutePlan,
-    onNavigate: (NavRoute) -> Unit,
+    onNavigate: (CommonChildRoute) -> Unit,
     modifier: Modifier = Modifier,
     googleMapsSlot: @Composable (() -> Unit)? = null,
 ) {
@@ -225,7 +225,7 @@ private fun RouteDetailBase(
 @Composable
 private fun Itinerary(
     route: RoutePlan,
-    onNavigate: (NavRoute)-> Unit,
+    onNavigate: (CommonChildRoute)-> Unit,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues.Zero,
 ) {

@@ -31,38 +31,28 @@ import kotlinx.serialization.Serializable
 
 
 interface NavRoute
+interface TrainQueryGraphRoute: NavRoute
+interface CommonChildRoute: TrainQueryGraphRoute
 
-@Serializable
-object StationSearchRoute : NavRoute
+@Serializable object TrainQueryRoute : NavRoute, TrainQueryGraphRoute
+@Serializable object StationSearchRoute : NavRoute
 
-@Serializable
-object TrainQueryRoute : NavRoute
-
-@Serializable
-data class AreaDetailRoute(val id: Int) : NavRoute
-
-@Serializable
-data class StationDetailRoute(val id: Int) : NavRoute
-
-@Serializable
-data class TrainServiceDetailRoute(val id: Int) : NavRoute
-
-@Serializable
-data class RouteDetailRoute(val index: Int) : NavRoute
-
+@Serializable data class AreaDetailRoute(val id: Int) : NavRoute, TrainQueryGraphRoute, CommonChildRoute
+@Serializable data class StationDetailRoute(val id: Int) : NavRoute, TrainQueryGraphRoute, CommonChildRoute
+@Serializable data class TrainServiceDetailRoute(val id: Int) : NavRoute, TrainQueryGraphRoute, CommonChildRoute
+@Serializable data class RouteDetailRoute(val index: Int) : NavRoute, TrainQueryGraphRoute, CommonChildRoute
 
 /**
  * Adds navigation routes for pages in the main screen's bottom navbar.
  */
 fun NavGraphBuilder.topNavGraph() {
-    composableTopRoute<TrainQueryRoute> { backStackEntry, onNavigate ->
-        val tabViewModel = viewModel<RoutePlannerViewModel>(backStackEntry)
-        RoutePlannerScreen(
-            viewModel = tabViewModel,
-            onNavigate = onNavigate,
-        )
+    singleComposableGraphTopRoute<TrainQueryRoute, TrainQueryGraphRoute> { routeArgs, topLevelBackStackEntry, onNavigate, onNavigateBack ->
+        val tabViewModel = viewModel<RoutePlannerViewModel>(topLevelBackStackEntry())
+        RoutePlannerScreen(routeArgs, tabViewModel, onNavigate, onNavigateBack)
     }
-    composableTopRoute<StationSearchRoute> { backStackEntry, onNavigate ->
+    composableTopRoute<StationSearchRoute>(
+        childNavGraph = NavGraphBuilder::tabNavGraph
+    ) { backStackEntry, onNavigate ->
         StationSearchScreen(onNavigate = onNavigate)
     }
 }
@@ -73,7 +63,7 @@ fun NavGraphBuilder.topNavGraph() {
  */
 fun NavGraphBuilder.tabNavGraph(
     topLevelBackStackEntry: () -> NavBackStackEntry,
-    onNavigate: (NavRoute) -> Unit,
+    onNavigate: (CommonChildRoute) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     composableChildRoute<AreaDetailRoute> { backStackEntry ->
@@ -126,14 +116,53 @@ fun NavGraphBuilder.tabNavGraph(
 }
 
 /**
+ * [tabNavGraph] that uses the provided composable to render all routes,
+ * allowing a seamless transition between them.
+ */
+private inline fun <
+    reified StartRoute: SubgraphRoute,
+    reified SubgraphRoute: NavRoute,
+> NavGraphBuilder.singleComposableGraphTopRoute(
+    crossinline composable: @Composable (SubgraphRoute, () -> NavBackStackEntry, (CommonChildRoute) -> Unit, () -> Unit) -> Unit,
+) = composable<SubgraphRoute>(
+    enterTransition = { EnterTransition.None },
+    exitTransition = { ExitTransition.None },
+    popEnterTransition = { EnterTransition.None },
+    popExitTransition = { ExitTransition.None },
+) {
+    val tabNavController = rememberNavController()
+    NavHost(
+        tabNavController,
+        startDestination = StartRoute::class
+    ) {
+        composable<SubgraphRoute> { backStackEntry ->
+            composable(
+                backStackEntry.toRoute(),
+                { tabNavController.getBackStackEntry<StartRoute>() },
+                { tabNavController.navigate(it) },
+                { tabNavController.popBackStack() },
+            )
+        }
+
+    }
+}
+
+/**
  * Encloses [topContent] in its own nested NavHost,
  * and allows it to navigate to routes in [tabNavGraph].
  *
  * Also provides with appropriate tab-change animations
  * (i.e. none).
  */
-private inline fun <reified T: Any> NavGraphBuilder.composableTopRoute(
-    noinline topContent: @Composable AnimatedContentScope.(NavBackStackEntry, (NavRoute)->Unit)->Unit
+private inline fun <
+    reified T: NavRoute
+> NavGraphBuilder.composableTopRoute(
+    crossinline childNavGraph: NavGraphBuilder.(
+        topLevelBackStackEntry: () -> NavBackStackEntry,
+        onNavigate: (CommonChildRoute) -> Unit,
+        onNavigateBack: () -> Unit,
+    ) -> Unit,
+    noinline topContent: @Composable AnimatedContentScope.(NavBackStackEntry, (CommonChildRoute)->Unit)->Unit,
 ) = composable<T>(
     enterTransition = { EnterTransition.None },
     exitTransition = { ExitTransition.None },
@@ -151,10 +180,10 @@ private inline fun <reified T: Any> NavGraphBuilder.composableTopRoute(
                 { newRoute -> tabNavController.navigate(newRoute) }
             )
         }
-        tabNavGraph(
-            topLevelBackStackEntry = { tabNavController.getBackStackEntry<T>() },
-            onNavigate = { tabNavController.navigate(it) },
-            onNavigateBack = { tabNavController.popBackStack() },
+        childNavGraph(
+            { tabNavController.getBackStackEntry<T>() },
+            { tabNavController.navigate(it) },
+            { tabNavController.popBackStack() },
         )
     }
 }
@@ -162,7 +191,9 @@ private inline fun <reified T: Any> NavGraphBuilder.composableTopRoute(
 /**
  * Provides child routes with enter/exit animations.
  */
-private inline fun <reified T: Any> NavGraphBuilder.composableChildRoute(
+private inline fun <
+    reified T: CommonChildRoute
+> NavGraphBuilder.composableChildRoute(
     noinline content: @Composable AnimatedContentScope.(NavBackStackEntry)->Unit
 ) = composable<T>(
     enterTransition = {

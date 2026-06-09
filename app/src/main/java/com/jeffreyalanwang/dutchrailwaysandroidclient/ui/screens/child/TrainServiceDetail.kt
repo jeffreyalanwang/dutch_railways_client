@@ -50,9 +50,8 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
-import com.jeffreyalanwang.dutchrailwaysandroidclient.compareTo
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getCurrStop
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
@@ -66,8 +65,6 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 import java.util.EnumSet
-import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 
 @Preview
 @Composable
@@ -101,7 +98,7 @@ private fun TrainServiceDetailPreview() {
 @Composable
 fun TrainServiceDetailScreen(
     service: PassService,
-    onNavigate: (NavRoute) -> Unit,
+    onNavigate: (CommonChildRoute) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     Scaffold(
@@ -133,7 +130,7 @@ fun TrainServiceDetailScreen(
 fun TrainServiceDetail(
     service: PassService,
     modifier: Modifier = Modifier,
-    onNavigate: (NavRoute)-> Unit
+    onNavigate: (CommonChildRoute)-> Unit
 ) {
     val stops = remember { service.getStops().toImmutableList() }
     Card(modifier) {
@@ -240,7 +237,7 @@ private fun AmenityBadge(
 @Composable
 private fun Stops(
     stops: ImmutableList<ServiceStop>,
-    onNavigate: (NavRoute)-> Unit,
+    onNavigate: (CommonChildRoute)-> Unit,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues.Zero,
 ) {

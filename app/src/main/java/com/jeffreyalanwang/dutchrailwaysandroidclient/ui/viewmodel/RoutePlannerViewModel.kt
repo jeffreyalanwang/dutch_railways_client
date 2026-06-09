@@ -18,7 +18,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 enum class Endpoint { Origin, Destination }
-enum class RoutePlannerStage { NoneSelected, Selecting, Routes }
+enum class RoutePlannerStage { NoneSelected, HasAnySelected, ListRouteOptions }
 
 data class RoutePlannerState(
     val origin: Place? = null,
@@ -44,20 +44,20 @@ data class RoutePlannerState(
 
     val uiStage =
         if (routes != null)
-            RoutePlannerStage.Routes
+            RoutePlannerStage.ListRouteOptions
         else if (lastSet != null)
-            RoutePlannerStage.Selecting
+            RoutePlannerStage.HasAnySelected
         else
             RoutePlannerStage.NoneSelected
 
     @get:Throws(NullPointerException::class)
     val mapCameraPosition by lazy {
         when (uiStage) {
-            RoutePlannerStage.Selecting
+            RoutePlannerStage.HasAnySelected
                 -> lastSetEndpoint!!
                 .getMapCameraUpdate()
 
-            RoutePlannerStage.Routes
+            RoutePlannerStage.ListRouteOptions
                 -> listOf(origin!!, destination!!)
                 .calculateBounds()
                 .getMapCameraUpdate(400)
@@ -140,12 +140,8 @@ class RoutePlannerViewModel : ViewModel() {
 
     fun loadRoutes() {
         val routes = with(uiState.value) {
-            check(origin != null && destination != null)
-            BackendApi
-                .get_routes(origin, destination, departTime, arriveTime)
-                .take(10)
-                .toImmutableList()
-        }
+            BackendApi.get_routes(origin!!, destination!!, departTime, arriveTime)
+        }.take(10).toImmutableList()
         _uiState.update { it.copy(routes = routes) }
     }
 }

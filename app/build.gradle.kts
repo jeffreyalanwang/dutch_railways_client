@@ -8,11 +8,10 @@ plugins {
 
 kotlin {
     compilerOptions {
-        freeCompilerArgs.addAll(
-            "-P",
-            "plugin:org.jetbrains.kotlin.parcelize:experimentalCodeGeneration=true",
-            "-XXLanguage:+ContextParameters",
-        )
+        optIn.add("kotlin.time.ExperimentalTime")
+        optIn.add("androidx.compose.material3.ExperimentalMaterial3Api")
+        freeCompilerArgs.addAll("-P", "plugin:org.jetbrains.kotlin.parcelize:experimentalCodeGeneration=true")
+        freeCompilerArgs.add("-XXLanguage:+ContextParameters")
     }
 }
 
@@ -80,7 +79,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.8")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.maps.android:maps-compose:8.3.0")
-    implementation("ca.solo-studios:kt-fuzzy:0.1.+")
+    implementation("ca.solo-studios:kt-fuzzy:0.1")
     implementation("androidx.navigation:navigation-compose:$nav_version")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.8.0")
     testImplementation(libs.junit)

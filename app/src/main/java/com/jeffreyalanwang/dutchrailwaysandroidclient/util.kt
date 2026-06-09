@@ -5,6 +5,8 @@ import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import java.time.ZonedDateTime
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
@@ -240,24 +242,32 @@ fun <T, U> List<Pair<T, U>>.withFlatIndex()
         .withIndex()
         .map { (index, pair) -> Triple(index, pair.first, pair.second) }
 
+inline fun <T, U, R> T.letWith(receiver: U, block: U.(T) -> R): R
+    = block(receiver, this)
+
 inline fun <T> T.letIf(condition: Boolean, then: (T)->T): T
     = if (!condition) this else then(this)
 
-@OptIn(ExperimentalTime::class)
+
+context(tz: TimeZone)
+fun Instant.toLocalTime()
+    = this.toLocalDateTime(tz).time
+
+
 fun ZonedDateTime.toKotlinInstant()
     = this.toInstant().toKotlinInstant()
 
-@OptIn(ExperimentalTime::class)
+
 operator fun ZonedDateTime.minus(other: ZonedDateTime)
     = this.toKotlinInstant().minus(other.toKotlinInstant())
 
-@OptIn(ExperimentalTime::class)
-operator fun ZonedDateTime.compareTo(other: Instant)
-        = this.toKotlinInstant().compareTo(other)
 
-@OptIn(ExperimentalTime::class)
+operator fun ZonedDateTime.compareTo(other: Instant)
+    = this.toKotlinInstant().compareTo(other)
+
+
 operator fun Instant.compareTo(other: ZonedDateTime)
-        = this.compareTo(other.toKotlinInstant())
+    = this.compareTo(other.toKotlinInstant())
 
 class ReadOnlyLateInit<T> : ReadWriteProperty<Any?, T> {
     private var value: T? = null
@@ -330,7 +340,7 @@ fun Place.getMapCameraUpdate(): CameraUpdate = when (this) {
     else -> throw NotImplementedError()
 }
 
-@OptIn(ExperimentalTime::class)
+
 fun getCurrStop(stops: ImmutableList<ServiceStop>): IndexedValue<ServiceStop> {
     for (item in stops.dropLast(1).withIndex()) {
         if (item.value.departure!! > Clock.System.now()) {

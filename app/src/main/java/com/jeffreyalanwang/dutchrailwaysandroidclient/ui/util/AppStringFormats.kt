@@ -1,5 +1,7 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util
 
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.toJavaLocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.temporal.TemporalAccessor
@@ -12,7 +14,10 @@ object AppStringFormats {
             .ofLocalizedTime(FormatStyle.SHORT)
             .format(time)
 
-    @OptIn(ExperimentalTime::class)
+    fun Time(time: LocalTime)
+        = Time(time.toJavaLocalTime())
+
+
     fun TripDuration(duration: Duration): String {
         val hours = duration.inWholeHours
         val minutes = duration.inWholeMinutes % 60

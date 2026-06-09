@@ -1,11 +1,10 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 
 import kotlinx.collections.immutable.toImmutableList
-import java.time.Duration
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
-@OptIn(ExperimentalTime::class)
+
 internal fun List<Pair<ServiceStop, ServiceStop>>.edgesWithin(
     earliest: Instant? = null,
     latest: Instant? = null,
@@ -51,7 +50,7 @@ internal fun List<Pair<ServiceStop, ServiceStop>>.edgesNotBetween(
         }
     }
 
-@OptIn(ExperimentalTime::class)
+
 internal fun get_routes_min_total_time(
     origin: Int,
     destination: Int,
@@ -73,16 +72,12 @@ internal fun get_routes_min_total_time(
         }
     }
 
-    return byFirstEdge
-        .flattenSorted {
-            Duration.between(
-                it.stops.first().departure!!,
-                it.stops.last().arrival!!,
-            )
-        }
+    return byFirstEdge.flattenSorted {
+        it.stops.first().departure!! - it.stops.last().arrival!!
+    }
 }
 
-@OptIn(ExperimentalTime::class)
+
 private fun get_routes_min_arrival_time(
     origin: Int,
     destination: Int,
@@ -185,7 +180,6 @@ private fun trace_edges(
     return RoutePlan(flattened.toImmutableList())
 }
 
-//@OptIn(ExperimentalTime::class)
 //fun get_routes(
 //    origin: Place,
 //    destination: Place,

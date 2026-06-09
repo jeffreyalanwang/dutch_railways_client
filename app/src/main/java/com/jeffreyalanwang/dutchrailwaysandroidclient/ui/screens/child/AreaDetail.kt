@@ -52,7 +52,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getMapCameraUpdate
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.cellAlign
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.fill
@@ -93,7 +93,7 @@ private fun AreaDetailPreview() {
 @Composable
 fun AreaDetailScreen(
     area: Area,
-    onNavigate: (NavRoute) -> Unit,
+    onNavigate: (CommonChildRoute) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     Scaffold(
@@ -127,14 +127,14 @@ fun AreaDetailScreen(
 @Composable
 fun AreaDetailWithoutMap(
     area: Area,
-    onNavigate: (NavRoute) -> Unit,
+    onNavigate: (CommonChildRoute) -> Unit,
     modifier: Modifier = Modifier,
 ) = AreaDetailBase(area, onNavigate, modifier)
 
 @Composable
 fun AreaDetail(
     area: Area,
-    onNavigate: (NavRoute) -> Unit,
+    onNavigate: (CommonChildRoute) -> Unit,
     modifier: Modifier = Modifier,
 ) = AreaDetailBase(area, onNavigate, modifier, {
     val areaGeom = remember { area.getGeom() }
@@ -170,7 +170,7 @@ fun AreaDetail(
 @Composable
 private fun AreaDetailBase(
     area: Area,
-    onNavigate: (NavRoute) -> Unit,
+    onNavigate: (CommonChildRoute) -> Unit,
     modifier: Modifier = Modifier,
     googleMapsSlot: @Composable (() -> Unit)? = null,
 ) {
@@ -205,7 +205,7 @@ private fun StationList(
     stations: List<Station>,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues.Zero,
-    onNavigate: (NavRoute) -> Unit
+    onNavigate: (CommonChildRoute) -> Unit
 ) {
     val gap = 10.dp
 
