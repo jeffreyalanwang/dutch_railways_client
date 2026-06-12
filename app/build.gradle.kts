@@ -54,6 +54,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -79,7 +80,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-collections-immutable:0.3.8")
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.maps.android:maps-compose:8.3.0")
-    implementation("ca.solo-studios:kt-fuzzy:0.1")
+    implementation("ca.solo-studios:kt-fuzzy:0.1.0")
     implementation("androidx.navigation:navigation-compose:$nav_version")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.8.0")
     testImplementation(libs.junit)

@@ -1,7 +1,5 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 
-import com.google.android.gms.maps.CameraUpdate
-import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import kotlinx.collections.immutable.ImmutableList
@@ -11,7 +9,6 @@ import java.time.ZonedDateTime
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 import kotlin.time.toKotlinInstant
 
@@ -317,9 +314,6 @@ fun List<Place>.calculateBounds()
 fun PolygonData.getBounds(): LatLngBounds
     = this.points.calculateBounds()
 
-fun LatLngBounds.getMapCameraUpdate(padding: Int)
-    = CameraUpdateFactory.newLatLngBounds(this, padding)
-
 /**
  * For use in finding a combined [LatLngBounds].
  */
@@ -329,16 +323,6 @@ val Place.points: List<LatLng>
         is Area -> this.getGeom().points
         else -> throw NotImplementedError()
     }
-
-fun Place.getMapCameraUpdate(): CameraUpdate = when (this) {
-    is Station -> CameraUpdateFactory.newLatLng(this.geom)
-    is Area -> CameraUpdateFactory.newLatLngBounds(
-        this.getGeom().getBounds(),
-        12
-    )
-
-    else -> throw NotImplementedError()
-}
 
 
 fun getCurrStop(stops: ImmutableList<ServiceStop>): IndexedValue<ServiceStop> {

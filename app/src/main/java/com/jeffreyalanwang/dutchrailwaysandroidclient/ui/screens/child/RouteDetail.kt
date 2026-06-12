@@ -50,7 +50,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.RoutePlan
 import com.jeffreyalanwang.dutchrailwaysandroidclient.RoutePlan.Companion.byLeg
 import com.jeffreyalanwang.dutchrailwaysandroidclient.calculateBounds
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getCurrStop
-import com.jeffreyalanwang.dutchrailwaysandroidclient.getMapCameraUpdate
 import com.jeffreyalanwang.dutchrailwaysandroidclient.minus
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
@@ -59,12 +58,12 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGrid
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.LineSegmentWithPoint
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.getMapCameraUpdate
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
 
 
 @Preview

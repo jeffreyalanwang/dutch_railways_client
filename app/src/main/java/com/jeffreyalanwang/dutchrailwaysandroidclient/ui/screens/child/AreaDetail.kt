@@ -51,12 +51,12 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
-import com.jeffreyalanwang.dutchrailwaysandroidclient.getMapCameraUpdate
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.cellAlign
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.fill
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.getMapCameraUpdate
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import kotlinx.coroutines.launch
@@ -137,6 +137,7 @@ fun AreaDetail(
     onNavigate: (CommonChildRoute) -> Unit,
     modifier: Modifier = Modifier,
 ) = AreaDetailBase(area, onNavigate, modifier, {
+    val scope = rememberCoroutineScope()
     val areaGeom = remember { area.getGeom() }
     val cameraPositionState = rememberCameraPositionState()
     var didInitPosition by remember { mutableStateOf(false) }
@@ -150,7 +151,7 @@ fun AreaDetail(
             .fillMaxWidth()
             .sizeIn(minHeight = 200.dp, maxHeight = 400.dp),
         onMapLoaded = {
-            if (!didInitPosition) {
+            if (!didInitPosition) scope.launch {
                 cameraPositionState.move(area.getMapCameraUpdate())
                 didInitPosition = true
             }

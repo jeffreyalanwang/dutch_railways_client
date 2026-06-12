@@ -8,6 +8,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toJavaLocalDateTime
+import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -151,8 +152,8 @@ class ServiceStop(
     val passServiceId: Int,
     val stationId: Int,
 ) : Parcelable {
-    private var passService: PassService? = null
-    private var station: Station? = null
+    @IgnoredOnParcel private var passService: PassService? = null
+    @IgnoredOnParcel private var station: Station? = null
 
     constructor(arrival: ZonedDateTime, departure: ZonedDateTime, passService: PassService, station: Station)
             : this(arrival, departure, passServiceId=passService.id, stationId=station.id) {

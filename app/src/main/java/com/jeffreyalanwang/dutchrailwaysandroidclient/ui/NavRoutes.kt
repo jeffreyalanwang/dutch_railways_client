@@ -1,5 +1,7 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui
 
+import android.annotation.SuppressLint
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContentScope
 import androidx.compose.animation.AnimatedContentTransitionScope
 import androidx.compose.animation.EnterTransition
@@ -9,19 +11,20 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavDestination.Companion.hasRoute
 import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.toRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.RouteDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.TrainServiceDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.RoutePlannerScreen
@@ -32,24 +35,83 @@ import kotlinx.serialization.Serializable
 
 interface NavRoute
 interface TrainQueryGraphRoute: NavRoute
-interface CommonChildRoute: TrainQueryGraphRoute
+interface TrainQueryGraphMajorRoute: TrainQueryGraphRoute
+interface TrainQueryGraphChildRoute: TrainQueryGraphRoute
+interface CommonChildRoute: TrainQueryGraphChildRoute
+interface PlaceDetailRoute: CommonChildRoute { val id: Int }
 
-@Serializable object TrainQueryRoute : NavRoute, TrainQueryGraphRoute
+@Serializable object TrainQuerySelectionRoute : NavRoute, TrainQueryGraphRoute, TrainQueryGraphMajorRoute
 @Serializable object StationSearchRoute : NavRoute
 
-@Serializable data class AreaDetailRoute(val id: Int) : NavRoute, TrainQueryGraphRoute, CommonChildRoute
-@Serializable data class StationDetailRoute(val id: Int) : NavRoute, TrainQueryGraphRoute, CommonChildRoute
-@Serializable data class TrainServiceDetailRoute(val id: Int) : NavRoute, TrainQueryGraphRoute, CommonChildRoute
-@Serializable data class RouteDetailRoute(val index: Int) : NavRoute, TrainQueryGraphRoute, CommonChildRoute
+@Serializable data class AreaDetailRoute(override val id: Int) : NavRoute, TrainQueryGraphChildRoute, CommonChildRoute, PlaceDetailRoute
+@Serializable data class StationDetailRoute(override val id: Int) : NavRoute, TrainQueryGraphChildRoute, CommonChildRoute, PlaceDetailRoute
+@Serializable data class TrainServiceDetailRoute(val id: Int) : NavRoute, TrainQueryGraphChildRoute, CommonChildRoute
+@Serializable object RouteOptionsRoute : NavRoute, TrainQueryGraphChildRoute, TrainQueryGraphMajorRoute
+@Serializable data class RouteDetailRoute(val index: Int) : NavRoute, TrainQueryGraphChildRoute
 
 /**
  * Adds navigation routes for pages in the main screen's bottom navbar.
  */
 fun NavGraphBuilder.topNavGraph() {
-    singleComposableGraphTopRoute<TrainQueryRoute, TrainQueryGraphRoute> { routeArgs, topLevelBackStackEntry, onNavigate, onNavigateBack ->
-        val tabViewModel = viewModel<RoutePlannerViewModel>(topLevelBackStackEntry())
-        RoutePlannerScreen(routeArgs, tabViewModel, onNavigate, onNavigateBack)
+    singleComposableGraphTopRoute<TrainQuerySelectionRoute, TrainQueryGraphRoute> { navController, backStackEntry ->
+
+        val route = backStackEntry.toRoute<TrainQueryGraphRoute>() // TODO does this create a subclass of TrainQueryGraphRoute?
+        val destination = backStackEntry.destination
+        val topLevelBackStackEntry = remember(backStackEntry) {
+            navController.getBackStackEntry(TrainQuerySelectionRoute::class)
+        }
+
+        val tabViewModel = viewModel<RoutePlannerViewModel>(topLevelBackStackEntry)
+        val stateRequestedMajorRoute by tabViewModel
+                .navMajorRouteState
+                .collectAsStateWithLifecycle()
+        val stateRequestedMinorRoute by tabViewModel
+                .navMinorRouteState
+                .collectAsStateWithLifecycle()
+
+        // Major routes are controlled by the ViewModel and outline linear stages.
+        // Minor routes are all others in the graph; they are temporary user excursions within major routes.
+        // (Note: Minor routes are always child routes but are not identified by [TrainQueryGraphChildRoute].)
+
+        // The ViewModel can directly trigger navigation to/back from major routes.
+        //      It can directly trigger navigation to a minor route, but only directly above the major route.
+        // The composable itself can directly trigger navigation to minor routes.
+        //      It can directly trigger navigation back from a major/minor route. (In practice we do not use this.)
+        // The back key can trigger navigation back from major and minor routes.
+
+        Pair(stateRequestedMajorRoute, stateRequestedMinorRoute).let { (major, minor) ->
+            LaunchedEffect(major, minor) {
+                if (destination.hasRoute(major::class)) {
+                    navController.popBackStack(
+                        major::class,
+                        inclusive = false
+                    )
+                } else {
+                    navController.navigate(major) {
+                        popUpTo(TrainQueryGraphMajorRoute::class) // TODO does this pop up to any subtype of [TrainQueryGraphMajorRoute]?
+                    }
+                }
+
+                minor?.let {
+                    navController.navigate(it)
+                }
+            }
+        }
+
+        BackHandler(true) {
+            when (route) {
+                is TrainQueryGraphMajorRoute ->
+                    if (!tabViewModel.onPopMajorRoute()) {
+                        navController.popBackStack()
+                    }
+                is TrainQueryGraphChildRoute ->
+                    navController.popBackStack()
+                else -> throw IllegalStateException()
+            }
+        }
+        RoutePlannerScreen(route, tabViewModel, { navController.navigate(it) })
     }
+
     composableTopRoute<StationSearchRoute>(
         childNavGraph = NavGraphBuilder::tabNavGraph
     ) { backStackEntry, onNavigate ->
@@ -62,7 +124,6 @@ fun NavGraphBuilder.topNavGraph() {
  * (thus pushed on top of) top-level pages in the back stack.
  */
 fun NavGraphBuilder.tabNavGraph(
-    topLevelBackStackEntry: () -> NavBackStackEntry,
     onNavigate: (CommonChildRoute) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
@@ -90,40 +151,22 @@ fun NavGraphBuilder.tabNavGraph(
             onNavigateBack = onNavigateBack,
         )
     }
-
-    /**
-     * Can only be called from Trip Query tab (where the parent route provides a viewModel).
-     */
-    composableChildRoute<RouteDetailRoute> { backStackEntry ->
-        val routeArgs: RouteDetailRoute = backStackEntry.toRoute()
-        val tabViewModel = viewModel<RoutePlannerViewModel>(topLevelBackStackEntry())
-        val liveVMState by tabViewModel.uiState.collectAsState()
-
-        val originalVMState = remember { liveVMState }
-
-        LaunchedEffect(liveVMState) {
-            if (liveVMState != originalVMState) {
-                onNavigateBack()
-            }
-        }
-
-        RouteDetailScreen(
-            originalVMState.routes!![routeArgs.index],
-            onNavigate = onNavigate,
-            onNavigateBack = onNavigateBack,
-        )
-    }
 }
 
 /**
  * [tabNavGraph] that uses the provided composable to render all routes,
  * allowing a seamless transition between them.
  */
+@SuppressLint("RestrictedApi")
 private inline fun <
     reified StartRoute: SubgraphRoute,
     reified SubgraphRoute: NavRoute,
 > NavGraphBuilder.singleComposableGraphTopRoute(
-    crossinline composable: @Composable (SubgraphRoute, () -> NavBackStackEntry, (CommonChildRoute) -> Unit, () -> Unit) -> Unit,
+    crossinline delegateComposable:
+        @Composable AnimatedContentScope.(
+            NavHostController,
+            NavBackStackEntry,
+        ) -> Unit,
 ) = composable<SubgraphRoute>(
     enterTransition = { EnterTransition.None },
     exitTransition = { ExitTransition.None },
@@ -131,19 +174,14 @@ private inline fun <
     popExitTransition = { ExitTransition.None },
 ) {
     val tabNavController = rememberNavController()
+
     NavHost(
         tabNavController,
         startDestination = StartRoute::class
     ) {
         composable<SubgraphRoute> { backStackEntry ->
-            composable(
-                backStackEntry.toRoute(),
-                { tabNavController.getBackStackEntry<StartRoute>() },
-                { tabNavController.navigate(it) },
-                { tabNavController.popBackStack() },
-            )
+            delegateComposable(tabNavController, backStackEntry)
         }
-
     }
 }
 
@@ -158,7 +196,6 @@ private inline fun <
     reified T: NavRoute
 > NavGraphBuilder.composableTopRoute(
     crossinline childNavGraph: NavGraphBuilder.(
-        topLevelBackStackEntry: () -> NavBackStackEntry,
         onNavigate: (CommonChildRoute) -> Unit,
         onNavigateBack: () -> Unit,
     ) -> Unit,
@@ -181,7 +218,6 @@ private inline fun <
             )
         }
         childNavGraph(
-            { tabNavController.getBackStackEntry<T>() },
             { tabNavController.navigate(it) },
             { tabNavController.popBackStack() },
         )

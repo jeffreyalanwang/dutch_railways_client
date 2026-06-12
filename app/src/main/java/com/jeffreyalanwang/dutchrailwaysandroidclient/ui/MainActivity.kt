@@ -92,7 +92,7 @@ private enum class AppDestinations(
     val route: NavRoute,
 ) {
 //    HOME("Home", R.drawable.ic_home, ),
-    TRIP("Trip", R.drawable.ic_directions, TrainQueryRoute),
+    TRIP("Trip", R.drawable.ic_directions, TrainQuerySelectionRoute),
     STATIONS("Stations", R.drawable.ic_dr_station, StationSearchRoute),
 //    EDIT("Edit", R.drawable.ic_edit, ),
 }

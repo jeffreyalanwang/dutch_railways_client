@@ -3,22 +3,32 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.RoutePlan
-import com.jeffreyalanwang.dutchrailwaysandroidclient.calculateBounds
-import com.jeffreyalanwang.dutchrailwaysandroidclient.getMapCameraUpdate
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AreaDetailRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.RouteOptionsRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQueryGraphChildRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQueryGraphMajorRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQuerySelectionRoute
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 enum class Endpoint { Origin, Destination }
-enum class RoutePlannerStage { NoneSelected, HasAnySelected, ListRouteOptions }
+enum class RoutePlannerStage { QueryBuilding, RoutesFound }
 
 data class RoutePlannerState(
     val origin: Place? = null,
@@ -29,57 +39,31 @@ data class RoutePlannerState(
     /**
      * Used to display the most recently selected endpoint [Place].
      */
-    val lastSet: Endpoint? = null,
+    val lastSetEndpoint: Endpoint? = null,
 
     val routes: ImmutableList<RoutePlan>? = null,
 ) {
-    val lastSetEndpoint = when (lastSet) {
-        Endpoint.Origin -> origin
-        Endpoint.Destination -> destination
-        null -> null
-    }
-
-    val queryAllowed =
-        (origin != null) && (destination != null) && (routes == null)
-
-    val uiStage =
-        if (routes != null)
-            RoutePlannerStage.ListRouteOptions
-        else if (lastSet != null)
-            RoutePlannerStage.HasAnySelected
-        else
-            RoutePlannerStage.NoneSelected
-
-    @get:Throws(NullPointerException::class)
-    val mapCameraPosition by lazy {
-        when (uiStage) {
-            RoutePlannerStage.HasAnySelected
-                -> lastSetEndpoint!!
-                .getMapCameraUpdate()
-
-            RoutePlannerStage.ListRouteOptions
-                -> listOf(origin!!, destination!!)
-                .calculateBounds()
-                .getMapCameraUpdate(400)
-
-            RoutePlannerStage.NoneSelected
-                -> BackendApi.get_nl_area()
-                .getMapCameraUpdate()
+    val lastSetPlace =
+        when (lastSetEndpoint) {
+            Endpoint.Origin -> origin
+            Endpoint.Destination -> destination
+            null -> null
         }
-    }
+    val canSubmitQuery =
+        (origin != null) && (destination != null) && (routes == null)
 
     fun copyWithQueryParams(
         origin: Place? = this.origin,
         destination: Place? = this.destination,
         departTime: Instant? = this.departTime,
         arriveTime: Instant? = this.arriveTime,
-        lastSet: Endpoint? = this.lastSet,
+        lastSet: Endpoint? = this.lastSetEndpoint,
     ) = copy(
         origin = origin,
         destination = destination,
         departTime = departTime,
         arriveTime = arriveTime,
-        lastSet = lastSet,
+        lastSetEndpoint = lastSet,
         routes = null,
     )
 
@@ -87,20 +71,14 @@ data class RoutePlannerState(
         = copyWithQueryParams(
             origin = newOrigin,
             departTime = null,
-            lastSet =
-                if (newOrigin != null) Endpoint.Origin
-                else if (destination != null) Endpoint.Destination
-                else null,
+            lastSet = newOrigin?.let { Endpoint.Origin },
         )
 
     fun copyWithDestination(newDestination: Place?)
         = copyWithQueryParams(
             destination = newDestination,
             arriveTime = null,
-            lastSet =
-                if (newDestination != null) Endpoint.Destination
-                else if (origin != null) Endpoint.Origin
-                else null,
+            lastSet = newDestination?.let { Endpoint.Destination },
         )
 }
 
@@ -108,6 +86,38 @@ class RoutePlannerViewModel : ViewModel() {
 
     private val _uiState = MutableStateFlow(RoutePlannerState())
     val uiState: StateFlow<RoutePlannerState> = _uiState.asStateFlow()
+
+    val navMajorRouteState: StateFlow<TrainQueryGraphMajorRoute> = uiState
+        .map {
+            if (it.routes == null) TrainQuerySelectionRoute
+            else RouteOptionsRoute
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Lazily,
+            initialValue = TrainQuerySelectionRoute
+        )
+
+    /**
+     * Requests zero or one minor routes to be pushed directly on top of
+     * the value of [navMajorRouteState].
+     */
+    val navMinorRouteState: StateFlow<TrainQueryGraphChildRoute?> =
+        uiState.map {
+            if (it.routes != null) null
+            else when (val place = it.lastSetPlace) {
+                is Station -> StationDetailRoute(place.id)
+                is Area -> AreaDetailRoute(place.id)
+                null -> null
+
+                else -> throw IllegalStateException()
+            }
+        }
+        .stateIn(
+            viewModelScope,
+            SharingStarted.Lazily,
+            initialValue = null
+        )
 
     // [setOrigin()] and [setDestination()] need to be separate methods
     // so that we can implicitly set [RoutePlannerState.lastSet].
@@ -139,9 +149,27 @@ class RoutePlannerViewModel : ViewModel() {
     }
 
     fun loadRoutes() {
-        val routes = with(uiState.value) {
-            BackendApi.get_routes(origin!!, destination!!, departTime, arriveTime)
-        }.take(10).toImmutableList()
+        val routes =
+            with(uiState.value) {
+                BackendApi.get_routes(origin!!, destination!!, departTime, arriveTime)
+            }
+            .take(10)
+            .toImmutableList()
         _uiState.update { it.copy(routes = routes) }
+    }
+
+    /**
+     * Returns [false] instead of popping the eldest major ancestor route.
+     */
+    fun onPopMajorRoute(): Boolean {
+        when (navMajorRouteState.value) {
+            is TrainQuerySelectionRoute -> return false
+            is RouteOptionsRoute -> {
+                _uiState.update { it.copy(routes = null) }
+                return true
+            }
+
+            else -> throw IllegalArgumentException()
+        }
     }
 }

@@ -3,8 +3,10 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -52,7 +54,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.google.android.gms.maps.CameraUpdate
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.Polygon
@@ -64,26 +68,33 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.RoutePlan
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
+import com.jeffreyalanwang.dutchrailwaysandroidclient.calculateBounds
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letWith
 import com.jeffreyalanwang.dutchrailwaysandroidclient.toLocalTime
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PlaceDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.RouteDetailRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.RouteOptionsRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQueryGraphChildRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQueryGraphRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQueryRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQuerySelectionRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.AppBarWithDualSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ClearableTimePickerDialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PlaceSearchResults
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.rememberDualSearchBarState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailWithoutMap
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.RouteDetailWithoutMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailWithoutMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.bottomOnly
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.getMapCameraUpdate
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.topOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.Endpoint
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.RoutePlannerStage
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.RoutePlannerViewModel
+import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.persistentListOf
+import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
-import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atDate
 import kotlinx.datetime.todayIn
@@ -95,272 +106,274 @@ val ON_MAP_SHADOW_ELEVATION = 12.dp
 @Preview
 @Composable
 private fun RoutePlannerScreenPreview() {
+    val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val snackbarEffectScope = rememberCoroutineScope()
+    val viewModel = viewModel<RoutePlannerViewModel>()
+
+    val minor by viewModel.navMinorRouteState.collectAsState()
+    val major by viewModel.navMajorRouteState.collectAsState()
+    val route = minor ?: major
 
     RoutePlannerScreen (
-        routeArgs = TrainQueryRoute,
-        viewModel = viewModel<RoutePlannerViewModel>(),
-        onNavigate = { newRoute ->
-            snackbarEffectScope.launch {
+        routeArgs = route,
+        viewModel = viewModel,
+        onNavigateMinor = { newRoute ->
+            scope.launch {
                 snackbarHostState.showSnackbar(
                     newRoute.toString(),
                     withDismissAction = true
                 )
             }
         },
-        onNavigateBack = {
-            snackbarEffectScope.launch {
-                snackbarHostState.showSnackbar(
-                    "Back activated",
-                    withDismissAction = true
-                )
-            }
-        },
     )
 
-    SnackbarHost(hostState = snackbarHostState)
+    Column(Modifier.fillMaxSize(), Arrangement.Bottom) {
+        SnackbarHost(hostState = snackbarHostState)
+    }
 }
-
 
 @Composable
 fun RoutePlannerScreen(
     routeArgs: TrainQueryGraphRoute,
     viewModel: RoutePlannerViewModel,
-        // currently, the state we are in reacts to a state calculated in viewModel...
-        //  We link onNavigate to a listener on RoutePlannerViewModel
-        //  * LaunchedEffect(routePlannerState.uiStage) to either
-        //          pop back to the previous main stage (see below)
-        //          or pop to the current main stage and then navigate to the next main stage
-        //  * LaunchedEffect(navRoute) to either
-        //          base route -> display nothing
-        //          station/area -> display station/area
-        //          TODO ? -> display route list
-        //          routeDetail -> display route
-        //          [station/area from routeDetail]
-        //
-    // TODO the above: how are we going to make sure we do not bounce between the two effects?
-        //  Back stack (by bottom sheet showing):
-        //    Nothing -> one place (-> extra station/service) -> routes (-> route (-> extra station/service))
-    onNavigate: (CommonChildRoute)->Unit,
-    onNavigateBack: ()->Unit
+    onNavigateMinor: (TrainQueryGraphChildRoute)->Unit,
 ) {
-    val routePlannerState by viewModel.uiState.collectAsState()
+    // This composable can only navigate to major routes by triggering changes
+    // in [viewModel]. However, it is allowed to navigate to minor routes
+    // using [onNavigateMinor].
 
-    val scope = rememberCoroutineScope()
-    val dualSearchBarState = rememberDualSearchBarState()
-    val mapCameraState = rememberCameraPositionState()
-    val bottomSheetState = rememberStandardBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        skipHiddenState = false,
-        confirmValueChange = {
-            when (it) {
-                // Do not allow user to hide a visible sheet; only programmatically
-                SheetValue.Hidden -> (routePlannerState.uiStage == RoutePlannerStage.NoneSelected)
-                else -> true
+    val viewModelState by viewModel.uiState.collectAsStateWithLifecycle()
+    var timePickerSetting by remember { mutableStateOf<Endpoint?>(null) }
+    var mapLoaded by remember { mutableStateOf(false) }
+
+    val subjectPlace: Place?
+    val subjectRoute: RoutePlan?
+    when (routeArgs) {
+        is PlaceDetailRoute -> {
+            subjectPlace = remember(routeArgs) {
+                when (routeArgs.id) {
+                    viewModelState.origin?.id -> viewModelState.origin
+                    viewModelState.destination?.id -> viewModelState.destination
+                    else -> BackendApi.get_place_info(routeArgs.id)
+                }
+            }
+            subjectRoute = null
+        }
+        is RouteDetailRoute -> {
+            subjectPlace = null
+            subjectRoute = remember(routeArgs, viewModelState) {
+                viewModelState.routes!![routeArgs.index]
             }
         }
-    )
-    fun closeSearch() { scope.launch { dualSearchBarState.animateToCollapsed() } }
-    val isBottomSheetVisible = routeArgs !is TrainQueryRoute // all other routes require bottomSheet
-    var timePickerTarget by remember { mutableStateOf<Endpoint?>(null) }
-
-    LaunchedEffect(isBottomSheetVisible) {
-        if (isBottomSheetVisible) bottomSheetState.expand()
-        else bottomSheetState.hide()
+        else -> {
+            subjectPlace = null
+            subjectRoute = null
+        }
     }
 
-    // Sync changes in ViewModel state with GoogleMap
-    runCatching {
-        // If this throws an error, we will do it later using [onMapLoaded]
-        routePlannerState.mapCameraPosition
-    }.getOrNull()?.let {
-        LaunchedEffect(it) { mapCameraState.animate(it) }
-    }
+    RoutePlannerScreen(
+        setOrigin = { viewModel.setOrigin(it) },
+        setDestination = { viewModel.setDestination(it) },
 
-    // Build UI
+        departTime = viewModelState.departTime,
+        setDepartTime = { viewModel.setTimeConstraints(departTime = it) },
 
-    Scaffold (
-        modifier = Modifier.fillMaxSize(),
-        topBar = {
-            AppBarWithDualSearch(
-                dualSearchBarState,
-                colors = SearchBarDefaults.appBarWithSearchColors(
-                    appBarContainerColor = Color.Transparent,
-                ),
-                shadowElevation = ON_MAP_SHADOW_ELEVATION,
-                actionIcon = {
-                    IconButton(
-                        enabled = routePlannerState.queryAllowed,
-                        colors = IconButtonDefaults.filledIconButtonColors(),
-                        modifier = Modifier.padding(horizontal = 4.dp),
-                        onClick = { viewModel.loadRoutes() },
-                    ) {
-                        Icon(
-                            painterResource(R.drawable.ic_search),
-                            contentDescription = "Search routes"
-                        )
-                    }
-                },
-                inputField1 = inputFieldFactory(
-                    placeholderText = "Search departure",
-                    onFinishSearch = { closeSearch() },
-                    timeConstraintField = routePlannerState.departTime
-                        ?.letWith(TimeZone.currentSystemDefault()) { it.toLocalTime() },
-                    timeButtonContentDescription = "Select departure time",
-                    onTimeConstraintButtonClick = { timePickerTarget = Endpoint.Origin },
-                ),
-                inputField2 = inputFieldFactory(
-                    placeholderText = "Search arrival",
-                    onFinishSearch = { closeSearch() },
-                    timeConstraintField = routePlannerState.arriveTime
-                        ?.letWith(TimeZone.currentSystemDefault()) { it.toLocalTime() },
-                    timeButtonContentDescription = "Select arrival time",
-                    onTimeConstraintButtonClick = { timePickerTarget = Endpoint.Destination },
-                ),
-                expandedSearch1 = expandedSearchFactory(
-                    placeholderText = "Search departure",
-                    onNewSelection = { viewModel.setOrigin(it) },
-                    onFinishSearch = { closeSearch() },
-                ),
-                expandedSearch2 = expandedSearchFactory(
-                    placeholderText = "Search arrival",
-                    onNewSelection = { viewModel.setDestination(it) },
-                    onFinishSearch = { closeSearch() },
-                ),
-            )
-        },
-    ) { innerPadding ->
+        arriveTime = viewModelState.arriveTime,
+        setArriveTime = { viewModel.setTimeConstraints(arriveTime = it) },
 
-        GoogleMap(
-            cameraPositionState = mapCameraState,
-            contentDescription = "Trip endpoints map",
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = innerPadding,
-            onMapLoaded = {
-                mapCameraState.move(routePlannerState.mapCameraPosition)
+        onMapLoaded = { mapLoaded = true },
+        mapMarkers =
+            listOfNotNull(viewModelState.origin, viewModelState.destination)
+            .toImmutableList(),
+
+        // Short circuit on [mapLoaded], ensuring we never try to evaluate lazy property
+        // [mapCameraUpdate] before it is allowed to use [CameraUpdateFactory].
+        mapCameraUpdate = if (!mapLoaded) null
+            else when (routeArgs) {
+                is TrainQuerySelectionRoute
+                     -> BackendApi.get_nl_area()
+                        .run { remember { getMapCameraUpdate() } }
+                is PlaceDetailRoute
+                     -> subjectPlace!!
+                        .run { remember(this) { getMapCameraUpdate() } }
+                is RouteOptionsRoute, is RouteDetailRoute
+                     -> persistentListOf(viewModelState.origin!!, viewModelState.destination!!)
+                        .calculateBounds()
+                        .run { remember(this) { getMapCameraUpdate(400) } }
+                else
+                     -> throw IllegalArgumentException()
             },
-        ) {
-            for (place in listOfNotNull(
-                routePlannerState.origin,
-                routePlannerState.destination,
-            )) {
-                when (place) {
-                    is Station ->
-                        Marker(
-                            title = place.name,
-                            state = rememberUpdatedMarkerState(
-                                position = place.geom
-                            )
-                        )
-                    is Area ->
-                        Polygon(
-                            tag = place.name,
-                            points = place.getGeom().points,
-                            holes = place.getGeom().holes,
-                            fillColor = Color.Transparent,
-                        )
-                    else ->
-                        throw NotImplementedError()
-                }
-            }
-        }
 
-        BottomSheet(
-            state = bottomSheetState,
-            modifier = Modifier.padding(innerPadding.topOnly()),
-            shadowElevation = ON_MAP_SHADOW_ELEVATION,
-        ) {
-            Box(
-                Modifier
-                    .padding(innerPadding.bottomOnly())
-                    .padding(bottom = 10.dp)
-            ) {
-                when (routePlannerState.uiStage) {
-                    RoutePlannerStage.ListRouteOptions -> {
-                        val routes = routePlannerState.routes!!
-                        LazyColumn {
-                            if (routes.isEmpty()) {
-                                item { NoRoutesPlaceholder() }
-                            } else routes.forEachIndexed { i, it ->
-                                item {
-                                    RouteListing(it,
-                                        { onNavigate(RouteDetailRoute(i)) }
-                                    )
-                                }
-                            }
-                        }
-                    }
+        isBottomSheetVisible = when(routeArgs) {
+            is TrainQuerySelectionRoute -> false
+            else -> true // All other routes happen to need it
+        },
 
-                    RoutePlannerStage.HasAnySelected ->
-                        when (routePlannerState.lastSetEndpoint) {
-                            is Station -> StationDetailWithoutMap(
-                                station = routePlannerState.lastSetEndpoint as Station,
-                                onNavigate = onNavigate,
-                                Modifier.padding(horizontal = 10.dp),
-                            )
+        isSubmitQueryAllowed = viewModelState.canSubmitQuery,
+        onSubmitQuery = viewModel::loadRoutes,
 
-                            is Area -> AreaDetailWithoutMap(
-                                area = routePlannerState.lastSetEndpoint as Area,
-                                onNavigate = onNavigate,
-                                Modifier.padding(horizontal = 10.dp),
-                            )
-
-                            else -> throw NotImplementedError()
-                        }
-
-                    RoutePlannerStage.NoneSelected -> {} // in this case, sheet is hidden
-                }
-            }
-        }
-
-        timePickerTarget?.let { target ->
-            key(target) {
-                val title = when (target) {
-                    Endpoint.Origin -> "Select depart time"
-                    Endpoint.Destination -> "Select arrive time"
-                }
-                val initialInstant = when (target) {
-                    Endpoint.Origin -> routePlannerState.departTime
-                    Endpoint.Destination -> routePlannerState.arriveTime
-                }
-                val setTime = when (target) {
-                    Endpoint.Origin -> { it: Instant? ->
-                        { viewModel.setTimeConstraints(departTime = it) }
-                    }
-                    Endpoint.Destination -> { it: Instant? ->
-                        { viewModel.setTimeConstraints(arriveTime = it) }
-                    }
-                }
-                ClearableTimePickerDialog(
-                        title = title,
-                        initialTime = initialInstant
-                            ?.letWith(TimeZone.currentSystemDefault()) { it.toLocalDateTime() }
-                            ?.time,
-                    onConfirm = { selectedTime ->
-                        setTime(
-                            with(TimeZone.currentSystemDefault()) {
-                                selectedTime
-                                    ?.atDate(Clock.System.todayIn(this))
-                                    ?.toInstant()
-                            }
-                        )
-                        timePickerTarget = null
-                    },
-                    onDismiss = { timePickerTarget = null },
+        timePickerSetting = timePickerSetting,
+        setTimePickerSetting = { timePickerSetting = it },
+    ) {
+        when (routeArgs) {
+            is TrainQuerySelectionRoute ->
+                BottomSheetContent(
+                    onNavigate = onNavigateMinor,
                 )
-            }
+            is PlaceDetailRoute ->
+                BottomSheetContent(
+                    place = subjectPlace!!,
+                    onNavigate = onNavigateMinor,
+                )
+            is RouteOptionsRoute ->
+                BottomSheetContent(
+                    routes = viewModelState.routes!!,
+                    onNavigate = onNavigateMinor,
+                )
+            is RouteDetailRoute ->
+                BottomSheetContent(
+                    route = subjectRoute!!,
+                    onNavigate = onNavigateMinor,
+                )
+            else ->
+                throw IllegalArgumentException()
         }
     }
 }
 
+@Composable
+private fun RoutePlannerScreen(
+    setOrigin: (Place?) -> Unit,
+    setDestination: (Place?) -> Unit,
+
+    departTime: Instant?,
+    setDepartTime: (Instant?) -> Unit,
+
+    arriveTime: Instant?,
+    setArriveTime: (Instant?) -> Unit,
+
+    mapMarkers: ImmutableList<Place>,
+    mapCameraUpdate: CameraUpdate?,
+    onMapLoaded: () -> Unit,
+
+    isBottomSheetVisible: Boolean,
+
+    isSubmitQueryAllowed: Boolean,
+    onSubmitQuery: () -> Unit,
+
+    timePickerSetting: Endpoint?,
+    setTimePickerSetting: (Endpoint?) -> Unit,
+
+    bottomSheetContent: @Composable BoxScope.() -> Unit,
+) {
+    Scaffold(
+        modifier = Modifier.fillMaxSize(),
+        topBar = {
+            PersistentTopBar(
+                isSubmitQueryAllowed = isSubmitQueryAllowed,
+                arriveTime = arriveTime,
+                departTime = departTime,
+                setTimePickerSetting = setTimePickerSetting,
+                setOrigin = setOrigin,
+                setDestination = setDestination,
+                onSubmitQuery = onSubmitQuery,
+            )
+         },
+    ) { innerPadding ->
+
+        PersistentGoogleMap(
+            markers = mapMarkers,
+
+            camera = mapCameraUpdate,
+            onMapLoaded = onMapLoaded,
+
+            contentPadding = innerPadding,
+        )
+
+        RevealableBottomSheet(
+            isVisible = isBottomSheetVisible,
+            scaffoldPadding = innerPadding,
+            content = bottomSheetContent,
+        )
+
+        RevealableEndpointTimePicker(
+            setting = timePickerSetting,
+            onDismiss = { setTimePickerSetting(null) },
+
+            departTime = departTime,
+            setDepartTime = setDepartTime,
+
+            arriveTime = arriveTime,
+            setArriveTime = setArriveTime,
+        )
+    }
+}
 
 @Composable
-private fun inputFieldFactory(
+private fun PersistentTopBar(
+    isSubmitQueryAllowed: Boolean,
+    arriveTime: Instant?,
+    departTime: Instant?,
+    setTimePickerSetting: (Endpoint) -> Unit,
+    setOrigin: (Place?) -> Unit,
+    setDestination: (Place?) -> Unit,
+    onSubmitQuery: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val dualSearchBarState = rememberDualSearchBarState()
+    fun closeSearch() { scope.launch { dualSearchBarState.animateToCollapsed() } }
+
+    AppBarWithDualSearch(
+        dualSearchBarState,
+        colors = SearchBarDefaults.appBarWithSearchColors(
+            appBarContainerColor = Color.Transparent,
+        ),
+        shadowElevation = ON_MAP_SHADOW_ELEVATION,
+        actionIcon = {
+            IconButton(
+                enabled = isSubmitQueryAllowed,
+                colors = IconButtonDefaults.filledIconButtonColors(),
+                modifier = Modifier.padding(horizontal = 4.dp),
+                onClick = onSubmitQuery,
+            ) {
+                Icon(
+                    painterResource(R.drawable.ic_search),
+                    contentDescription = "Search routes"
+                )
+            }
+        },
+        inputField1 = inputFieldFactory(
+            placeholderText = "Search departure",
+            onFinishSearch = ::closeSearch,
+            timeConstraintField = departTime,
+            timeButtonContentDescription = "Select departure time",
+            onTimeConstraintButtonClick = { setTimePickerSetting(Endpoint.Origin) },
+        ),
+        inputField2 = inputFieldFactory(
+            placeholderText = "Search arrival",
+            onFinishSearch = ::closeSearch,
+            timeConstraintField = arriveTime,
+            timeButtonContentDescription = "Select arrival time",
+            onTimeConstraintButtonClick = { setTimePickerSetting(Endpoint.Destination) },
+        ),
+        expandedSearch1 = expandedSearchFactory(
+            placeholderText = "Search departure",
+            onNewSelection = { setOrigin(it) },
+            onFinishSearch = ::closeSearch,
+        ),
+        expandedSearch2 = expandedSearchFactory(
+            placeholderText = "Search arrival",
+            onNewSelection = { setDestination(it) },
+            onFinishSearch = ::closeSearch,
+        ),
+    )
+}
+
+private inline fun inputFieldFactory(
     placeholderText: String,
-    onFinishSearch: () -> Unit,
-    onTimeConstraintButtonClick: () -> Unit,
-    timeConstraintField: LocalTime?,
+    crossinline onFinishSearch: () -> Unit,
+    crossinline onTimeConstraintButtonClick: () -> Unit,
+    timeConstraintField: Instant?,
     timeButtonContentDescription: String,
 ): @Composable (TextFieldState, SearchBarState) -> Unit {
     return { textFieldState, searchBarState ->
@@ -376,28 +389,28 @@ private fun inputFieldFactory(
             },
             trailingIcon = {
                 if (timeConstraintField == null) {
-                    IconButton(onClick = onTimeConstraintButtonClick) {
+                    IconButton(onClick = { onTimeConstraintButtonClick() }) {
                         Icon(
                             painterResource(R.drawable.ic_time_add),
                             contentDescription = timeButtonContentDescription,
                         )
                     }
                 } else {
-                    TextButton(onClick = onTimeConstraintButtonClick) {
-                        Text( AppStringFormats.Time(timeConstraintField) )
+                    TextButton(onClick = { onTimeConstraintButtonClick() }) {
+                        Text( timeConstraintField
+                            .letWith ( TimeZone.currentSystemDefault() )
+                                { it.toLocalTime() }
+                            .let { AppStringFormats.Time(it) } )
                     }
                 }
             }
         )
     }
 }
-
-
-@Composable
-private fun expandedSearchFactory(
+private inline fun expandedSearchFactory(
     placeholderText: String,
-    onNewSelection: (Place?) -> Unit,
-    onFinishSearch: () -> Unit,
+    crossinline onNewSelection: (Place?) -> Unit,
+    crossinline onFinishSearch: () -> Unit,
 ): @Composable (TextFieldState, SearchBarState) -> Unit {
     return { textFieldState, searchBarState ->
         ExpandedFullScreenSearchBar(
@@ -410,7 +423,7 @@ private fun expandedSearchFactory(
                         IconButton(onClick = { onFinishSearch() }) {
                             Icon(
                                 painterResource(R.drawable.ic_back),
-                                "Clear search",
+                                "Close search",
                             )
                         }
                     },
@@ -451,6 +464,205 @@ private fun expandedSearchFactory(
 }
 
 @Composable
+private fun PersistentGoogleMap(
+    markers: ImmutableList<Place>,
+
+    camera: CameraUpdate?,
+    onMapLoaded: () -> Unit,
+
+    contentPadding: PaddingValues,
+) {
+    val cameraState = rememberCameraPositionState()
+
+    camera?.let {
+        LaunchedEffect(it) { cameraState.animate(it) }
+    }
+
+    GoogleMap(
+        cameraPositionState = cameraState,
+        contentDescription = "Map",
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = contentPadding,
+        onMapLoaded = onMapLoaded,
+    ) {
+        markers.forEach { when (it) {
+            is Station ->
+                Marker(
+                    title = it.name,
+                    state = rememberUpdatedMarkerState(
+                        position = it.geom
+                    )
+                )
+            is Area ->
+                Polygon(
+                    tag = it.name,
+                    points = it.getGeom().points,
+                    holes = it.getGeom().holes,
+                    fillColor = Color.Transparent,
+                )
+            else ->
+                throw NotImplementedError()
+        } }
+    }
+}
+
+@Composable
+private fun RevealableBottomSheet(
+    isVisible: Boolean,
+    scaffoldPadding: PaddingValues,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    val sheetState = rememberStandardBottomSheetState(
+        skipHiddenState = false,
+        initialValue = SheetValue.Hidden,
+        confirmValueChange = { when (it) {
+            // Do not allow user to request hidden if currently visible,
+            // but allow when triggered by [LaunchedEffect(isVisible)]
+            SheetValue.Hidden -> !isVisible
+
+            // User wouldn't be able to request partiallyExpanded/expanded if currently hidden
+            else -> true
+        } }
+    )
+
+    LaunchedEffect(isVisible) {
+        if (isVisible) sheetState.expand()
+        else sheetState.hide()
+    }
+
+    BottomSheet(
+        state = sheetState,
+        shadowElevation = ON_MAP_SHADOW_ELEVATION,
+
+        // When fully expanded, do not cover scaffold's app bar
+        modifier = Modifier.padding(scaffoldPadding.topOnly()),
+    ) {
+        Box(
+            modifier = Modifier
+                .padding(scaffoldPadding.bottomOnly())
+                .padding(bottom = 10.dp),
+            content = content,
+        )
+    }
+}
+
+@Composable
+private fun BottomSheetContent(
+    route: RoutePlan,
+    onNavigate: (CommonChildRoute) -> Unit,
+) = RouteDetailWithoutMap(
+        route = route,
+        onNavigate = onNavigate,
+        Modifier.padding(horizontal = 10.dp),
+    )
+
+@Composable
+private fun BottomSheetContent(
+    routes: ImmutableList<RoutePlan>,
+    onNavigate: (TrainQueryGraphChildRoute) -> Unit,
+) = RouteOptionsList(
+        routes = routes,
+        onNavigate = onNavigate,
+        Modifier.padding(horizontal = 10.dp),
+    )
+
+@Composable
+private fun BottomSheetContent(
+    place: Place,
+    onNavigate: (CommonChildRoute) -> Unit,
+) = when(place) {
+        is Station ->
+            StationDetailWithoutMap(
+                station = place,
+                onNavigate = onNavigate,
+                Modifier.padding(horizontal = 10.dp),
+            )
+
+        is Area ->
+            AreaDetailWithoutMap(
+                area = place,
+                onNavigate = onNavigate,
+                Modifier.padding(horizontal = 10.dp),
+            )
+
+        else ->
+            throw NotImplementedError()
+    }
+
+@Composable
+private fun BottomSheetContent(
+    onNavigate: (TrainQueryGraphChildRoute) -> Unit,
+) {
+    // No content; bottom sheet will be hidden anyways
+}
+
+@Composable
+private fun RevealableEndpointTimePicker(
+    setting: Endpoint?,
+    onDismiss: () -> Unit,
+
+    departTime: Instant?,
+    setDepartTime: (Instant?) -> Unit,
+
+    arriveTime: Instant?,
+    setArriveTime: (Instant?) -> Unit,
+) {
+    setting?.let { target ->
+        key(target) {
+            val title = when (target) {
+                Endpoint.Origin -> "Select depart time"
+                Endpoint.Destination -> "Select arrive time"
+            }
+            val initialInstant = when (target) {
+                Endpoint.Origin -> departTime
+                Endpoint.Destination -> arriveTime
+            }
+            val setTime = when (target) {
+                Endpoint.Origin -> { it: Instant? ->
+                    { setDepartTime(it) }
+                }
+                Endpoint.Destination -> { it: Instant? ->
+                    { setArriveTime(it) }
+                }
+            }
+            ClearableTimePickerDialog(
+                title = title,
+                initialTime = with(TimeZone.currentSystemDefault()) { initialInstant?.toLocalTime() },
+                onConfirm = { selectedTime ->
+                    setTime(
+                        with(TimeZone.currentSystemDefault()) {
+                            selectedTime?.atDate(Clock.System.todayIn(this))?.toInstant()
+                        }
+                    )
+                    onDismiss()
+                },
+                onDismiss = onDismiss,
+            )
+        }
+    }
+}
+
+@Composable
+private fun RouteOptionsList(
+    routes: ImmutableList<RoutePlan>,
+    onNavigate: (RouteDetailRoute) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    LazyColumn(modifier) {
+        if (routes.isEmpty()) {
+            item { NoRoutesPlaceholder() }
+        } else routes.forEachIndexed { i, route ->
+            item {
+                RouteListing(
+                    route,
+                    { onNavigate(RouteDetailRoute(i)) }
+                )
+            }
+        }
+    }
+}
+
+@Composable
 private fun NoRoutesPlaceholder(modifier: Modifier = Modifier) {
     Column(
         modifier
@@ -474,7 +686,7 @@ private fun NoRoutesPlaceholder(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun RouteListing(
+private fun RouteListing(
     route: RoutePlan,
     onClick: (RoutePlan) -> Unit,
     modifier: Modifier = Modifier,
@@ -486,7 +698,7 @@ fun RouteListing(
             .clickable(onClick = { onClick(route) })
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .padding(horizontal = 14.dp),
+            .padding(horizontal = 4.dp),
         horizontalArrangement = Arrangement.spacedBy(14.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
