@@ -1,21 +1,12 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top
 
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
@@ -24,7 +15,6 @@ import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarState
@@ -42,17 +32,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
-import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.maps.CameraUpdate
@@ -89,6 +74,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetai
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.RouteDetailWithoutMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailWithoutMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.TrainServiceDetail
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.RouteOptionsList
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.getMapCameraUpdate
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.topOnly
@@ -677,132 +663,4 @@ fun EndpointTimePicker(
         },
         onDismiss = onDismiss,
     )
-}
-
-@Composable
-private fun RouteOptionsList(
-    routes: ImmutableList<RoutePlan>,
-    onNavigate: (RouteDetailRoute) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    LazyColumn(modifier) {
-        if (routes.isEmpty()) {
-            item { NoRoutesPlaceholder() }
-        } else routes.forEachIndexed { i, route ->
-            item {
-                RouteListing(
-                    route,
-                    { onNavigate(RouteDetailRoute(i)) }
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun NoRoutesPlaceholder(modifier: Modifier = Modifier) {
-    Column(
-        modifier
-            .alpha(.7f)
-            .fillMaxSize(),
-        Arrangement.Center,
-        Alignment.CenterHorizontally,
-    ) {
-        Icon(
-            painterResource(R.drawable.ic_directions),
-            null,
-            Modifier
-                .size(96.dp)
-                .padding(bottom = 12.dp)
-        )
-        Text(
-            "No routes available",
-            textAlign = TextAlign.Center,
-        )
-    }
-}
-
-@Composable
-private fun RouteListing(
-    route: RoutePlan,
-    onClick: (RoutePlan) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    // Row height is controlled by transfers column.
-    // Element width is controlled by duration and transfers item/column.
-    Row(
-        modifier = modifier
-            .clickable(onClick = { onClick(route) })
-            .fillMaxWidth()
-            .height(IntrinsicSize.Min)
-            .padding(horizontal = 4.dp),
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Text(
-            AppStringFormats.TripDuration(route.duration),
-            textAlign = TextAlign.Center,
-            softWrap = false,
-            modifier = Modifier.fillMaxWidth(
-                .25f
-            ),
-            autoSize = TextAutoSize.StepBased(
-                MaterialTheme.typography.titleMedium.fontSize,
-                MaterialTheme.typography.displayMedium.fontSize,
-                stepSize = 1.sp,
-            ),
-            style = MaterialTheme.typography.displayMedium,
-        )
-
-        Column(
-            modifier = Modifier.fillMaxHeight(),
-            verticalArrangement = Arrangement.SpaceEvenly,
-            horizontalAlignment = Alignment.End
-        ) {
-            Text(
-                AppStringFormats.Time(route.stops.first().departure!!),
-                style = MaterialTheme.typography.titleSmallEmphasized,
-                modifier = Modifier.alpha(0.5f),
-            )
-            Text(
-                AppStringFormats.Time(route.stops.last().arrival!!),
-                style = MaterialTheme.typography.titleSmallEmphasized,
-                modifier = Modifier.alpha(0.5f),
-            )
-        }
-
-        Column(
-            modifier = Modifier
-                .fillMaxHeight()
-                .weight(1f),
-            verticalArrangement = Arrangement.SpaceEvenly,
-            horizontalAlignment = Alignment.Start
-        ) {
-            Text(
-                route.stops.first()
-                    .getStation().name,
-                overflow = TextOverflow.MiddleEllipsis,
-                style = MaterialTheme.typography.titleSmallEmphasized,
-            )
-            Text(
-                route.stops.last()
-                    .getStation().name,
-                overflow = TextOverflow.MiddleEllipsis,
-                style = MaterialTheme.typography.titleSmallEmphasized,
-            )
-        }
-
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                route.transferCount.toString(),
-                style = MaterialTheme.typography.displaySmall,
-            )
-            Text(
-                "Transfers",
-                style = MaterialTheme.typography.labelSmall,
-            )
-        }
-    }
 }
