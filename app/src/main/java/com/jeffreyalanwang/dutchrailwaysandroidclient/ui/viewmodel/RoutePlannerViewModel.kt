@@ -24,10 +24,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -179,9 +178,9 @@ private class NavModelDelegate(
     override val backStack =
         _backStack.asStateFlow()
 
-    val toLaunchInViewModelScope =
+    val toLaunchInViewModelScope: suspend () -> Unit = {
         stateRequestedRoutes
-        .onEach { (newMajor, newMinor) ->
+        .collect { (newMajor, newMinor) ->
             _backStack.update { value ->
                 value.builder().apply {
                     val newMajorIndex = indexOf(newMajor)
@@ -199,6 +198,7 @@ private class NavModelDelegate(
                 }.build()
             }
         }
+    }
 
     override fun pushUserRequested(route: GraphRoute)
         = _backStack.update { it.add(route) }
@@ -261,7 +261,7 @@ class RoutePlannerViewModel private constructor(
         ),
     )
 
-    init { navModelDelegate.toLaunchInViewModelScope.launchIn(viewModelScope) }
+    init { viewModelScope.launch { navModelDelegate.toLaunchInViewModelScope() } }
 
     constructor(): this(DataModelDelegate())
 }
