@@ -54,7 +54,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getCurrStop
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
@@ -99,7 +98,7 @@ private fun TrainServiceDetailPreview() {
 @Composable
 fun TrainServiceDetailScreen(
     service: PassService,
-    onNavigate: (CommonChildRoute) -> Unit,
+    onNavigate: (StationDetailRoute) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     Scaffold(
@@ -135,7 +134,7 @@ fun TrainServiceDetailScreen(
 @Composable
 fun TrainServiceDetail(
     service: PassService,
-    onNavigate: (CommonChildRoute) -> Unit,
+    onNavigate: (StationDetailRoute) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val stops = remember { service.getStops() }
@@ -241,7 +240,7 @@ private fun AmenityBadge(
 @Composable
 private fun Stops(
     stops: List<ServiceStop>,
-    onNavigate: (CommonChildRoute)-> Unit,
+    onNavigate: (StationDetailRoute)-> Unit,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues.Zero,
 ) {

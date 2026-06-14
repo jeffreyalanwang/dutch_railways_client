@@ -15,7 +15,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExpandedFullScreenSearchBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Scaffold
@@ -42,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainServiceDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PlaceSearchResults
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetail
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.topOnly
@@ -68,7 +67,7 @@ private fun StationSearchScreenPreview() {
 
 
 @Composable
-fun StationSearchScreen(onNavigate: (CommonChildRoute)->Unit) { //TODO document each onNavigate
+fun StationSearchScreen(onNavigate: (TrainServiceDetailRoute)->Unit) {
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
     var stationState by rememberSaveable { mutableStateOf<Station?>(null) }

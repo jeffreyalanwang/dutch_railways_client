@@ -48,7 +48,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainServiceDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
@@ -93,7 +92,7 @@ private fun StationDetailPreview() {
 @Composable
 fun StationDetailScreen(
     station: Station,
-    onNavigate: (CommonChildRoute) -> Unit,
+    onNavigate: (TrainServiceDetailRoute) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     Scaffold(
@@ -127,14 +126,14 @@ fun StationDetailScreen(
 @Composable
 fun StationDetailWithoutMap(
     station: Station,
-    onNavigate: (CommonChildRoute) -> Unit,
+    onNavigate: (TrainServiceDetailRoute) -> Unit,
     modifier: Modifier = Modifier,
 ) = StationDetailBase(station, onNavigate, modifier)
 
 @Composable
 fun StationDetail(
     station: Station,
-    onNavigate: (CommonChildRoute) -> Unit,
+    onNavigate: (TrainServiceDetailRoute) -> Unit,
     modifier: Modifier = Modifier,
 ) = StationDetailBase(station, onNavigate, modifier, {
     val stationMarkerState = rememberUpdatedMarkerState(position = station.geom)
@@ -163,7 +162,7 @@ fun StationDetail(
 @Composable
 private fun StationDetailBase(
     station: Station,
-    onNavigate: (CommonChildRoute) -> Unit,
+    onNavigate: (TrainServiceDetailRoute) -> Unit,
     modifier: Modifier = Modifier,
     googleMapsSlot: @Composable (() -> Unit)? = null,
 ) {
@@ -196,7 +195,7 @@ private fun StationTimetable(
     stops: List<ServiceStop>,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues.Zero,
-    onNavigate: (CommonChildRoute) -> Unit
+    onNavigate: (TrainServiceDetailRoute) -> Unit
 ) {
     val gap = 10.dp
     val gridControl = remember(stops) { DiscreteGridControl() }

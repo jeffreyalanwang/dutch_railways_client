@@ -1,6 +1,5 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui
 
-import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -41,12 +40,48 @@ interface PlaceDetailRoute: NavRoute, CommonChildRoute { val id: Int }
  * Returns navigation entries for pages in the main screen's bottom navbar.
  */
 fun appEntries(): (NavRoute) -> NavEntry<NavRoute> = entryProvider {
-    trainQueryEntryTopGraph()
+    entry<TrainQuerySelectionRoute> { topKey ->
+        val viewModel = viewModel<RoutePlannerViewModel>()
+        val backStack by viewModel.backStack.collectAsStateWithLifecycle()
 
-    entryTopGraph<NavRoute, StationSearchRoute, CommonChildRoute>(
-        childEntries = { onNavigate, onBack -> tabEntries(onNavigate, onBack) }
-    ) { route, onNavigate ->
-        StationSearchScreen(onNavigate = onNavigate)
+        NavDisplay(
+            backStack = backStack,
+            onBack = { viewModel.popBack() },
+        ) { key ->
+            NavEntry(
+                key = key,
+
+                // Same for all routes within this NavDisplay,
+                // means we use the same SinglePaneScene,
+                // thus same RoutePlannerScreen
+                contentKey = true,
+            ) { key ->
+                RoutePlannerScreen(
+                    key,
+                    viewModel,
+                    onNavigateMinor = { viewModel.pushUserRequested(it) }
+                )
+            }
+        }
+    }
+
+    entry<StationSearchRoute> { initialRoute ->
+        val backstack = rememberNavBackStack<NavRoute>(initialRoute)
+
+        NavDisplay(
+            backStack = backstack,
+            entryProvider = entryProvider {
+                entry<StationSearchRoute> { route ->
+                    StationSearchScreen(
+                        onNavigate = { newRoute -> backstack.add(newRoute) }
+                    )
+                }
+                tabEntries(
+                    { backstack.add(it) },
+                    { backstack.removeAt(backstack.lastIndex) }
+                )
+            },
+        )
     }
 }
 
@@ -82,78 +117,6 @@ fun <T: NavRoute> EntryProviderScope<T>.tabEntries(
             rememberSaveable(routeArgs.id) { BackendApi.get_pass_service(routeArgs.id) },
             onNavigate = onNavigate,
             onNavigateBack = onNavigateBack,
-        )
-    }
-}
-
-/**
- * [tabNavGraph] that uses the provided composable to render all routes,
- * allowing a seamless transition between them.
- */
-private fun EntryProviderScope<NavRoute>.trainQueryEntryTopGraph() {
-
-    entry<TrainQuerySelectionRoute> { topKey ->
-        val viewModel = viewModel<RoutePlannerViewModel>()
-        val backStack by viewModel.backStack.collectAsStateWithLifecycle()
-
-        NavDisplay(
-            backStack = backStack,
-            onBack = { viewModel.popBack() },
-        ) { key ->
-            NavEntry(
-                key = key,
-                contentKey = true, // Same for all routes within this NavDisplay, means we use the same SinglePaneScene, thus same RoutePlannerScreen
-            ) { key ->
-                RoutePlannerScreen(
-                    key,
-                    viewModel,
-                    onNavigateMinor = { viewModel.pushUserRequested(it) }
-                )
-            }
-        }
-    }
-}
-/**
- * Encloses [topContent] in its own nested NavDisplay,
- * and allows it to navigate to routes in [childEntries].
- *
- * [TopKey] should be a concrete class.
- * [GraphKey] and [ChildKey] should be superclasses.
- */
-private inline fun <
-    reified GraphKey: NavRoute,
-    reified TopKey: GraphKey,
-    reified ChildKey: GraphKey,
-> EntryProviderScope<NavRoute>.entryTopGraph(
-    crossinline childEntries:
-        EntryProviderScope<GraphKey>.(
-            onNavigate: (ChildKey) -> Unit,
-            onBack: () -> Unit,
-        ) -> Unit,
-
-    crossinline topContent:
-        @Composable (
-            TopKey,
-            (ChildKey) -> Unit,
-        ) -> Unit,
-) {
-    entry<TopKey> { initialRoute ->
-        val backstack = rememberNavBackStack<GraphKey>(initialRoute)
-
-        NavDisplay(
-            backStack = backstack,
-            entryProvider = entryProvider {
-                entry<TopKey> { route ->
-                    topContent(
-                        route,
-                        { newRoute -> backstack.add(newRoute) }
-                    )
-                }
-                childEntries(
-                    { backstack.add(it) },
-                    { backstack.removeAt(backstack.lastIndex) }
-                )
-            },
         )
     }
 }

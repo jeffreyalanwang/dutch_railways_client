@@ -76,6 +76,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PlaceDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.RouteDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.RouteOptionsRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQueryGraphChildRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQueryGraphRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQuerySelectionRoute
@@ -605,7 +606,7 @@ private fun BottomSheetContent(
 @Composable
 private fun BottomSheetContent(
     routes: ImmutableList<RoutePlan>,
-    onNavigate: (TrainQueryGraphChildRoute) -> Unit,
+    onNavigate: (RouteDetailRoute) -> Unit,
 ) = RouteOptionsList(
         routes = routes,
         onNavigate = onNavigate,
@@ -638,7 +639,7 @@ private fun BottomSheetContent(
 @Composable
 private fun BottomSheetContent(
     passService: PassService,
-    onNavigate: (CommonChildRoute) -> Unit,
+    onNavigate: (StationDetailRoute) -> Unit,
 ) = TrainServiceDetail(
     service = passService,
     onNavigate = onNavigate,
