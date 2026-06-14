@@ -178,8 +178,6 @@ private fun AreaDetailBase(
     val stations = remember { area.getStations() }
 
     Column (modifier.fillMaxWidth()) {
-        Spacer(Modifier.height(20.dp))
-
         Icon(
             painterResource(R.drawable.ic_dr_area),
             "Station icon",
@@ -196,8 +194,6 @@ private fun AreaDetailBase(
             padding = PaddingValues(horizontal=10.dp),
             onNavigate = onNavigate,
         )
-
-        Spacer(Modifier.height(20.dp))
     }
 }
 

@@ -14,8 +14,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -60,8 +63,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
 import java.util.EnumSet
@@ -118,24 +119,28 @@ fun TrainServiceDetailScreen(
         },
         modifier = Modifier.fillMaxSize(),
     ) { innerPadding ->
-        TrainServiceDetail(
-            service,
-            Modifier.padding(innerPadding).padding(10.dp),
-            onNavigate
-        )
+        Box(Modifier.verticalScroll(rememberScrollState())) {
+            Card(Modifier.padding(innerPadding + PaddingValues(10.dp))) {
+                TrainServiceDetail(
+                    service,
+                    onNavigate,
+                    Modifier.padding(vertical = 20.dp)
+                )
+            }
+        }
+
     }
 }
 
 @Composable
 fun TrainServiceDetail(
     service: PassService,
-    modifier: Modifier = Modifier,
-    onNavigate: (CommonChildRoute)-> Unit
+    onNavigate: (CommonChildRoute) -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    val stops = remember { service.getStops().toImmutableList() }
-    Card(modifier) {
-        Spacer(Modifier.height(20.dp))
+    val stops = remember { service.getStops() }
 
+    Column(modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.Bottom) {
             // Icon (based on rolling stock)
             Icon(
@@ -151,6 +156,7 @@ fun TrainServiceDetail(
                 modifier=Modifier.offset(x=-25.dp, y=-7.5.dp)
             )
         }
+
         // Name
         Text(
             service.title,
@@ -162,8 +168,6 @@ fun TrainServiceDetail(
 
         // Stops (arrive; depart; station)
         Stops(stops, onNavigate, padding=PaddingValues(horizontal=10.dp))
-
-        Spacer(Modifier.height(20.dp))
     }
 }
 
@@ -236,7 +240,7 @@ private fun AmenityBadge(
 
 @Composable
 private fun Stops(
-    stops: ImmutableList<ServiceStop>,
+    stops: List<ServiceStop>,
     onNavigate: (CommonChildRoute)-> Unit,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues.Zero,

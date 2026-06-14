@@ -3,6 +3,7 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import kotlinx.collections.immutable.ImmutableList
+import kotlinx.collections.immutable.PersistentList
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import java.time.ZonedDateTime
@@ -11,6 +12,9 @@ import kotlin.reflect.KProperty
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.time.toKotlinInstant
+
+fun <T> PersistentList<T>.removeLast()
+    = this.removeAt(size - 1)
 
 fun <T> Iterable<T>.toPair(): Pair<T, T> {
     val iterator = this.iterator()
@@ -325,7 +329,7 @@ val Place.points: List<LatLng>
     }
 
 
-fun getCurrStop(stops: ImmutableList<ServiceStop>): IndexedValue<ServiceStop> {
+fun getCurrStop(stops: List<ServiceStop>): IndexedValue<ServiceStop> {
     for (item in stops.dropLast(1).withIndex()) {
         if (item.value.departure!! > Clock.System.now()) {
             return item
@@ -334,3 +338,4 @@ fun getCurrStop(stops: ImmutableList<ServiceStop>): IndexedValue<ServiceStop> {
 
     return IndexedValue(stops.size-1, stops.last())
 }
+
