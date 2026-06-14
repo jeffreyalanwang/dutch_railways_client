@@ -38,7 +38,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -77,12 +76,13 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PlaceDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.RouteDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.RouteOptionsRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TimePickerRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQueryGraphChildRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQueryGraphRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQuerySelectionRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainServiceDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.AppBarWithDualSearch
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ClearableTimePickerDialog
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ClearableTimePicker
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PlaceSearchResults
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.rememberDualSearchBarState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailWithoutMap
@@ -262,17 +262,12 @@ private fun RoutePlannerScreen(
 
     bottomSheetContent: @Composable (BoxScope.() -> Unit)?,
 ) {
-    var timePickerSetting by remember { mutableStateOf<Endpoint?>(null) }
-
     RoutePlannerScreen(
         setOrigin = { viewModel.setOrigin(it) },
         setDestination = { viewModel.setDestination(it) },
 
         departTime = viewModelState.departTime,
-        setDepartTime = { viewModel.setTimeConstraints(departTime = it) },
-
         arriveTime = viewModelState.arriveTime,
-        setArriveTime = { viewModel.setTimeConstraints(arriveTime = it) },
 
         onMapLoaded = onMapLoaded,
         mapMarkers = mapMarkers,
@@ -282,8 +277,7 @@ private fun RoutePlannerScreen(
         isSubmitQueryAllowed = viewModelState.canSubmitQuery,
         onSubmitQuery = viewModel::loadRoutes,
 
-        timePickerSetting = timePickerSetting,
-        setTimePickerSetting = { timePickerSetting = it },
+        onOpenTimePicker = { viewModel.pushUserRequested(TimePickerRoute(forEndpoint = it)) },
 
         bottomSheetContent = bottomSheetContent,
     )
@@ -295,10 +289,7 @@ private fun RoutePlannerScreen(
     setDestination: (Place?) -> Unit,
 
     departTime: Instant?,
-    setDepartTime: (Instant?) -> Unit,
-
     arriveTime: Instant?,
-    setArriveTime: (Instant?) -> Unit,
 
     mapCameraUpdate: CameraUpdate?,
 
@@ -308,8 +299,7 @@ private fun RoutePlannerScreen(
     isSubmitQueryAllowed: Boolean,
     onSubmitQuery: () -> Unit,
 
-    timePickerSetting: Endpoint?,
-    setTimePickerSetting: (Endpoint?) -> Unit,
+    onOpenTimePicker: (Endpoint) -> Unit,
 
     bottomSheetContent: @Composable (BoxScope.() -> Unit)?,
 ) {
@@ -320,7 +310,7 @@ private fun RoutePlannerScreen(
                 isSubmitQueryAllowed = isSubmitQueryAllowed,
                 arriveTime = arriveTime,
                 departTime = departTime,
-                setTimePickerSetting = setTimePickerSetting,
+                onOpenTimePicker = onOpenTimePicker,
                 setOrigin = setOrigin,
                 setDestination = setDestination,
                 onSubmitQuery = onSubmitQuery,
@@ -342,17 +332,6 @@ private fun RoutePlannerScreen(
             scaffoldPadding = innerPadding,
             content = bottomSheetContent ?: {},
         )
-
-        RevealableEndpointTimePicker(
-            setting = timePickerSetting,
-            onDismiss = { setTimePickerSetting(null) },
-
-            departTime = departTime,
-            setDepartTime = setDepartTime,
-
-            arriveTime = arriveTime,
-            setArriveTime = setArriveTime,
-        )
     }
 }
 
@@ -361,7 +340,7 @@ private fun PersistentTopBar(
     isSubmitQueryAllowed: Boolean,
     arriveTime: Instant?,
     departTime: Instant?,
-    setTimePickerSetting: (Endpoint) -> Unit,
+    onOpenTimePicker: (Endpoint) -> Unit,
     setOrigin: (Place?) -> Unit,
     setDestination: (Place?) -> Unit,
     onSubmitQuery: () -> Unit,
@@ -394,14 +373,14 @@ private fun PersistentTopBar(
             onFinishSearch = ::closeSearch,
             timeConstraintField = departTime,
             timeButtonContentDescription = "Select departure time",
-            onTimeConstraintButtonClick = { setTimePickerSetting(Endpoint.Origin) },
+            onTimeConstraintButtonClick = { onOpenTimePicker(Endpoint.Origin) },
         ),
         inputField2 = inputFieldFactory(
             placeholderText = "Search arrival",
             onFinishSearch = ::closeSearch,
             timeConstraintField = arriveTime,
             timeButtonContentDescription = "Select arrival time",
-            onTimeConstraintButtonClick = { setTimePickerSetting(Endpoint.Destination) },
+            onTimeConstraintButtonClick = { onOpenTimePicker(Endpoint.Destination) },
         ),
         expandedSearch1 = expandedSearchFactory(
             placeholderText = "Search departure",
@@ -647,8 +626,24 @@ private fun BottomSheetContent(
 )
 
 @Composable
-private fun RevealableEndpointTimePicker(
-    setting: Endpoint?,
+fun EndpointTimePicker(
+    forEndpoint: Endpoint,
+    viewModel: RoutePlannerViewModel,
+    onDismiss: () -> Unit,
+) {
+    EndpointTimePicker(
+        forEndpoint = forEndpoint,
+        onDismiss = onDismiss,
+        departTime = viewModel.uiState.collectAsState().value.departTime,
+        arriveTime = viewModel.uiState.collectAsState().value.arriveTime,
+        setDepartTime = { viewModel.setTimeConstraints(departTime = it) },
+        setArriveTime = { viewModel.setTimeConstraints(arriveTime = it) },
+    )
+}
+
+@Composable
+fun EndpointTimePicker(
+    forEndpoint: Endpoint,
     onDismiss: () -> Unit,
 
     departTime: Instant?,
@@ -657,39 +652,31 @@ private fun RevealableEndpointTimePicker(
     arriveTime: Instant?,
     setArriveTime: (Instant?) -> Unit,
 ) {
-    setting?.let { target ->
-        key(target) {
-            val title = when (target) {
-                Endpoint.Origin -> "Select depart time"
-                Endpoint.Destination -> "Select arrive time"
-            }
-            val initialInstant = when (target) {
-                Endpoint.Origin -> departTime
-                Endpoint.Destination -> arriveTime
-            }
-            val setTime = when (target) {
-                Endpoint.Origin -> { it: Instant? ->
-                    { setDepartTime(it) }
-                }
-                Endpoint.Destination -> { it: Instant? ->
-                    { setArriveTime(it) }
-                }
-            }
-            ClearableTimePickerDialog(
-                title = title,
-                initialTime = with(TimeZone.currentSystemDefault()) { initialInstant?.toLocalTime() },
-                onConfirm = { selectedTime ->
-                    setTime(
-                        with(TimeZone.currentSystemDefault()) {
-                            selectedTime?.atDate(Clock.System.todayIn(this))?.toInstant()
-                        }
-                    )
-                    onDismiss()
-                },
-                onDismiss = onDismiss,
-            )
-        }
+    val title = when (forEndpoint) {
+        Endpoint.Origin -> "Select depart time"
+        Endpoint.Destination -> "Select arrive time"
     }
+    val initialInstant = when (forEndpoint) {
+        Endpoint.Origin -> departTime
+        Endpoint.Destination -> arriveTime
+    }
+    val setTime = when (forEndpoint) {
+        Endpoint.Origin -> { it: Instant? -> setDepartTime(it) }
+        Endpoint.Destination -> { it: Instant? -> setArriveTime(it) }
+    }
+    ClearableTimePicker(
+        title = title,
+        initialTime = with(TimeZone.currentSystemDefault()) { initialInstant?.toLocalTime() },
+        onConfirm = { selectedTime ->
+            setTime(
+                with(TimeZone.currentSystemDefault()) {
+                    selectedTime?.atDate(Clock.System.todayIn(this))?.toInstant()
+                }
+            )
+            onDismiss()
+        },
+        onDismiss = onDismiss,
+    )
 }
 
 @Composable

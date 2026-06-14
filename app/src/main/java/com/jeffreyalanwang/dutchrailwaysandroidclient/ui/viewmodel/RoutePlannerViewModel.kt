@@ -32,7 +32,7 @@ import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 enum class Endpoint { Origin, Destination }
-enum class RoutePlannerStage { QueryBuilding, RoutesFound }
+
 
 data class DataState(
     val origin: Place? = null,
@@ -86,7 +86,7 @@ data class DataState(
         )
 }
 
-private interface RoutePlannerDataModel {
+interface RoutePlannerDataModel {
     val uiState: StateFlow<DataState>
     fun setOrigin(origin: Place?)
     fun setDestination(destination: Place?)
@@ -152,7 +152,7 @@ private typealias ChildGraphRoute = TrainQueryGraphChildRoute
 private typealias MajorGraphRoute = TrainQueryGraphMajorRoute
 private typealias BackStack = ImmutableList<GraphRoute>
 
-private interface RoutePlannerNavModel {
+interface RoutePlannerNavModel {
     val backStack: StateFlow<BackStack>
     fun pushUserRequested(route: GraphRoute)
     fun popBack(): Boolean

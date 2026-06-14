@@ -1,6 +1,7 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui
 
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -8,14 +9,19 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy.Companion.pbDialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.TrainServiceDetailScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EndpointTimePicker
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.RoutePlannerScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.StationSearchScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.rememberNavBackStack
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.Endpoint
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.RoutePlannerViewModel
 import kotlinx.serialization.Serializable
 
@@ -35,6 +41,7 @@ interface PlaceDetailRoute: NavRoute, CommonChildRoute { val id: Int }
 @Serializable data class TrainServiceDetailRoute(val id: Int) : NavRoute, TrainQueryGraphChildRoute, CommonChildRoute
 @Serializable data object RouteOptionsRoute : NavRoute, TrainQueryGraphChildRoute, TrainQueryGraphMajorRoute
 @Serializable data class RouteDetailRoute(val index: Int) : NavRoute, TrainQueryGraphChildRoute
+@Serializable data class TimePickerRoute(val forEndpoint: Endpoint) : NavRoute, TrainQueryGraphChildRoute
 
 /**
  * Returns navigation entries for pages in the main screen's bottom navbar.
@@ -47,8 +54,22 @@ fun appEntries(): (NavRoute) -> NavEntry<NavRoute> = entryProvider {
         NavDisplay(
             backStack = backStack,
             onBack = { viewModel.popBack() },
-        ) { key ->
-            NavEntry(
+            sceneStrategy = remember {
+                PredictiveBackDialogSceneStrategy<TrainQueryGraphRoute>()
+                    .then( SinglePaneSceneStrategy() )
+            },
+        ) { key -> when (key) {
+            is TimePickerRoute -> NavEntry(
+                key = key,
+                metadata = pbDialog(),
+            ) { key -> key as TimePickerRoute
+                EndpointTimePicker(
+                    key.forEndpoint,
+                    viewModel = viewModel,
+                    onDismiss = { viewModel.popBack() },
+                )
+            }
+            else -> NavEntry(
                 key = key,
 
                 // Same for all routes within this NavDisplay,
@@ -62,7 +83,7 @@ fun appEntries(): (NavRoute) -> NavEntry<NavRoute> = entryProvider {
                     onNavigateMinor = { viewModel.pushUserRequested(it) }
                 )
             }
-        }
+        } }
     }
 
     entry<StationSearchRoute> { initialRoute ->

@@ -65,6 +65,25 @@ fun ClearableTimePickerDialog(
     modifier: Modifier = Modifier,
     title: String? = null,
 ) {
+    Dialog(onDismissRequest = onDismiss) {
+        ClearableTimePicker(
+            initialTime,
+            onConfirm,
+            onDismiss,
+            modifier,
+            title
+        )
+    }
+}
+
+@Composable
+fun ClearableTimePicker(
+    initialTime: LocalTime?,
+    onConfirm: (LocalTime?) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    title: String? = null,
+) {
     val _initialTime = initialTime
         ?: Clock.System.now()
             .letWith(TimeZone.currentSystemDefault()) { it.toLocalTime() }
@@ -74,41 +93,37 @@ fun ClearableTimePickerDialog(
         initialMinute = _initialTime.minute,
     )
 
-    Dialog(
-        onDismissRequest = onDismiss
+    Surface(
+        shape = MaterialTheme.shapes.extraLarge,
+        tonalElevation = 6.dp,
+        modifier = modifier,
     ) {
-        Surface(
-            shape = MaterialTheme.shapes.extraLarge,
-            tonalElevation = 6.dp,
-            modifier = modifier,
-        ) {
-            Column(Modifier.padding(24.dp)) {
-                title?.let {
-                    Text(
-                        text = it,
-                        style = MaterialTheme.typography.labelMedium,
-                    )
-                    Spacer(Modifier.height(20.dp))
+        Column(Modifier.padding(24.dp)) {
+            title?.let {
+                Text(
+                    text = it,
+                    style = MaterialTheme.typography.labelMedium,
+                )
+                Spacer(Modifier.height(20.dp))
+            }
+
+            TimePicker(timePickerState)
+
+            Row {
+                TextButton(onClick = { onConfirm(null) }) {
+                    Text("Clear and exit")
                 }
 
-                TimePicker(timePickerState)
+                Spacer(Modifier.weight(1f))
 
-                Row {
-                    TextButton(onClick = { onConfirm(null) }) {
-                        Text("Clear and exit")
-                    }
+                TextButton(onClick = onDismiss) {
+                    Text("Cancel")
+                }
 
-                    Spacer(Modifier.weight(1f))
-
-                    TextButton(onClick = onDismiss) {
-                        Text("Cancel")
-                    }
-
-                    TextButton( onClick = { onConfirm(
-                        LocalTime(timePickerState.hour, timePickerState.minute)
-                    ) } ) {
-                        Text("OK")
-                    }
+                TextButton( onClick = { onConfirm(
+                    LocalTime(timePickerState.hour, timePickerState.minute)
+                ) } ) {
+                    Text("OK")
                 }
             }
         }
