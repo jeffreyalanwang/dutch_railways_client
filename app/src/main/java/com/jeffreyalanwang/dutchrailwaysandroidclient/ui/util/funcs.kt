@@ -57,14 +57,14 @@ fun LatLng.minus(
 
 /**
  * Create a new [LatLngBounds] in which the receiver [LatLngBounds]
- * is *roughly* in the top two-thirds.
+ * is *roughly* in the top, padded with a proportion of its height.
  */
 fun LatLngBounds.paddedBelow(proportion: Float): LatLngBounds {
 
     val originalBoundsHeight = this.northeast.latitude - this.southwest.latitude
 
     val newSouthWest = this.southwest.minus(
-        latitude =  originalBoundsHeight * proportion
+        latitude = originalBoundsHeight * proportion
     )
     return this.including(newSouthWest)
 }
@@ -80,8 +80,8 @@ fun LatLngBounds.getMapCameraUpdate(padding: Int)
 fun Place.boundsForDisplay()
     = when (this) {
         is Station -> this.geom.let {
-            val latitudePadding = 1/30f
-            val longitudePadding = 1/45f
+            val latitudePadding = 1/60f
+            val longitudePadding = 1/90f
             LatLngBounds(
                 LatLng( // southwest
                     it.latitude - latitudePadding,
