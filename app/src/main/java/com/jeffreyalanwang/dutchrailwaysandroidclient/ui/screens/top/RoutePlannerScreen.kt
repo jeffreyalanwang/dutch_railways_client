@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.maps.CameraUpdate
+import com.google.maps.android.compose.ComposeMapColorScheme
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.Polygon
@@ -522,6 +523,7 @@ private fun PersistentGoogleMap(
         contentDescription = "Map",
         modifier = Modifier.fillMaxSize(),
         contentPadding = contentPadding,
+        mapColorScheme = ComposeMapColorScheme.FOLLOW_SYSTEM,
         onMapLoaded = onMapLoaded,
     ) {
         markers.forEach { when (it) {
