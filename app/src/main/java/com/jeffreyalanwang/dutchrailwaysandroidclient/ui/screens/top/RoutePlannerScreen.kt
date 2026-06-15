@@ -554,7 +554,7 @@ private fun RevealableBottomSheet(
 ) {
     val sheetState = rememberStandardBottomSheetState(
         skipHiddenState = false,
-        initialValue = SheetValue.Hidden,
+        initialValue = SheetValue.PartiallyExpanded,
         confirmValueChange = { when (it) {
             // Do not allow user to request hidden if currently visible,
             // but allow when triggered by [LaunchedEffect(isVisible)]
