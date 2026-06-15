@@ -76,7 +76,9 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDe
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.TrainServiceDetail
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.RouteOptionsList
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.boundsForDisplay
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.getMapCameraUpdate
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.paddedBelow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.topOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.DataState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.Endpoint
@@ -179,21 +181,21 @@ fun RoutePlannerScreen(
             else when (routeArgs) {
                 is TrainQuerySelectionRoute
                     -> BackendApi.get_nl_area()
-                    .run { remember { getMapCameraUpdate() } }
+                    .run { remember { boundsForDisplay().paddedBelow(1/2f).getMapCameraUpdate(100) } }
                 is PlaceDetailRoute
                     -> subjectPlace!!
-                    .run { remember(this) { getMapCameraUpdate() } }
+                    .run { remember(this) { boundsForDisplay().paddedBelow(1/2f).getMapCameraUpdate(100) } }
                 is RouteOptionsRoute
                     -> persistentListOf(viewModelState.origin!!, viewModelState.destination!!)
-                    .calculateBounds().run { remember(this) { getMapCameraUpdate(400) } }
+                    .calculateBounds().run { remember(this) { paddedBelow(1/2f).getMapCameraUpdate(100) } }
                 is RouteDetailRoute
                     -> subjectRoute!!
                     .stopsByLayover().map { it.first().getStation() }
-                    .calculateBounds().run { remember(this) { getMapCameraUpdate(400) } }
+                    .calculateBounds().run { remember(this) { paddedBelow(1/2f).getMapCameraUpdate(100) } }
                 is TrainServiceDetailRoute
                     -> subjectTrainService!!
                     .getStops().map { it.getStation() }
-                    .calculateBounds().run { remember(this) { getMapCameraUpdate(400) } }
+                    .calculateBounds().run { remember(this) { paddedBelow(1/2f).getMapCameraUpdate(100) } }
 
                 else
                     -> throw IllegalArgumentException("Unrecognized routeArgs type: ${routeArgs::class}")

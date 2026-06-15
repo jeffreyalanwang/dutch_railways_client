@@ -10,6 +10,7 @@ import androidx.navigation3.runtime.NavBackStack
 import androidx.navigation3.runtime.serialization.NavBackStackSerializer
 import androidx.navigation3.runtime.serialization.NavKeySerializer
 import com.google.android.gms.maps.CameraUpdateFactory
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
@@ -39,17 +40,60 @@ fun PaddingValues.verticalOnly()
 fun PaddingValues.horizontalOnly()
     = this.minus(this.verticalOnly())
 
+fun LatLng.copy(
+    latitude: Double = this.latitude,
+    longitude: Double = this.longitude,
+) = LatLng(latitude, longitude)
+
+fun LatLng.plus(
+    latitude: Double = 0.0,
+    longitude: Double = 0.0,
+) = LatLng(this.latitude + latitude, this.longitude + longitude)
+
+fun LatLng.minus(
+    latitude: Double = 0.0,
+    longitude: Double = 0.0,
+) = LatLng(this.latitude - latitude, this.longitude - longitude)
+
+/**
+ * Create a new [LatLngBounds] in which the receiver [LatLngBounds]
+ * is *roughly* in the top two-thirds.
+ */
+fun LatLngBounds.paddedBelow(proportion: Float): LatLngBounds {
+
+    val originalBoundsHeight = this.northeast.latitude - this.southwest.latitude
+
+    val newSouthWest = this.southwest.minus(
+        latitude =  originalBoundsHeight * proportion
+    )
+    return this.including(newSouthWest)
+}
+
 fun LatLngBounds.getMapCameraUpdate(padding: Int)
-        = CameraUpdateFactory.newLatLngBounds(this, padding)
+    = CameraUpdateFactory.newLatLngBounds(this, padding)
 
-fun Place.getMapCameraUpdate()
+/**
+ * Gets [LatLngBounds] with an area > 0,
+ * even when the [Place] is a [Station]
+ * (i.e. located at a point).
+ */
+fun Place.boundsForDisplay()
     = when (this) {
-        is Station -> CameraUpdateFactory.newLatLng(this.geom)
-        is Area -> CameraUpdateFactory.newLatLngBounds(
-            this.getGeom().getBounds(),
-            12
-        )
-
+        is Station -> this.geom.let {
+            val latitudePadding = 1/30f
+            val longitudePadding = 1/45f
+            LatLngBounds(
+                LatLng( // southwest
+                    it.latitude - latitudePadding,
+                    it.longitude - longitudePadding,
+                ),
+                LatLng( // northeast
+                    it.latitude + latitudePadding,
+                    it.longitude + longitudePadding,
+                ),
+            )
+        }
+        is Area -> this.getGeom().getBounds()
         else -> throw NotImplementedError()
     }
 
