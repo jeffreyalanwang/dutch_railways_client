@@ -22,7 +22,7 @@ import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
 import androidx.navigationevent.NavigationEvent
 import androidx.navigationevent.NavigationEvent.Companion.EDGE_NONE
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy.Companion.pbDialog
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy.Companion.predictiveBackDialog
 import kotlinx.coroutines.CancellationException
 
 fun DialogProperties.copy(
@@ -136,7 +136,7 @@ internal class PredictiveBackDialogScene<T : Any>(
 }
 
 /**
- * A [SceneStrategy] that displays entries that have added [pbDialog] to their
+ * A [SceneStrategy] that displays entries that have added [predictiveBackDialog] to their
  * [NavEntry.metadata] within a [Dialog] instance.
  *
  * This strategy should always be added before any non-overlay scene strategies.
@@ -167,7 +167,7 @@ class PredictiveBackDialogSceneStrategy<T : Any> : SceneStrategy<T> {
          *
          * @param dialogProperties properties that should be passed to the containing [PredictiveBackDialog].
          */
-        public fun pbDialog(
+        public fun predictiveBackDialog(
             dialogProperties: DialogProperties = DialogProperties()
         ): Map<String, Any> = mapOf(PB_DIALOG_KEY to dialogProperties)
 

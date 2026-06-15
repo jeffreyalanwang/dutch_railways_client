@@ -13,7 +13,7 @@ import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy.Companion.pbDialog
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy.Companion.predictiveBackDialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.TrainServiceDetailScreen
@@ -46,7 +46,7 @@ interface PlaceDetailRoute: NavRoute, CommonChildRoute { val id: Int }
 /**
  * Returns navigation entries for pages in the main screen's bottom navbar.
  */
-fun appEntries(): (NavRoute) -> NavEntry<NavRoute> = entryProvider {
+fun appEntries() = entryProvider {
     entry<TrainQuerySelectionRoute> { topKey ->
         val viewModel = viewModel<RoutePlannerViewModel>()
         val backStack by viewModel.backStack.collectAsStateWithLifecycle()
@@ -61,7 +61,7 @@ fun appEntries(): (NavRoute) -> NavEntry<NavRoute> = entryProvider {
         ) { key -> when (key) {
             is TimePickerRoute -> NavEntry(
                 key = key,
-                metadata = pbDialog(),
+                metadata = predictiveBackDialog(),
             ) { key -> key as TimePickerRoute
                 EndpointTimePicker(
                     key.forEndpoint,
