@@ -1,9 +1,12 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui
 
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.rememberViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavEntry
@@ -46,66 +49,81 @@ interface PlaceDetailRoute: NavRoute, CommonChildRoute { val id: Int }
 /**
  * Returns navigation entries for pages in the main screen's bottom navbar.
  */
-fun appEntries() = entryProvider {
-    entry<TrainQuerySelectionRoute> { topKey ->
-        val viewModel = viewModel<RoutePlannerViewModel>()
-        val backStack by viewModel.backStack.collectAsStateWithLifecycle()
+@Composable
+fun appEntries(
+    // Specific values are meaningless; they simply need to change
+    // in order to reset the corresponding top-level route state
+    resetKeyState: Map<NavRoute, Int>,
+) = entryProvider {
+    entry<TrainQuerySelectionRoute> { initialRoute ->
+        key(resetKeyState.get(initialRoute)) {
+            // Dispose + regenerate view model when key changes
+            val viewModelStoreOwner = rememberViewModelStoreOwner()
 
-        NavDisplay(
-            backStack = backStack,
-            onBack = { viewModel.popBack() },
-            sceneStrategy = remember {
-                PredictiveBackDialogSceneStrategy<TrainQueryGraphRoute>()
-                    .then( SinglePaneSceneStrategy() )
-            },
-        ) { key -> when (key) {
-            is TimePickerRoute -> NavEntry(
-                key = key,
-                metadata = predictiveBackDialog(),
-            ) { key -> key as TimePickerRoute
-                EndpointTimePicker(
-                    key.forEndpoint,
-                    viewModel = viewModel,
-                    onDismiss = { viewModel.popBack() },
-                )
-            }
-            else -> NavEntry(
-                key = key,
+            val viewModel = viewModel<RoutePlannerViewModel>(viewModelStoreOwner)
+            val backStack by viewModel.backStack.collectAsStateWithLifecycle()
 
-                // Same for all routes within this NavDisplay,
-                // means we use the same SinglePaneScene,
-                // thus same RoutePlannerScreen
-                contentKey = true,
+            NavDisplay(
+                backStack = backStack,
+                onBack = { viewModel.popBack() },
+                sceneStrategy = remember {
+                    PredictiveBackDialogSceneStrategy<TrainQueryGraphRoute>()
+                        .then(SinglePaneSceneStrategy())
+                },
             ) { key ->
-                RoutePlannerScreen(
-                    key,
-                    viewModel,
-                    onNavigateMinor = { viewModel.pushUserRequested(it) }
-                )
+                when (key) {
+                    is TimePickerRoute -> NavEntry(
+                        key = key,
+                        metadata = predictiveBackDialog(),
+                    ) { key ->
+                        key as TimePickerRoute
+                        EndpointTimePicker(
+                            key.forEndpoint,
+                            viewModel = viewModel,
+                            onDismiss = { viewModel.popBack() },
+                        )
+                    }
+
+                    else -> NavEntry(
+                        key = key,
+
+                        // Same for all routes within this NavDisplay,
+                        // means we use the same SinglePaneScene,
+                        // thus same RoutePlannerScreen
+                        contentKey = true,
+                    ) { key ->
+                        RoutePlannerScreen(
+                            key,
+                            viewModel,
+                            onNavigateMinor = { viewModel.pushUserRequested(it) }
+                        )
+                    }
+                }
             }
-        } }
+        }
     }
 
     entry<StationSearchRoute> { initialRoute ->
-        val backstack = rememberNavBackStack<NavRoute>(initialRoute)
+        key(resetKeyState.get(initialRoute)) {
+            val backstack = rememberNavBackStack<NavRoute>(initialRoute)
 
-        NavDisplay(
-            backStack = backstack,
-            entryProvider = entryProvider {
-                entry<StationSearchRoute> { route ->
-                    StationSearchScreen(
-                        onNavigate = { newRoute -> backstack.add(newRoute) }
+            NavDisplay(
+                backStack = backstack,
+                entryProvider = entryProvider {
+                    entry<StationSearchRoute> { route ->
+                        StationSearchScreen(
+                            onNavigate = { newRoute -> backstack.add(newRoute) }
+                        )
+                    }
+                    tabEntries(
+                        { backstack.add(it) },
+                        { backstack.removeAt(backstack.lastIndex) }
                     )
-                }
-                tabEntries(
-                    { backstack.add(it) },
-                    { backstack.removeAt(backstack.lastIndex) }
-                )
-            },
-        )
+                },
+            )
+        }
     }
 }
-
 /**
  * Returns navigation entries for pages which may be opened by
  * (thus pushed on top of) top-level pages in the back stack.

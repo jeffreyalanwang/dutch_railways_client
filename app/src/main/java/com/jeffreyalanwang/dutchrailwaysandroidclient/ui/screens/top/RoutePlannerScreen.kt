@@ -191,26 +191,26 @@ fun RoutePlannerScreen(
                     -> if (initialZoomExecuted) null else
                         BackendApi.get_nl_area()
                         .run {
-                            remember { boundsForDisplay().paddedBelow(1f).getMapCameraUpdate(100) }
+                            remember { boundsForDisplay().paddedBelow(1f).getMapCameraUpdate(200) }
                         }
                 is PlaceDetailRoute
                     -> subjectPlace?.run { remember(this) {
-                        boundsForDisplay().paddedBelow(1f).getMapCameraUpdate(100)
+                        boundsForDisplay().paddedBelow(1f).getMapCameraUpdate(200)
                     } }
                 is RouteOptionsRoute
                     -> listOfNotNull(viewModelState.origin, viewModelState.destination)
                     .calculateBounds().run { remember(this) {
-                        paddedBelow(1f).getMapCameraUpdate(100)
+                        paddedBelow(1f).getMapCameraUpdate(200)
                     } }
                 is RouteDetailRoute
                     -> subjectRoute?.stopsByLayover()?.map { it.first().getStation() }
                     ?.calculateBounds()?.run { remember(this) {
-                        paddedBelow(1f).getMapCameraUpdate(100)
+                        paddedBelow(1f).getMapCameraUpdate(200)
                     } }
                 is TrainServiceDetailRoute
                     -> subjectTrainService?.getStops()?.map { it.getStation() }
                     ?.calculateBounds()?.run { remember(this) {
-                        paddedBelow(1f).getMapCameraUpdate(100)
+                        paddedBelow(1f).getMapCameraUpdate(200)
                     } }
 
                 else

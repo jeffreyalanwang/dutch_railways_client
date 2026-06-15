@@ -17,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Composer
 import androidx.compose.runtime.ExperimentalComposeApi
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.tooling.ComposeStackTraceMode
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -25,9 +26,11 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
+import com.jeffreyalanwang.dutchrailwaysandroidclient.applyAndSet
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.theme.DutchRailwaysAndroidClientTheme
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.bottomOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.rememberNavBackStack
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.toMutableStateMap
 
 class MainActivity : ComponentActivity() {
     @OptIn(ExperimentalComposeApi::class)
@@ -47,6 +50,11 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DutchRailwaysAndroidClientApp() {
     val topBackStack = rememberNavBackStack<NavRoute>(AppDestinations.TRIP.navKey)
+    val resetKeys = remember {
+        AppDestinations.entries.map { it.navKey }
+            .associateWith { 0 }
+            .toMutableStateMap()
+    }
 
     Scaffold(
         bottomBar = { NavigationBar {
@@ -60,7 +68,11 @@ fun DutchRailwaysAndroidClientApp() {
                     label = { Text(appTab.label) },
                     selected = isSelected,
                     onClick = {
-                        if (!isSelected) topBackStack.add(appTab.navKey)
+                        if (!isSelected) {
+                            topBackStack.add(appTab.navKey)
+                        } else {
+                            resetKeys.applyAndSet(appTab.navKey) { it!! + 1 }
+                        }
                     },
                 )
             }
@@ -73,7 +85,7 @@ fun DutchRailwaysAndroidClientApp() {
                 rememberSaveableStateHolderNavEntryDecorator(),
                 rememberViewModelStoreNavEntryDecorator(),
             ),
-            entryProvider = appEntries(),
+            entryProvider = appEntries(resetKeys),
             modifier = Modifier
                 .padding(innerPadding.bottomOnly())
                 .consumeWindowInsets(innerPadding.bottomOnly()),

@@ -2,7 +2,6 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient
 
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -12,6 +11,9 @@ import kotlin.reflect.KProperty
 import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.time.toKotlinInstant
+
+fun <K, V> MutableMap<K, V>.applyAndSet(key: K, block: (V?)->V)
+    = set(key, block(get(key)))
 
 fun <T> PersistentList<T>.removeLast()
     = this.removeAt(size - 1)

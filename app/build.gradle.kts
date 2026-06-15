@@ -18,9 +18,7 @@ kotlin {
 android {
     namespace = "com.jeffreyalanwang.dutchrailwaysandroidclient"
     compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
+        version = release(37)
     }
 
     defaultConfig {
@@ -82,7 +80,6 @@ dependencies {
     implementation("androidx.appcompat:appcompat:1.6.1")
     implementation("com.google.maps.android:maps-compose:8.3.0")
     implementation("ca.solo-studios:kt-fuzzy:0.1.0")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-navigation3")
     implementation("org.jetbrains.kotlin:kotlin-reflect:2.0.21")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.8.0")
     testImplementation(libs.junit)
