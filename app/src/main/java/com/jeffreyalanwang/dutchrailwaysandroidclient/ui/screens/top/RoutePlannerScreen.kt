@@ -676,6 +676,7 @@ fun EndpointTimePicker(
         Endpoint.Origin -> departTime
         Endpoint.Destination -> arriveTime
     }
+
     val setTime = when (forEndpoint) {
         Endpoint.Origin -> { it: Instant? -> setDepartTime(it) }
         Endpoint.Destination -> { it: Instant? -> setArriveTime(it) }
@@ -685,8 +686,14 @@ fun EndpointTimePicker(
         initialTime = with(TimeZone.currentSystemDefault()) { initialInstant?.toLocalTime() },
         onConfirm = { selectedTime ->
             setTime(
+                // Here, we are making the decision that the user is inputting a time
+                // in their local device time zone, for their device's current date.
+                // (Outside [ClearableTimePicker], the application always uses
+                // [ZonedDateTime] or [Instant], and a date is always included.)
                 with(TimeZone.currentSystemDefault()) {
-                    selectedTime?.atDate(Clock.System.todayIn(this))?.toInstant()
+                    selectedTime
+                        ?.atDate( Clock.System.todayIn(this) )
+                        ?.toInstant()
                 }
             )
             onDismiss()
