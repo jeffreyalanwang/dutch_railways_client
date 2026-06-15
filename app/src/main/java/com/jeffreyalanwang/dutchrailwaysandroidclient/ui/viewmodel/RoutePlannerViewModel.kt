@@ -30,6 +30,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
@@ -102,7 +103,9 @@ interface RoutePlannerDataModel {
 
 private class DataModelDelegate: RoutePlannerDataModel {
 
-    private val _uiState = MutableStateFlow(DataState())
+    private val _uiState = MutableStateFlow(DataState(
+        departTime = Clock.System.now(),
+    ))
     override val uiState = _uiState.asStateFlow()
 
     // [setOrigin()] and [setDestination()] need to be separate methods
