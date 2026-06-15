@@ -2,6 +2,9 @@
 
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
@@ -225,6 +228,10 @@ class RoutePlannerViewModel private constructor(
     RoutePlannerNavModel by navModelDelegate,
     ViewModel()
 {
+    var initialZoomExecuted: Boolean by mutableStateOf(false)
+        private set
+    fun setInitialZoomExecuted() { initialZoomExecuted = true }
+
     private constructor(dataModelDelegate: DataModelDelegate): this(
         dataModelDelegate,
         NavModelDelegate(

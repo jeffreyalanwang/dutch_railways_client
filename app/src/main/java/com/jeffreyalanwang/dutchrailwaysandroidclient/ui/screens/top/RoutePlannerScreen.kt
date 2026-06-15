@@ -84,7 +84,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.DataState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.Endpoint
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.RoutePlannerViewModel
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atDate
@@ -133,6 +132,7 @@ fun RoutePlannerScreen(
 
     val viewModelState by viewModel.uiState.collectAsStateWithLifecycle()
     var mapLoaded by remember { mutableStateOf(false) }
+    val initialZoomExecuted = viewModel.initialZoomExecuted
 
     val subjectPlace: Place?
     val subjectRoute: RoutePlan?
@@ -170,6 +170,12 @@ fun RoutePlannerScreen(
         }
     }
 
+    // Extensive use of null-safe [?.run] and [?.let] serves to
+    // allow discrepancies between viewModel's [routeArgs] state
+    // and the one passed; this issue occurs when [NavDisplay]
+    // handles predictive back by rendering two versions of
+    // [RoutePlannerScreen] (one with old and new [routeArgs]).
+
     RoutePlannerScreen(
         viewModel = viewModel,
         viewModelState = viewModelState,
@@ -177,25 +183,34 @@ fun RoutePlannerScreen(
         // Short circuit on [mapLoaded], ensuring we never try to evaluate lazy property
         // [mapCameraUpdate] before it is allowed to use [CameraUpdateFactory].
         onMapLoaded = { mapLoaded = true },
+        onZoomComplete = { viewModel.setInitialZoomExecuted() }, // technically only needed when TrainQuerySelectionRoute
         mapCameraUpdate = if (!mapLoaded) null
             else when (routeArgs) {
                 is TrainQuerySelectionRoute
-                    -> BackendApi.get_nl_area()
-                    .run { remember { boundsForDisplay().paddedBelow(1/2f).getMapCameraUpdate(100) } }
+                    -> if (initialZoomExecuted) null else
+                        BackendApi.get_nl_area()
+                        .run {
+                            remember { boundsForDisplay().paddedBelow(1/2f).getMapCameraUpdate(100) }
+                        }
                 is PlaceDetailRoute
-                    -> subjectPlace!!
-                    .run { remember(this) { boundsForDisplay().paddedBelow(1/2f).getMapCameraUpdate(100) } }
+                    -> subjectPlace?.run { remember(this) {
+                        boundsForDisplay().paddedBelow(1/2f).getMapCameraUpdate(100)
+                    } }
                 is RouteOptionsRoute
-                    -> persistentListOf(viewModelState.origin!!, viewModelState.destination!!)
-                    .calculateBounds().run { remember(this) { paddedBelow(1/2f).getMapCameraUpdate(100) } }
+                    -> listOfNotNull(viewModelState.origin, viewModelState.destination)
+                    .calculateBounds().run { remember(this) {
+                        paddedBelow(1/2f).getMapCameraUpdate(100)
+                    } }
                 is RouteDetailRoute
-                    -> subjectRoute!!
-                    .stopsByLayover().map { it.first().getStation() }
-                    .calculateBounds().run { remember(this) { paddedBelow(1/2f).getMapCameraUpdate(100) } }
+                    -> subjectRoute?.stopsByLayover()?.map { it.first().getStation() }
+                    ?.calculateBounds()?.run { remember(this) {
+                        paddedBelow(1/2f).getMapCameraUpdate(100)
+                    } }
                 is TrainServiceDetailRoute
-                    -> subjectTrainService!!
-                    .getStops().map { it.getStation() }
-                    .calculateBounds().run { remember(this) { paddedBelow(1/2f).getMapCameraUpdate(100) } }
+                    -> subjectTrainService?.getStops()?.map { it.getStation() }
+                    ?.calculateBounds()?.run { remember(this) {
+                        paddedBelow(1/2f).getMapCameraUpdate(100)
+                    } }
 
                 else
                     -> throw IllegalArgumentException("Unrecognized routeArgs type: ${routeArgs::class}")
@@ -204,7 +219,7 @@ fun RoutePlannerScreen(
                 is TrainQuerySelectionRoute
                     -> emptyList<Place>()
                 is PlaceDetailRoute
-                    -> setOfNotNull(viewModelState.origin, viewModelState.destination, subjectPlace!!)
+                    -> setOfNotNull(viewModelState.origin, viewModelState.destination, subjectPlace)
                 is RouteOptionsRoute
                     -> setOfNotNull(viewModelState.origin, viewModelState.destination)
                 is RouteDetailRoute
@@ -220,17 +235,17 @@ fun RoutePlannerScreen(
             is TrainQuerySelectionRoute -> {
                 null
             }
-            is PlaceDetailRoute -> {
-                { BottomSheetContent(subjectPlace!!, onNavigateMinor) }
+            is PlaceDetailRoute -> subjectPlace?.let{
+                { BottomSheetContent(it, onNavigateMinor) }
             }
-            is RouteOptionsRoute -> {
-                { BottomSheetContent(viewModelState.routes!!, onNavigateMinor) }
+            is RouteOptionsRoute -> viewModelState.routes?.let {
+                { BottomSheetContent(it, onNavigateMinor) }
             }
-            is RouteDetailRoute -> {
-                { BottomSheetContent(subjectRoute!!, onNavigateMinor) }
+            is RouteDetailRoute -> subjectRoute?.let{
+                { BottomSheetContent(it, onNavigateMinor) }
             }
-            is TrainServiceDetailRoute -> {
-                { BottomSheetContent(subjectTrainService!!, onNavigateMinor) }
+            is TrainServiceDetailRoute -> subjectTrainService?.let{
+                { BottomSheetContent(it, onNavigateMinor) }
             }
             else ->
                 throw IllegalArgumentException("Unrecognized routeArgs type: ${routeArgs::class}")
@@ -245,6 +260,7 @@ private fun RoutePlannerScreen(
     viewModelState: DataState,
 
     onMapLoaded: () -> Unit,
+    onZoomComplete: () -> Unit,
     mapCameraUpdate: CameraUpdate?,
     mapMarkers: Collection<Place>,
 
@@ -258,6 +274,7 @@ private fun RoutePlannerScreen(
         arriveTime = viewModelState.arriveTime,
 
         onMapLoaded = onMapLoaded,
+        onZoomComplete = onZoomComplete,
         mapMarkers = mapMarkers,
 
         mapCameraUpdate = mapCameraUpdate,
@@ -282,6 +299,7 @@ private fun RoutePlannerScreen(
     mapCameraUpdate: CameraUpdate?,
 
     mapMarkers: Collection<Place>,
+    onZoomComplete: () -> Unit,
     onMapLoaded: () -> Unit,
 
     isSubmitQueryAllowed: Boolean,
@@ -311,6 +329,7 @@ private fun RoutePlannerScreen(
 
             camera = mapCameraUpdate,
             onMapLoaded = onMapLoaded,
+            onZoomComplete = onZoomComplete,
 
             contentPadding = innerPadding,
         )
@@ -485,13 +504,17 @@ private fun PersistentGoogleMap(
 
     camera: CameraUpdate?,
     onMapLoaded: () -> Unit,
+    onZoomComplete: () -> Unit,
 
     contentPadding: PaddingValues,
 ) {
     val cameraState = rememberCameraPositionState()
 
     camera?.let {
-        LaunchedEffect(it) { cameraState.animate(it) }
+        LaunchedEffect(it) {
+            cameraState.animate(it)
+            onZoomComplete()
+        }
     }
 
     GoogleMap(
