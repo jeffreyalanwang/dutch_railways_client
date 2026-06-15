@@ -44,7 +44,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainServiceDetailRoute
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PlaceSearchResults
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetail
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.topOnly
 import kotlinx.coroutines.launch
 
 @Preview
@@ -151,7 +150,7 @@ fun StationSearchScreen(onNavigate: (TrainServiceDetailRoute)->Unit) {
     ) { innerPadding ->
         if (stationState == null) NoStationDetail(
             Modifier
-                .padding(innerPadding.topOnly())
+                .padding(innerPadding)
         )
         else Box(
             Modifier

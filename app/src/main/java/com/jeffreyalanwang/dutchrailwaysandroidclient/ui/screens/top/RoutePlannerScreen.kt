@@ -323,6 +323,7 @@ private fun RoutePlannerScreen(
 
 @Composable
 private fun PersistentTopBar(
+    modifier: Modifier = Modifier,
     isSubmitQueryAllowed: Boolean,
     arriveTime: Instant?,
     departTime: Instant?,
@@ -337,6 +338,7 @@ private fun PersistentTopBar(
 
     AppBarWithDualSearch(
         dualSearchBarState,
+        modifier = modifier,
         colors = SearchBarDefaults.appBarWithSearchColors(
             appBarContainerColor = Color.Transparent,
         ),
@@ -522,6 +524,7 @@ private fun PersistentGoogleMap(
 private fun RevealableBottomSheet(
     isVisible: Boolean,
     scaffoldPadding: PaddingValues,
+    modifier: Modifier = Modifier,
     content: @Composable BoxScope.() -> Unit,
 ) {
     val sheetState = rememberStandardBottomSheetState(
@@ -548,11 +551,11 @@ private fun RevealableBottomSheet(
         backHandlerEnabled = false,
 
         // When fully expanded, do not cover scaffold's app bar
-        modifier = Modifier.padding(scaffoldPadding.topOnly()),
+        modifier = modifier.padding(scaffoldPadding.topOnly()),
     ) {
         Box(
             modifier = Modifier
-                .padding(bottom = 10.dp),
+                .padding(bottom = 25.dp),
             content = content,
         )
     }

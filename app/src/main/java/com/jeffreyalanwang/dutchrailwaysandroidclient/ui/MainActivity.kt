@@ -7,6 +7,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
 import androidx.compose.animation.ExitTransition
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -73,7 +74,9 @@ fun DutchRailwaysAndroidClientApp() {
                 rememberViewModelStoreNavEntryDecorator(),
             ),
             entryProvider = appEntries(),
-            modifier = Modifier.padding(innerPadding.bottomOnly()),
+            modifier = Modifier
+                .padding(innerPadding.bottomOnly())
+                .consumeWindowInsets(innerPadding.bottomOnly()),
             predictivePopTransitionSpec = {
                 ContentTransform(
                     targetContentEnter = EnterTransition.None,
