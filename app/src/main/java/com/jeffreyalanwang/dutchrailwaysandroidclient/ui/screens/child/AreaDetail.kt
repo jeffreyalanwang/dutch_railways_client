@@ -52,7 +52,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getBounds
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.cellAlign
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.fill
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
@@ -69,10 +69,10 @@ private fun AreaDetailPreview() {
 
     AreaDetailScreen(
         BackendApi.get_area_info(1),
-        onNavigate = { stationRoute ->
+        onNavigate = { stationNavArgs ->
             snackbarEffectScope.launch {
                 snackbarHostState.showSnackbar(
-                    stationRoute.toString(),
+                    stationNavArgs.toString(),
                     withDismissAction = true
                 )
             }
@@ -93,7 +93,7 @@ private fun AreaDetailPreview() {
 @Composable
 fun AreaDetailScreen(
     area: Area,
-    onNavigate: (StationDetailRoute) -> Unit,
+    onNavigate: (StationDetailNavArgs) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     Scaffold(
@@ -127,14 +127,14 @@ fun AreaDetailScreen(
 @Composable
 fun AreaDetailWithoutMap(
     area: Area,
-    onNavigate: (StationDetailRoute) -> Unit,
+    onNavigate: (StationDetailNavArgs) -> Unit,
     modifier: Modifier = Modifier,
 ) = AreaDetailBase(area, onNavigate, modifier)
 
 @Composable
 fun AreaDetail(
     area: Area,
-    onNavigate: (StationDetailRoute) -> Unit,
+    onNavigate: (StationDetailNavArgs) -> Unit,
     modifier: Modifier = Modifier,
 ) = AreaDetailBase(area, onNavigate, modifier, {
     val scope = rememberCoroutineScope()
@@ -171,7 +171,7 @@ fun AreaDetail(
 @Composable
 private fun AreaDetailBase(
     area: Area,
-    onNavigate: (StationDetailRoute) -> Unit,
+    onNavigate: (StationDetailNavArgs) -> Unit,
     modifier: Modifier = Modifier,
     googleMapsSlot: @Composable (() -> Unit)? = null,
 ) {
@@ -202,7 +202,7 @@ private fun StationList(
     stations: List<Station>,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues.Zero,
-    onNavigate: (StationDetailRoute) -> Unit
+    onNavigate: (StationDetailNavArgs) -> Unit
 ) {
     val gap = 10.dp
 
@@ -231,7 +231,7 @@ private fun StationList(
                 modifier = modifier
                     .fillMaxWidth()
                     .height(IntrinsicSize.Min)
-                    .clickable { onNavigate(StationDetailRoute(station.id)) }
+                    .clickable { onNavigate(StationDetailNavArgs(station.id)) }
                     .padding(padding.horizontalOnly()),
                 horizontalArrangement = Arrangement.spacedBy(gap, Alignment.Start),
                 verticalAlignment = Alignment.CenterVertically,

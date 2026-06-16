@@ -18,33 +18,58 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy.Companion.predictiveBackDialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.PassServiceDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.TrainServiceDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EndpointTimePicker
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.RoutePlannerScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.StationSearchScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.TripFinderScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.rememberNavBackStack
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.Endpoint
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.RoutePlannerViewModel
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.TripFinderViewModel
 import kotlinx.serialization.Serializable
 
-interface NavRoute: NavKey
+/** All [NavKey] instances in this app should inherit from this type. */
+interface AppNavArgs: NavKey
 
-interface TrainQueryGraphRoute: NavRoute
-interface TrainQueryGraphMajorRoute: NavRoute, TrainQueryGraphRoute
-interface TrainQueryGraphChildRoute: NavRoute, TrainQueryGraphRoute
-interface CommonChildRoute: NavRoute, TrainQueryGraphChildRoute
-interface PlaceDetailRoute: NavRoute, CommonChildRoute { val id: Int }
+/**
+ * Represents a UI configuration in the [AppDestinations.TRIP] tab,
+ * i.e. rendered with [TripFinderScreen].
+ */
+interface TripFinderGraphNavArgs: AppNavArgs
+/**
+ * A [TripFinderGraphNavArgs] that cannot be added or removed from the
+ * back stack without making modifications to data provided by the
+ * ViewModel in [TripFinderDataModel]
+ * [com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.TripFinderDataModel].
+ *
+ * @see TripFinderViewModel
+ * **/
+interface TripFinderGraphMajorNavArgs: TripFinderGraphNavArgs
+/**
+ * A page represented by [TripFinderGraphNavArgs] that is not
+ * the top-level route (i.e. [TripFinderStartNavArgs])
+ */
+interface TripFinderGraphChildNavArgs: TripFinderGraphNavArgs
 
-@Serializable data object TrainQuerySelectionRoute : NavRoute, TrainQueryGraphRoute, TrainQueryGraphMajorRoute
-@Serializable data object StationSearchRoute : NavRoute
+/**
+ * A page which all tabs' nested [NavDisplay]s should be able to navigate to.
+ * Generally, these can all be added at once using [EntryProviderScope.tabEntries],
+ * but can be delegated differently for specific tabs.
+ */
+interface CommonChildNavArgs: AppNavArgs, TripFinderGraphChildNavArgs
+interface PlaceDetailNavArgs: CommonChildNavArgs { val id: Int }
 
-@Serializable data class AreaDetailRoute(override val id: Int) : NavRoute, TrainQueryGraphChildRoute, CommonChildRoute, PlaceDetailRoute
-@Serializable data class StationDetailRoute(override val id: Int) : NavRoute, TrainQueryGraphChildRoute, CommonChildRoute, PlaceDetailRoute
-@Serializable data class TrainServiceDetailRoute(val id: Int) : NavRoute, TrainQueryGraphChildRoute, CommonChildRoute
-@Serializable data object RouteOptionsRoute : NavRoute, TrainQueryGraphChildRoute, TrainQueryGraphMajorRoute
-@Serializable data class RouteDetailRoute(val index: Int) : NavRoute, TrainQueryGraphChildRoute
-@Serializable data class TimePickerRoute(val forEndpoint: Endpoint) : NavRoute, TrainQueryGraphChildRoute
+// Tabs' NavKey types (used in both top-level [MainActivity] and nested [NavDisplay] back stacks)
+@Serializable data object TripFinderStartNavArgs : AppNavArgs, TripFinderGraphNavArgs, TripFinderGraphMajorNavArgs
+@Serializable data object StationSearchNavArgs : AppNavArgs
+
+// Child navigation routes' NavKey types
+@Serializable data class AreaDetailNavArgs(override val id: Int) : PlaceDetailNavArgs, TripFinderGraphChildNavArgs
+@Serializable data class StationDetailNavArgs(override val id: Int) : PlaceDetailNavArgs, TripFinderGraphChildNavArgs
+@Serializable data class PassServiceDetailNavArgs(val id: Int) : CommonChildNavArgs, TripFinderGraphChildNavArgs
+@Serializable data object JourneyListNavArgs : AppNavArgs, TripFinderGraphChildNavArgs, TripFinderGraphMajorNavArgs
+@Serializable data class JourneyDetailNavArgs(val index: Int) : TripFinderGraphChildNavArgs
+@Serializable data class TimePickerNavArgs(val forEndpoint: Endpoint) : TripFinderGraphChildNavArgs
 
 /**
  * Returns navigation entries for pages in the main screen's bottom navbar.
@@ -52,31 +77,31 @@ interface PlaceDetailRoute: NavRoute, CommonChildRoute { val id: Int }
 @Composable
 fun appEntries(
     // Specific values are meaningless; they simply need to change
-    // in order to reset the corresponding top-level route state
-    resetKeyState: Map<NavRoute, Int>,
+    // in order to reset the corresponding top-level tab's state
+    resetKeyState: Map<AppNavArgs, Int>,
 ) = entryProvider {
-    entry<TrainQuerySelectionRoute> { initialRoute ->
-        key(resetKeyState.get(initialRoute)) {
+    entry<TripFinderStartNavArgs> { initialNavArgs ->
+        key(resetKeyState.get(initialNavArgs)) {
             // Dispose + regenerate view model when key changes
             val viewModelStoreOwner = rememberViewModelStoreOwner()
 
-            val viewModel = viewModel<RoutePlannerViewModel>(viewModelStoreOwner)
+            val viewModel = viewModel<TripFinderViewModel>(viewModelStoreOwner)
             val backStack by viewModel.backStack.collectAsStateWithLifecycle()
 
             NavDisplay(
                 backStack = backStack,
                 onBack = { viewModel.popBack() },
                 sceneStrategy = remember {
-                    PredictiveBackDialogSceneStrategy<TrainQueryGraphRoute>()
+                    PredictiveBackDialogSceneStrategy<TripFinderGraphNavArgs>()
                         .then(SinglePaneSceneStrategy())
                 },
             ) { key ->
                 when (key) {
-                    is TimePickerRoute -> NavEntry(
+                    is TimePickerNavArgs -> NavEntry(
                         key = key,
                         metadata = predictiveBackDialog(),
                     ) { key ->
-                        key as TimePickerRoute
+                        key as TimePickerNavArgs
                         EndpointTimePicker(
                             key.forEndpoint,
                             viewModel = viewModel,
@@ -87,12 +112,12 @@ fun appEntries(
                     else -> NavEntry(
                         key = key,
 
-                        // Same for all routes within this NavDisplay,
-                        // means we use the same SinglePaneScene,
-                        // thus same RoutePlannerScreen
+                        // Same value for all routes within this NavDisplay,
+                        // means we use the same SinglePaneScene, thus same
+                        // TripFinderScreen
                         contentKey = true,
                     ) { key ->
-                        RoutePlannerScreen(
+                        TripFinderScreen(
                             key,
                             viewModel,
                             onNavigateMinor = { viewModel.pushUserRequested(it) }
@@ -103,16 +128,16 @@ fun appEntries(
         }
     }
 
-    entry<StationSearchRoute> { initialRoute ->
-        key(resetKeyState.get(initialRoute)) {
-            val backstack = rememberNavBackStack<NavRoute>(initialRoute)
+    entry<StationSearchNavArgs> { initialNavArgs ->
+        key(resetKeyState.get(initialNavArgs)) {
+            val backstack = rememberNavBackStack<AppNavArgs>(initialNavArgs)
 
             NavDisplay(
                 backStack = backstack,
                 entryProvider = entryProvider {
-                    entry<StationSearchRoute> { route ->
+                    entry<StationSearchNavArgs> { navArgs ->
                         StationSearchScreen(
-                            onNavigate = { newRoute -> backstack.add(newRoute) }
+                            onNavigate = { newNavArgs -> backstack.add(newNavArgs) }
                         )
                     }
                     tabEntries(
@@ -128,32 +153,33 @@ fun appEntries(
  * Returns navigation entries for pages which may be opened by
  * (thus pushed on top of) top-level pages in the back stack.
  *
- * [T] must be a superclass of [CommonChildRoute].
+ * [T] must be a superclass of [CommonChildNavArgs].
  */
-fun <T: NavRoute> EntryProviderScope<T>.tabEntries(
-    onNavigate: (CommonChildRoute) -> Unit,
+@Suppress("UNCHECKED_CAST")
+fun <T: AppNavArgs> EntryProviderScope<T>.tabEntries(
+    onNavigate: (CommonChildNavArgs) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     // Enables smart cast for rest of method body
-    this as EntryProviderScope<CommonChildRoute>
+    this as EntryProviderScope<CommonChildNavArgs>
 
-    entry<AreaDetailRoute> { routeArgs ->
+    entry<AreaDetailNavArgs> { navArgs ->
         AreaDetailScreen(
-            rememberSaveable(routeArgs.id) { BackendApi.get_area_info(routeArgs.id) },
+            rememberSaveable(navArgs.id) { BackendApi.get_area_info(navArgs.id) },
             onNavigate = onNavigate,
             onNavigateBack = onNavigateBack,
         )
     }
-    entry<StationDetailRoute> { routeArgs ->
+    entry<StationDetailNavArgs> { navArgs ->
         StationDetailScreen(
-            rememberSaveable(routeArgs.id) { BackendApi.get_station_info(routeArgs.id) },
+            rememberSaveable(navArgs.id) { BackendApi.get_station_info(navArgs.id) },
             onNavigate = onNavigate,
             onNavigateBack = onNavigateBack,
         )
     }
-    entry<TrainServiceDetailRoute> { routeArgs ->
-        TrainServiceDetailScreen(
-            rememberSaveable(routeArgs.id) { BackendApi.get_pass_service(routeArgs.id) },
+    entry<PassServiceDetailNavArgs> { navArgs ->
+        PassServiceDetailScreen(
+            rememberSaveable(navArgs.id) { BackendApi.get_pass_service(navArgs.id) },
             onNavigate = onNavigate,
             onNavigateBack = onNavigateBack,
         )

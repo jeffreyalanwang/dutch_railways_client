@@ -54,7 +54,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getCurrStop
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.LineSegmentWithPoint
@@ -68,16 +68,16 @@ import java.util.EnumSet
 
 @Preview
 @Composable
-private fun TrainServiceDetailPreview() {
+private fun PassServiceDetailPreview() {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 
-    TrainServiceDetailScreen(
+    PassServiceDetailScreen(
         BackendApi.get_pass_service(119),
-        onNavigate = { stationRoute ->
+        onNavigate = { stationNavArgs ->
             snackbarEffectScope.launch {
                 snackbarHostState.showSnackbar(
-                    stationRoute.toString(),
+                    stationNavArgs.toString(),
                     withDismissAction = true
                 )
             }
@@ -96,9 +96,9 @@ private fun TrainServiceDetailPreview() {
 }
 
 @Composable
-fun TrainServiceDetailScreen(
+fun PassServiceDetailScreen(
     service: PassService,
-    onNavigate: (StationDetailRoute) -> Unit,
+    onNavigate: (StationDetailNavArgs) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     Scaffold(
@@ -120,7 +120,7 @@ fun TrainServiceDetailScreen(
     ) { innerPadding ->
         Box(Modifier.verticalScroll(rememberScrollState())) {
             Card(Modifier.padding(innerPadding + PaddingValues(10.dp))) {
-                TrainServiceDetail(
+                PassServiceDetail(
                     service,
                     onNavigate,
                     Modifier.padding(vertical = 20.dp)
@@ -132,9 +132,9 @@ fun TrainServiceDetailScreen(
 }
 
 @Composable
-fun TrainServiceDetail(
+fun PassServiceDetail(
     service: PassService,
-    onNavigate: (StationDetailRoute) -> Unit,
+    onNavigate: (StationDetailNavArgs) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val stops = remember { service.getStops() }
@@ -240,7 +240,7 @@ private fun AmenityBadge(
 @Composable
 private fun Stops(
     stops: List<ServiceStop>,
-    onNavigate: (StationDetailRoute)-> Unit,
+    onNavigate: (StationDetailNavArgs)-> Unit,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues.Zero,
 ) {
@@ -258,7 +258,7 @@ private fun Stops(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable {
-                        onNavigate(StationDetailRoute(stop.stationId))
+                        onNavigate(StationDetailNavArgs(stop.stationId))
                     }
                     .padding(padding.horizontalOnly()),
                 discreteGridControl = timetableGridControl,

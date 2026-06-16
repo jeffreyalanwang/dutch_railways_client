@@ -1,7 +1,6 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 
 import kotlinx.collections.immutable.toImmutableList
-import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 
@@ -51,15 +50,15 @@ internal fun List<Pair<ServiceStop, ServiceStop>>.edgesNotBetween(
     }
 
 
-internal fun get_routes_min_total_time(
+internal fun get_journeys_min_total_time(
     origin: Int,
     destination: Int,
     edges: List<Pair<ServiceStop, ServiceStop>>,
-): Sequence<RoutePlan> {
+): Sequence<Journey> {
     val firstEdgeOptions = edges.edgesBetween(fromStationId = origin)
 
     val byFirstEdge = firstEdgeOptions.map { edge ->
-        get_routes_min_arrival_time(
+        get_journeys_min_arrival_time(
             edge.second.stationId,
             destination,
             edges
@@ -78,11 +77,11 @@ internal fun get_routes_min_total_time(
 }
 
 
-private fun get_routes_min_arrival_time(
+private fun get_journeys_min_arrival_time(
     origin: Int,
     destination: Int,
     edges: List<Pair<ServiceStop, ServiceStop>>
-) = sequence<RoutePlan> {
+) = sequence<Journey> {
     var _edges = edges
 
     // minimize final arrival time.
@@ -157,7 +156,7 @@ private fun trace_edges(
     origin: Int,
     destination: Int,
     lastEdgeByDestination: Map<Int, Pair<ServiceStop, ServiceStop>>,
-): RoutePlan {
+): Journey {
     val buf = ArrayDeque<Pair<ServiceStop, ServiceStop>>()
 
     var addNext: Int = destination
@@ -177,15 +176,15 @@ private fun trace_edges(
         }
         .flatten()
 
-    return RoutePlan(flattened.toImmutableList())
+    return Journey(flattened.toImmutableList())
 }
 
-//fun get_routes(
+//fun get_journeys(
 //    origin: Place,
 //    destination: Place,
 //    departTime: Instant? = null,
 //    arriveTime: Instant? = null,
-//): Sequence<RoutePlan> {
+//): Sequence<Journey> {
 //    // These may be in order of distance in cm, if origin or destination is a LatLng
 //    val originStationOptions: List<Pair<UInt, Station>> =
 //        BackendApi.find_best_station(origin)
@@ -214,12 +213,12 @@ private fun trace_edges(
 //                .zipWithNext()
 //                .edgesWithin(departTime, arriveTime)
 //        }
-//    val routes: Sequence<RoutePlan>
+//    val journeys: Sequence<Journey>
 //        = endpointMatrix.map { (originStation, destinationStation) ->
-//            get_routes_min_total_time(originStation.id, destinationStation.id, stationEdges)
+//            get_journeys_min_total_time(originStation.id, destinationStation.id, stationEdges)
 //        }
 //        .toList()
 //        .flattenRoundRobin()
 //
-//    return routes
+//    return journeys
 //}

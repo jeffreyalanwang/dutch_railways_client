@@ -49,7 +49,7 @@ class MainActivity : ComponentActivity() {
 @Preview
 @Composable
 fun DutchRailwaysAndroidClientApp() {
-    val topBackStack = rememberNavBackStack<NavRoute>(AppDestinations.TRIP.navKey)
+    val topBackStack = rememberNavBackStack<AppNavArgs>(AppDestinations.TRIP.navKey)
     val resetKeys = remember {
         AppDestinations.entries.map { it.navKey }
             .associateWith { 0 }
@@ -103,10 +103,10 @@ fun DutchRailwaysAndroidClientApp() {
 private enum class AppDestinations(
     val label: String,
     val icon: Int,
-    val navKey: NavRoute,
+    val navKey: AppNavArgs,
 ) {
     // TODO HOME
-    TRIP("Trip", R.drawable.ic_directions, TrainQuerySelectionRoute),
-    STATIONS("Stations", R.drawable.ic_dr_station, StationSearchRoute),
+    TRIP("Trip", R.drawable.ic_directions, TripFinderStartNavArgs),
+    STATIONS("Stations", R.drawable.ic_dr_station, StationSearchNavArgs),
     // TODO EDIT
 }

@@ -45,15 +45,15 @@ import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Journey
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Journey.Companion.byLeg
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
-import com.jeffreyalanwang.dutchrailwaysandroidclient.RoutePlan
-import com.jeffreyalanwang.dutchrailwaysandroidclient.RoutePlan.Companion.byLeg
 import com.jeffreyalanwang.dutchrailwaysandroidclient.calculateBounds
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getCurrStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.minus
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainServiceDetailRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.LineSegmentWithPoint
@@ -68,19 +68,19 @@ import kotlin.time.Duration
 
 @Preview
 @Composable
-private fun RouteDetailPreview() {
+private fun JourneyDetailPreview() {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 
-    RouteDetailScreen(
-        BackendApi.get_routes(
+    JourneyDetailScreen(
+        BackendApi.get_journeys(
             BackendApi.get_station_info(358),
             BackendApi.get_station_info(361),
         ).first(),
-        onNavigate = { passServiceRoute ->
+        onNavigate = { passServiceNavArgs ->
             snackbarEffectScope.launch {
                 snackbarHostState.showSnackbar(
-                    passServiceRoute.toString(),
+                    passServiceNavArgs.toString(),
                     withDismissAction = true
                 )
             }
@@ -99,9 +99,9 @@ private fun RouteDetailPreview() {
 }
 
 @Composable
-fun RouteDetailScreen(
-    route: RoutePlan,
-    onNavigate: (CommonChildRoute) -> Unit,
+fun JourneyDetailScreen(
+    journey: Journey,
+    onNavigate: (CommonChildNavArgs) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
     Scaffold(
@@ -122,8 +122,8 @@ fun RouteDetailScreen(
     ) { innerPadding ->
         Box(Modifier.verticalScroll(rememberScrollState())) {
             Card(Modifier.padding(innerPadding + PaddingValues(10.dp))) {
-                RouteDetail(
-                    route,
+                JourneyDetail(
+                    journey,
                     onNavigate,
                     Modifier.padding(vertical = 20.dp),
                 )
@@ -133,18 +133,18 @@ fun RouteDetailScreen(
 }
 
 @Composable
-fun RouteDetailWithoutMap(
-    route: RoutePlan,
-    onNavigate: (CommonChildRoute) -> Unit,
+fun JourneyDetailWithoutMap(
+    journey: Journey,
+    onNavigate: (CommonChildNavArgs) -> Unit,
     modifier: Modifier = Modifier,
-) = RouteDetailBase(route, onNavigate, modifier)
+) = JourneyDetailBase(journey, onNavigate, modifier)
 
 @Composable
-fun RouteDetail(
-    route: RoutePlan,
-    onNavigate: (CommonChildRoute) -> Unit,
+fun JourneyDetail(
+    journey: Journey,
+    onNavigate: (CommonChildNavArgs) -> Unit,
     modifier: Modifier = Modifier,
-) = RouteDetailBase(route, onNavigate, modifier, {
+) = JourneyDetailBase(journey, onNavigate, modifier, {
     val cameraPositionState = rememberCameraPositionState()
 
     HorizontalDivider(thickness = Dp.Hairline)
@@ -154,7 +154,7 @@ fun RouteDetail(
         contentDescription = "Transfer points on map",
         onMapLoaded = {
             cameraPositionState.move(
-                route.stops
+                journey.stops
                     .map { it.getStation().geom }
                     .calculateBounds()
                     .getMapCameraUpdate(64)
@@ -164,7 +164,7 @@ fun RouteDetail(
             .fillMaxWidth()
             .sizeIn(minHeight = 200.dp, maxHeight = 400.dp),
     ) {
-        for (stops in route.stopsByLayover()) {
+        for (stops in journey.stopsByLayover()) {
             val station = stops.first().stationId.let { BackendApi.get_station_info(it) }
             val timeString = listOfNotNull(
                 stops.first().arrival,
@@ -182,29 +182,29 @@ fun RouteDetail(
 })
 
 @Composable
-private fun RouteDetailBase(
-    route: RoutePlan,
-    onNavigate: (CommonChildRoute) -> Unit,
+private fun JourneyDetailBase(
+    journey: Journey,
+    onNavigate: (CommonChildNavArgs) -> Unit,
     modifier: Modifier = Modifier,
     googleMapsSlot: @Composable (() -> Unit)? = null,
 ) {
     Column (modifier.fillMaxWidth()) {
         Icon(
             painterResource(R.drawable.ic_dr_traintime),
-            "Train route details",
+            "Route details",
             Modifier.size(72.dp + 20.dp)
         )
         Text(
-            "Trip from ${route.origin.name} to ${route.destination.name}",
+            "Trip from ${journey.origin.name} to ${journey.destination.name}",
             style = MaterialTheme.typography.displaySmall,
             modifier = Modifier.padding(horizontal=10.dp),
         )
         Spacer(Modifier.height(10.dp))
         Text(
             "%s, %s to %s".format(
-                AppStringFormats.TripDuration(route.duration),
-                AppStringFormats.Time(route.departTime),
-                AppStringFormats.Time(route.arriveTime),
+                AppStringFormats.TripDuration(journey.duration),
+                AppStringFormats.Time(journey.departTime),
+                AppStringFormats.Time(journey.arriveTime),
             ),
             modifier = Modifier.padding(horizontal=10.dp)
         )
@@ -213,8 +213,8 @@ private fun RouteDetailBase(
         googleMapsSlot?.invoke()
         Spacer(Modifier.height(10.dp))
 
-        Itinerary(
-            route,
+        JourneyItinerary(
+            journey,
             padding = PaddingValues(horizontal=10.dp),
             onNavigate = onNavigate
         )
@@ -222,14 +222,14 @@ private fun RouteDetailBase(
 }
 
 @Composable
-private fun Itinerary(
-    route: RoutePlan,
-    onNavigate: (CommonChildRoute)-> Unit,
+private fun JourneyItinerary(
+    journey: Journey,
+    onNavigate: (CommonChildNavArgs)-> Unit,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues.Zero,
 ) {
-    val currStopState by remember { mutableIntStateOf(getCurrStop(route.stops).index) }
-    val timetableGridControl = remember(route) { DiscreteGridControl() }
+    val currStopState by remember { mutableIntStateOf(getCurrStop(journey.stops).index) }
+    val timetableGridControl = remember(journey) { DiscreteGridControl() }
     // TODO on stop departure, update currStopState and set the timer for the next stop down
 
     Column(modifier.padding(padding.verticalOnly())) {
@@ -244,7 +244,7 @@ private fun Itinerary(
             )
         }
 
-        route.stops
+        journey.stops
             .withIndex()
             .byLeg { it.value.passServiceId }
             .let {
@@ -264,7 +264,7 @@ private fun Itinerary(
                         .fillMaxWidth()
                         .clickable {
                             onNavigate(
-                                TrainServiceDetailRoute(legStops.first.value.passServiceId)
+                                PassServiceDetailNavArgs(legStops.first.value.passServiceId)
                             )
                         }
                         .padding(padding.horizontalOnly()),
@@ -281,7 +281,7 @@ private fun Itinerary(
                         modifier = Modifier
                             .fillMaxWidth()
                             .clickable {
-                                onNavigate(StationDetailRoute(legEndStop.value.stationId))
+                                onNavigate(StationDetailNavArgs(legEndStop.value.stationId))
                             }
                             .padding(padding.horizontalOnly()),
                         lineWidth = lineWidth,

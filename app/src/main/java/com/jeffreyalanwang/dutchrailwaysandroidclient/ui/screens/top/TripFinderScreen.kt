@@ -49,33 +49,33 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Journey
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
-import com.jeffreyalanwang.dutchrailwaysandroidclient.RoutePlan
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.calculateBounds
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letWith
 import com.jeffreyalanwang.dutchrailwaysandroidclient.toLocalTime
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PlaceDetailRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.RouteDetailRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.RouteOptionsRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TimePickerRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQueryGraphChildRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQueryGraphRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQuerySelectionRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainServiceDetailRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.JourneyDetailNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.JourneyListNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PlaceDetailNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TimePickerNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphChildNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderStartNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.AppBarWithDualSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ClearableTimePicker
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PlaceSearchResults
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.rememberDualSearchBarState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailWithoutMap
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.RouteDetailWithoutMap
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.JourneyDetailWithoutMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailWithoutMap
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.TrainServiceDetail
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.RouteOptionsList
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.PassServiceDetail
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.JourneyList
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.boundsForDisplay
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.getMapCameraUpdate
@@ -83,7 +83,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.paddedBelow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.topOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.DataState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.Endpoint
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.RoutePlannerViewModel
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.TripFinderViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
 import kotlinx.datetime.TimeZone
@@ -94,22 +94,25 @@ import kotlin.time.Instant
 
 val ON_MAP_SHADOW_ELEVATION = 12.dp
 
+fun throwUnrecognizedNavArgs(navArgs: TripFinderGraphNavArgs): Nothing
+    = throw IllegalArgumentException("Unrecognized navArgs type: ${navArgs::class}")
+
 @Preview
 @Composable
-private fun RoutePlannerScreenPreview() {
+private fun TripFinderScreenPreview() {
     val scope = rememberCoroutineScope()
     val snackbarHostState = remember { SnackbarHostState() }
-    val viewModel = viewModel<RoutePlannerViewModel>()
+    val viewModel = viewModel<TripFinderViewModel>()
 
     val backStack by viewModel.backStack.collectAsState()
 
-    RoutePlannerScreen (
-        routeArgs = backStack.last(),
+    TripFinderScreen (
+        navArgs = backStack.last(),
         viewModel = viewModel,
-        onNavigateMinor = { newRoute ->
+        onNavigateMinor = { newNavArgs ->
             scope.launch {
                 snackbarHostState.showSnackbar(
-                    newRoute.toString(),
+                    newNavArgs.toString(),
                     withDismissAction = true
                 )
             }
@@ -122,10 +125,10 @@ private fun RoutePlannerScreenPreview() {
 }
 
 @Composable
-fun RoutePlannerScreen(
-    routeArgs: TrainQueryGraphRoute,
-    viewModel: RoutePlannerViewModel,
-    onNavigateMinor: (TrainQueryGraphChildRoute)->Unit,
+fun TripFinderScreen(
+    navArgs: TripFinderGraphNavArgs,
+    viewModel: TripFinderViewModel,
+    onNavigateMinor: (TripFinderGraphChildNavArgs)->Unit,
 ) {
     // This composable can only navigate to major routes by triggering changes
     // in [viewModel]. However, it is allowed to navigate to minor routes
@@ -136,128 +139,126 @@ fun RoutePlannerScreen(
     val initialZoomExecuted = viewModel.initialZoomExecuted
 
     val subjectPlace: Place?
-    val subjectRoute: RoutePlan?
-    val subjectTrainService: PassService?
-    when (routeArgs) {
-        is PlaceDetailRoute -> {
-            subjectPlace = remember(routeArgs) {
-                when (routeArgs.id) {
+    val subjectJourney: Journey?
+    val subjectPassService: PassService?
+    when (navArgs) {
+        is PlaceDetailNavArgs -> {
+            subjectPlace = remember(navArgs) {
+                when (navArgs.id) {
                     viewModelState.origin?.id -> viewModelState.origin
                     viewModelState.destination?.id -> viewModelState.destination
-                    else -> BackendApi.get_place_info(routeArgs.id)
+                    else -> BackendApi.get_place_info(navArgs.id)
                 }
             }
-            subjectRoute = null
-            subjectTrainService = null
+            subjectJourney = null
+            subjectPassService = null
         }
-        is RouteDetailRoute -> {
+        is JourneyDetailNavArgs -> {
             subjectPlace = null
-            subjectRoute = remember(routeArgs, viewModelState) {
-                viewModelState.routes!![routeArgs.index]
+            subjectJourney = remember(navArgs, viewModelState) {
+                viewModelState.journeys!![navArgs.index]
             }
-            subjectTrainService = null
+            subjectPassService = null
         }
-        is TrainServiceDetailRoute -> {
+        is PassServiceDetailNavArgs -> {
             subjectPlace = null
-            subjectRoute = null
-            subjectTrainService = remember() {
-                BackendApi.get_pass_service(routeArgs.id)
+            subjectJourney = null
+            subjectPassService = remember() {
+                BackendApi.get_pass_service(navArgs.id)
             }
         }
         else -> {
             subjectPlace = null
-            subjectRoute = null
-            subjectTrainService = null
+            subjectJourney = null
+            subjectPassService = null
         }
     }
 
     // Extensive use of null-safe [?.run] and [?.let] serves to
-    // allow discrepancies between viewModel's [routeArgs] state
+    // allow discrepancies between viewModel's [navArgs] state
     // and the one passed; this issue occurs when [NavDisplay]
     // handles predictive back by rendering two versions of
-    // [RoutePlannerScreen] (one with old and new [routeArgs]).
+    // [TripFinderScreen] (one with old and new [navArgs]).
 
-    RoutePlannerScreen(
+    TripFinderScreen(
         viewModel = viewModel,
         viewModelState = viewModelState,
 
         // Short circuit on [mapLoaded], ensuring we never try to evaluate lazy property
         // [mapCameraUpdate] before it is allowed to use [CameraUpdateFactory].
         onMapLoaded = { mapLoaded = true },
-        onZoomComplete = { viewModel.setInitialZoomExecuted() }, // technically only needed when TrainQuerySelectionRoute
+        onZoomComplete = { viewModel.setInitialZoomExecuted() }, // technically only needed when TripFinderStartRoute
         mapCameraUpdate = if (!mapLoaded) null
-            else when (routeArgs) {
-                is TrainQuerySelectionRoute
+            else when (navArgs) {
+                is TripFinderStartNavArgs
                     -> if (initialZoomExecuted) null else
                         BackendApi.get_nl_area()
                         .run {
                             remember { boundsForDisplay().paddedBelow(1f).getMapCameraUpdate(200) }
                         }
-                is PlaceDetailRoute
+                is PlaceDetailNavArgs
                     -> subjectPlace?.run { remember(this) {
                         boundsForDisplay().paddedBelow(1f).getMapCameraUpdate(200)
                     } }
-                is RouteOptionsRoute
+                is JourneyListNavArgs
                     -> listOfNotNull(viewModelState.origin, viewModelState.destination)
                     .calculateBounds().run { remember(this) {
                         paddedBelow(1f).getMapCameraUpdate(200)
                     } }
-                is RouteDetailRoute
-                    -> subjectRoute?.stopsByLayover()?.map { it.first().getStation() }
+                is JourneyDetailNavArgs
+                    -> subjectJourney?.stopsByLayover()?.map { it.first().getStation() }
                     ?.calculateBounds()?.run { remember(this) {
                         paddedBelow(1f).getMapCameraUpdate(200)
                     } }
-                is TrainServiceDetailRoute
-                    -> subjectTrainService?.getStops()?.map { it.getStation() }
+                is PassServiceDetailNavArgs
+                    -> subjectPassService?.getStops()?.map { it.getStation() }
                     ?.calculateBounds()?.run { remember(this) {
                         paddedBelow(1f).getMapCameraUpdate(200)
                     } }
 
                 else
-                    -> throw IllegalArgumentException("Unrecognized routeArgs type: ${routeArgs::class}")
+                    -> throwUnrecognizedNavArgs(navArgs)
             },
-        mapMarkers = when (routeArgs) {
-                is TrainQuerySelectionRoute
+        mapMarkers = when (navArgs) {
+                is TripFinderStartNavArgs
                     -> emptyList<Place>()
-                is PlaceDetailRoute
+                is PlaceDetailNavArgs
                     -> setOfNotNull(viewModelState.origin, viewModelState.destination, subjectPlace)
-                is RouteOptionsRoute
+                is JourneyListNavArgs
                     -> setOfNotNull(viewModelState.origin, viewModelState.destination)
-                is RouteDetailRoute
-                    -> subjectRoute!!.stopsByLayover().map { it.first().getStation() }.toSet()
-                is TrainServiceDetailRoute
-                    -> subjectTrainService!!.getStops().map { it.getStation() }.toSet()
+                is JourneyDetailNavArgs
+                    -> subjectJourney!!.stopsByLayover().map { it.first().getStation() }.toSet()
+                is PassServiceDetailNavArgs
+                    -> subjectPassService!!.getStops().map { it.getStation() }.toSet()
 
-                else ->
-                    throw IllegalArgumentException("Unrecognized routeArgs type: ${routeArgs::class}")
+                else -> throwUnrecognizedNavArgs(navArgs)
             },
 
-        bottomSheetContent = when (routeArgs) {
-            is TrainQuerySelectionRoute -> {
+        bottomSheetContent = when (navArgs) {
+            is TripFinderStartNavArgs -> {
                 null
             }
-            is PlaceDetailRoute -> subjectPlace?.let{
+            is PlaceDetailNavArgs -> subjectPlace?.let{
                 { BottomSheetContent(it, onNavigateMinor) }
             }
-            is RouteOptionsRoute -> viewModelState.routes?.let {
+            is JourneyListNavArgs -> viewModelState.journeys?.let {
                 { BottomSheetContent(it, onNavigateMinor) }
             }
-            is RouteDetailRoute -> subjectRoute?.let{
+            is JourneyDetailNavArgs -> subjectJourney?.let{
                 { BottomSheetContent(it, onNavigateMinor) }
             }
-            is TrainServiceDetailRoute -> subjectTrainService?.let{
+            is PassServiceDetailNavArgs -> subjectPassService?.let{
                 { BottomSheetContent(it, onNavigateMinor) }
             }
-            else ->
-                throw IllegalArgumentException("Unrecognized routeArgs type: ${routeArgs::class}")
+            else -> throwUnrecognizedNavArgs(navArgs)
         },
     )
 }
 
 
 @Composable
-private fun RoutePlannerScreen(
-    viewModel: RoutePlannerViewModel,
+private fun TripFinderScreen(
+    viewModel: TripFinderViewModel,
     viewModelState: DataState,
 
     onMapLoaded: () -> Unit,
@@ -267,7 +268,7 @@ private fun RoutePlannerScreen(
 
     bottomSheetContent: @Composable (BoxScope.() -> Unit)?,
 ) {
-    RoutePlannerScreen(
+    TripFinderScreen(
         setOrigin = { viewModel.setOrigin(it) },
         setDestination = { viewModel.setDestination(it) },
 
@@ -281,16 +282,16 @@ private fun RoutePlannerScreen(
         mapCameraUpdate = mapCameraUpdate,
 
         isSubmitQueryAllowed = viewModelState.canSubmitQuery,
-        onSubmitQuery = viewModel::loadRoutes,
+        onSubmitQuery = viewModel::loadJourneys,
 
-        onOpenTimePicker = { viewModel.pushUserRequested(TimePickerRoute(forEndpoint = it)) },
+        onOpenTimePicker = { viewModel.pushUserRequested(TimePickerNavArgs(forEndpoint = it)) },
 
         bottomSheetContent = bottomSheetContent,
     )
 }
 
 @Composable
-private fun RoutePlannerScreen(
+private fun TripFinderScreen(
     setOrigin: (Place?) -> Unit,
     setDestination: (Place?) -> Unit,
 
@@ -374,7 +375,7 @@ private fun PersistentTopBar(
             ) {
                 Icon(
                     painterResource(R.drawable.ic_search),
-                    contentDescription = "Search routes"
+                    contentDescription = "Show routes"
                 )
             }
         },
@@ -590,20 +591,20 @@ private fun RevealableBottomSheet(
 
 @Composable
 private fun BottomSheetContent(
-    route: RoutePlan,
-    onNavigate: (CommonChildRoute) -> Unit,
-) = RouteDetailWithoutMap(
-        route = route,
+    journey: Journey,
+    onNavigate: (CommonChildNavArgs) -> Unit,
+) = JourneyDetailWithoutMap(
+        journey = journey,
         onNavigate = onNavigate,
         Modifier.padding(horizontal = 10.dp),
     )
 
 @Composable
 private fun BottomSheetContent(
-    routes: ImmutableList<RoutePlan>,
-    onNavigate: (RouteDetailRoute) -> Unit,
-) = RouteOptionsList(
-        routes = routes,
+    journeys: ImmutableList<Journey>,
+    onNavigate: (JourneyDetailNavArgs) -> Unit,
+) = JourneyList(
+        journeys = journeys,
         onNavigate = onNavigate,
         Modifier.padding(horizontal = 10.dp),
     )
@@ -611,7 +612,7 @@ private fun BottomSheetContent(
 @Composable
 private fun BottomSheetContent(
     place: Place,
-    onNavigate: (CommonChildRoute) -> Unit,
+    onNavigate: (CommonChildNavArgs) -> Unit,
 ) = when(place) {
         is Station ->
             StationDetailWithoutMap(
@@ -634,8 +635,8 @@ private fun BottomSheetContent(
 @Composable
 private fun BottomSheetContent(
     passService: PassService,
-    onNavigate: (StationDetailRoute) -> Unit,
-) = TrainServiceDetail(
+    onNavigate: (StationDetailNavArgs) -> Unit,
+) = PassServiceDetail(
     service = passService,
     onNavigate = onNavigate,
     Modifier.padding(horizontal = 10.dp)
@@ -644,7 +645,7 @@ private fun BottomSheetContent(
 @Composable
 fun EndpointTimePicker(
     forEndpoint: Endpoint,
-    viewModel: RoutePlannerViewModel,
+    viewModel: TripFinderViewModel,
     onDismiss: () -> Unit,
 ) {
     EndpointTimePicker(

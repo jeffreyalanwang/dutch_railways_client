@@ -25,26 +25,26 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Journey
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
-import com.jeffreyalanwang.dutchrailwaysandroidclient.RoutePlan
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.RouteDetailRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.JourneyDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import kotlinx.collections.immutable.ImmutableList
 
 @Composable
-fun RouteOptionsList(
-    routes: ImmutableList<RoutePlan>,
-    onNavigate: (RouteDetailRoute) -> Unit,
+fun JourneyList(
+    journeys: ImmutableList<Journey>,
+    onNavigate: (JourneyDetailNavArgs) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     LazyColumn(modifier) {
-        if (routes.isEmpty()) {
-            item { NoRoutesPlaceholder() }
-        } else routes.forEachIndexed { i, route ->
+        if (journeys.isEmpty()) {
+            item { NoJourneysPlaceholder() }
+        } else journeys.forEachIndexed { i, journey ->
             item {
-                RouteListing(
-                    route,
-                    { onNavigate(RouteDetailRoute(i)) }
+                JourneyListing(
+                    journey,
+                    { onNavigate(JourneyDetailNavArgs(i)) }
                 )
             }
         }
@@ -52,7 +52,7 @@ fun RouteOptionsList(
 }
 
 @Composable
-private fun NoRoutesPlaceholder(modifier: Modifier = Modifier) {
+private fun NoJourneysPlaceholder(modifier: Modifier = Modifier) {
     Column(
         modifier
             .alpha(.7f)
@@ -75,16 +75,16 @@ private fun NoRoutesPlaceholder(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun RouteListing(
-    route: RoutePlan,
-    onClick: (RoutePlan) -> Unit,
+private fun JourneyListing(
+    journey: Journey,
+    onClick: (Journey) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     // Row height is controlled by transfers column.
     // Element width is controlled by duration and transfers item/column.
     Row(
         modifier = modifier
-            .clickable(onClick = { onClick(route) })
+            .clickable(onClick = { onClick(journey) })
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
             .padding(horizontal = 4.dp),
@@ -92,7 +92,7 @@ private fun RouteListing(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Text(
-            AppStringFormats.TripDuration(route.duration),
+            AppStringFormats.TripDuration(journey.duration),
             textAlign = TextAlign.Center,
             softWrap = false,
             modifier = Modifier.fillMaxWidth(
@@ -112,12 +112,12 @@ private fun RouteListing(
             horizontalAlignment = Alignment.End
         ) {
             Text(
-                AppStringFormats.Time(route.stops.first().departure!!),
+                AppStringFormats.Time(journey.stops.first().departure!!),
                 style = MaterialTheme.typography.titleSmallEmphasized,
                 modifier = Modifier.alpha(0.5f),
             )
             Text(
-                AppStringFormats.Time(route.stops.last().arrival!!),
+                AppStringFormats.Time(journey.stops.last().arrival!!),
                 style = MaterialTheme.typography.titleSmallEmphasized,
                 modifier = Modifier.alpha(0.5f),
             )
@@ -131,13 +131,13 @@ private fun RouteListing(
             horizontalAlignment = Alignment.Start
         ) {
             Text(
-                route.stops.first()
+                journey.stops.first()
                     .getStation().name,
                 overflow = TextOverflow.MiddleEllipsis,
                 style = MaterialTheme.typography.titleSmallEmphasized,
             )
             Text(
-                route.stops.last()
+                journey.stops.last()
                     .getStation().name,
                 overflow = TextOverflow.MiddleEllipsis,
                 style = MaterialTheme.typography.titleSmallEmphasized,
@@ -148,7 +148,7 @@ private fun RouteListing(
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                route.transferCount.toString(),
+                journey.transferCount.toString(),
                 style = MaterialTheme.typography.displaySmall,
             )
             Text(

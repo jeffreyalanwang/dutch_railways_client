@@ -17,7 +17,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getBounds
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NavRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AppNavArgs
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
@@ -102,11 +102,11 @@ fun Place.boundsForDisplay()
     }
 
 @Composable
-inline fun <reified T: NavRoute> rememberNavBackStack(
+inline fun <reified T: AppNavArgs> rememberNavBackStack(
     vararg elements: T,
 ): NavBackStack<T> {
     return rememberSerializable(
-        // Take advantage of the fact that NavRoute is a subclass of NavKey
+        // Take advantage of the fact that [AppNavArgs] is a subclass of [NavKey]
         serializer = NavBackStackSerializer(NavKeySerializer()),
     ) {
         NavBackStack(*elements)

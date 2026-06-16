@@ -41,7 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainServiceDetailRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PlaceSearchResults
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetail
 import kotlinx.coroutines.launch
@@ -52,10 +52,10 @@ private fun StationSearchScreenPreview() {
     val snackbarHostState = remember { SnackbarHostState() }
     val snackbarEffectScope = rememberCoroutineScope()
 
-    StationSearchScreen { newRoute ->
+    StationSearchScreen { newNavArgs ->
         snackbarEffectScope.launch {
             snackbarHostState.showSnackbar(
-                newRoute.toString(),
+                newNavArgs.toString(),
                 withDismissAction = true
             )
         }
@@ -66,7 +66,7 @@ private fun StationSearchScreenPreview() {
 
 
 @Composable
-fun StationSearchScreen(onNavigate: (TrainServiceDetailRoute)->Unit) {
+fun StationSearchScreen(onNavigate: (PassServiceDetailNavArgs)->Unit) {
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
     var stationState by rememberSaveable { mutableStateOf<Station?>(null) }

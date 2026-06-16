@@ -9,17 +9,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Journey
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
-import com.jeffreyalanwang.dutchrailwaysandroidclient.RoutePlan
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.removeLast
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AreaDetailRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.RouteOptionsRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQueryGraphChildRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQueryGraphMajorRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQueryGraphRoute
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TrainQuerySelectionRoute
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AreaDetailNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.JourneyListNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphChildNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphMajorNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderStartNavArgs
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
@@ -48,7 +48,7 @@ data class DataState(
      */
     val lastSetEndpoint: Endpoint? = null,
 
-    val routes: ImmutableList<RoutePlan>? = null,
+    val journeys: ImmutableList<Journey>? = null,
 ) {
     val lastSetPlace =
         when (lastSetEndpoint) {
@@ -57,7 +57,7 @@ data class DataState(
             null -> null
         }
     val canSubmitQuery =
-        (origin != null) && (destination != null) && (routes == null)
+        (origin != null) && (destination != null) && (journeys == null)
 
     fun copyWithQueryParams(
         origin: Place? = this.origin,
@@ -71,7 +71,7 @@ data class DataState(
         departTime = departTime,
         arriveTime = arriveTime,
         lastSetEndpoint = lastSet,
-        routes = null,
+        journeys = null,
     )
 
     fun copyWithOrigin(newOrigin: Place?)
@@ -89,7 +89,7 @@ data class DataState(
         )
 }
 
-interface RoutePlannerDataModel {
+interface TripFinderDataModel {
     val uiState: StateFlow<DataState>
     fun setOrigin(origin: Place?)
     fun setDestination(destination: Place?)
@@ -97,11 +97,11 @@ interface RoutePlannerDataModel {
         departTime: Instant? = uiState.value.departTime,
         arriveTime: Instant? = uiState.value.arriveTime,
     )
-    fun loadRoutes()
-    fun clearRoutes()
+    fun loadJourneys()
+    fun clearJourneys()
 }
 
-private class DataModelDelegate: RoutePlannerDataModel {
+private class DataModelDelegate: TripFinderDataModel {
 
     private val _uiState = MutableStateFlow(DataState(
         departTime = Clock.System.now(),
@@ -109,7 +109,7 @@ private class DataModelDelegate: RoutePlannerDataModel {
     override val uiState = _uiState.asStateFlow()
 
     // [setOrigin()] and [setDestination()] need to be separate methods
-    // so that we can implicitly set [RoutePlannerState.lastSet].
+    // so that we can implicitly set [DataState.lastSet].
 
     override fun setOrigin(origin: Place?) {
         if (origin != uiState.value.origin) {
@@ -137,49 +137,52 @@ private class DataModelDelegate: RoutePlannerDataModel {
         }
     }
 
-    override fun loadRoutes() {
-        val routes =
+    override fun loadJourneys() {
+        val journeys =
             with(uiState.value) {
-                BackendApi.get_routes(origin!!, destination!!, departTime, arriveTime)
+                BackendApi.get_journeys(origin!!, destination!!, departTime, arriveTime)
             }
             .take(10)
             .toImmutableList()
-        _uiState.update { it.copy(routes = routes) }
+        _uiState.update { it.copy(journeys = journeys) }
     }
 
-    override fun clearRoutes() {
-        _uiState.update { it.copy(routes = null) }
+    override fun clearJourneys() {
+        _uiState.update { it.copy(journeys = null) }
     }
 }
 
-private typealias GraphRoute = TrainQueryGraphRoute
-private typealias ChildGraphRoute = TrainQueryGraphChildRoute
-private typealias MajorGraphRoute = TrainQueryGraphMajorRoute
-private typealias BackStack = ImmutableList<GraphRoute>
+private typealias GraphNavArgs = TripFinderGraphNavArgs
+private typealias ChildGraphNavArgs = TripFinderGraphChildNavArgs
+private typealias MajorGraphNavArgs = TripFinderGraphMajorNavArgs
+private typealias BackStack = ImmutableList<GraphNavArgs>
 
-interface RoutePlannerNavModel {
+interface TripFinderNavModel {
     val backStack: StateFlow<BackStack>
-    fun pushUserRequested(route: GraphRoute)
+    fun pushUserRequested(navArgs: GraphNavArgs)
     fun popBack(): Boolean
 }
 
 private class NavModelDelegate(
-    stateRequestedRoutes: Flow<Pair<MajorGraphRoute, ChildGraphRoute?>>,
-    val onPopMajorRoute: (MajorGraphRoute) -> Boolean,
-): RoutePlannerNavModel {
+    stateRequestedRoutes: Flow<Pair<MajorGraphNavArgs, ChildGraphNavArgs?>>,
+    val onPopMajorRoute: (MajorGraphNavArgs) -> Boolean,
+): TripFinderNavModel {
     // Major nav routes are controlled by the ViewModel and maintain a set linear order.
     //      No minor routes exist between two major routes on the back stack.
     // Minor nav routes are all others in the graph; they are ephemeral w.r.t. the most recent major route.
-    // (Note: Minor routes are always child routes, but not to be confused with [TrainQueryGraphChildRoute].)
+    // (Note: Minor routes are always child routes, but not to be confused with [TripFinderGraphChildRoute].)
 
     // The ViewModel can directly trigger navigation to/back from major routes.
-    //      It can directly trigger navigation to a minor route, but only one, directly above a major route.
+    //      It can directly trigger navigation to a minor route, but only one,
+    //      directly above a major route; even if it has one indicated,
+    //      the user may have removed it by triggering [popBack].
     // The composable itself can directly trigger navigation to minor routes.
-    //      It can directly trigger navigation back from a major/minor route. (In practice we do not use this.)
+    //      It can directly trigger navigation back from a major/minor route.
+    //      (In practice we do not use this.)
     // The back key can trigger navigation back from major and minor routes.
 
     private val _backStack =
-        MutableStateFlow( persistentListOf<GraphRoute>() )
+        MutableStateFlow( persistentListOf<GraphNavArgs>() )
 
     override val backStack =
         _backStack.asStateFlow()
@@ -206,29 +209,25 @@ private class NavModelDelegate(
         }
     }
 
-    override fun pushUserRequested(route: GraphRoute)
-        = _backStack.update { it.add(route) }
+    override fun pushUserRequested(navArgs: GraphNavArgs)
+        = _backStack.update { it.add(navArgs) }
 
     override fun popBack(): Boolean {
         val toPop = _backStack.value.last()
-        if (toPop is MajorGraphRoute) {
+        if (toPop is MajorGraphNavArgs) {
             return onPopMajorRoute(toPop)
         } else {
             _backStack.update { it.removeLast() }
             return true
         }
-        // TODO we fail to handle popping the state-requested minor route of
-        //  [PlaceDetailRoute]; it would really be a major route.
-        //  find a way to rebuild, fixing this and without the
-        //  notion of a minor/major route
     }
 }
 
-class RoutePlannerViewModel private constructor(
+class TripFinderViewModel private constructor(
     private val dataModelDelegate: DataModelDelegate,
     private val navModelDelegate: NavModelDelegate,
-) : RoutePlannerDataModel by dataModelDelegate,
-    RoutePlannerNavModel by navModelDelegate,
+) : TripFinderDataModel by dataModelDelegate,
+    TripFinderNavModel by navModelDelegate,
     ViewModel()
 {
     var initialZoomExecuted: Boolean by mutableStateOf(false)
@@ -240,28 +239,28 @@ class RoutePlannerViewModel private constructor(
         NavModelDelegate(
             stateRequestedRoutes = dataModelDelegate.uiState
                 .map {
-                    if (it.routes == null) {
-                        TrainQuerySelectionRoute to
+                    if (it.journeys == null) {
+                        TripFinderStartNavArgs to
                             when (val place = it.lastSetPlace) {
-                                is Station -> StationDetailRoute(place.id)
-                                is Area -> AreaDetailRoute(place.id)
+                                is Station -> StationDetailNavArgs(place.id)
+                                is Area -> AreaDetailNavArgs(place.id)
                                 null -> null
 
                                 else -> throw IllegalStateException()
                             }
                     }
                     else {
-                        RouteOptionsRoute to
+                        JourneyListNavArgs to
                                 null
                     }
                 },
             onPopMajorRoute = {
                 when (it) {
-                    is TrainQuerySelectionRoute -> {
+                    is TripFinderStartNavArgs -> {
                         false
                     }
-                    is RouteOptionsRoute -> {
-                        dataModelDelegate.clearRoutes()
+                    is JourneyListNavArgs -> {
+                        dataModelDelegate.clearJourneys()
                         true
                     }
 

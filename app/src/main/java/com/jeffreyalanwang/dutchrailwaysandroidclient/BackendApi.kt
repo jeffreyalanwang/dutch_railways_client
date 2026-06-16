@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName") // use underscores for BackendApi methods
+
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 import android.content.res.Resources
 import android.os.Parcelable
@@ -16,10 +18,8 @@ import java.util.EnumSet
 import kotlin.math.max
 import kotlin.reflect.KClass
 import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 import ca.solostudios.fuzzykt.FuzzyKt.ratio as fuzzratio
-
 
 enum class TrainsetQuality {OLD, NEW}
 enum class Trainset(val quality: TrainsetQuality) {
@@ -43,7 +43,7 @@ enum class TrainAmenity(val friendlyName: String) {
 }
 
 @Immutable
-data class RoutePlan(
+data class Journey(
     val stops: ImmutableList<ServiceStop>
 ) {
     val transferCount: Int
@@ -81,11 +81,11 @@ data class RoutePlan(
         get() = stops.last().arrival!!
 }
 
-operator fun RoutePlan.plus(other: ServiceStop)
-    = RoutePlan((this.stops + other).toImmutableList())
+operator fun Journey.plus(other: ServiceStop)
+    = Journey((this.stops + other).toImmutableList())
 
-operator fun ServiceStop.plus(other: RoutePlan)
-    = RoutePlan(other.stops.plusInsert(0, this).toImmutableList())
+operator fun ServiceStop.plus(other: Journey)
+    = Journey(other.stops.plusInsert(0, this).toImmutableList())
 
 @Parcelize
 open class Place(
@@ -280,12 +280,12 @@ object BackendApi {
     }
 
 
-    fun get_routes(
+    fun get_journeys(
         origin: Place,
         destination: Place,
         departTime: Instant? = null,
         arriveTime: Instant? = null,
-    ) = sequence<RoutePlan> {
+    ) = sequence<Journey> {
         // as a dummy fixture, we only have the one pass service.
         // we simply check if it fits the requested parameters
 
@@ -313,7 +313,7 @@ object BackendApi {
         } else if (arriveTime != null && arriveTime < arrivalStop.arrival) {
             return@sequence
         } else {
-            yield(RoutePlan(persistentListOf(departureStop, arrivalStop)))
+            yield(Journey(persistentListOf(departureStop, arrivalStop)))
         }
     }
 
