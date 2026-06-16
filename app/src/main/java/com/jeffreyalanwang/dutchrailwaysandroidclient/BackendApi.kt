@@ -2,22 +2,14 @@
 
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 import android.content.res.Resources
-import android.os.Parcelable
-import androidx.compose.runtime.Immutable
 import com.google.android.gms.maps.model.LatLng
-import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableList
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toJavaLocalDateTime
-import kotlinx.parcelize.IgnoredOnParcel
-import kotlinx.parcelize.Parcelize
 import java.time.ZoneId
-import java.time.ZonedDateTime
 import java.util.EnumSet
 import kotlin.math.max
 import kotlin.reflect.KClass
-import kotlin.time.Duration
 import kotlin.time.Instant
 import ca.solostudios.fuzzykt.FuzzyKt.ratio as fuzzratio
 
@@ -33,7 +25,7 @@ private fun parseAmsTime(s: String)
 //    .build()
 
 object BackendApi {
-    private const val BACKEND_URL = "http://msword-jw125.duckdns.org";
+    private const val BACKEND_URL = "http://msword-jw125.duckdns.org"
 
     private val dummyService = PassService(119, "Intercity 2263 to Rotterdam Centraal", Trainset.VIRM, EnumSet.allOf(TrainAmenity::class.java))
     private val dummyServiceStops = listOf(
@@ -56,7 +48,7 @@ object BackendApi {
     )
 
     fun <T: Place> autocomplete_place(cls: KClass<T>, query: String): List<Place> { //TODO this should not be loading entire stations. just the data we need
-        val candidates = ArrayList<Pair<Place, Double>>();
+        val candidates = ArrayList<Pair<Place, Double>>()
 
         if (cls.java.isAssignableFrom(Station::class.java)) {
             candidates.addAll(dummyStations.map {  Pair(it, max(
@@ -81,14 +73,14 @@ object BackendApi {
         dummyAreas.forEach {
             if (it.id == id) return it
         }
-        throw Resources.NotFoundException("Id not found: $id");
+        throw Resources.NotFoundException("Id not found: $id")
     }
 
     fun get_station_info(id: Int): Station {
         dummyStations.forEach {
             if (it.id == id) return it
         }
-        throw Resources.NotFoundException("Id not found: $id");
+        throw Resources.NotFoundException("Id not found: $id")
     }
 
     fun get_place_info(id: Int): Place {
@@ -98,7 +90,7 @@ object BackendApi {
         dummyAreas.forEach {
             if (it.id == id) return it
         }
-        throw Resources.NotFoundException("Id not found: $id");
+        throw Resources.NotFoundException("Id not found: $id")
     }
 
 
