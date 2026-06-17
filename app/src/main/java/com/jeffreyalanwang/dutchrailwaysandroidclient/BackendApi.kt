@@ -27,13 +27,15 @@ private fun parseAmsTime(s: String)
 object BackendApi {
     private const val BACKEND_URL = "http://msword-jw125.duckdns.org"
 
-    private val dummyService = PassService(119, "Intercity 2263 to Rotterdam Centraal", Trainset.VIRM, EnumSet.allOf(TrainAmenity::class.java))
-    private val dummyServiceStops = listOf(
+    private val dummyServices = mutableListOf(
+        PassService(119, "Intercity 2263 to Rotterdam Centraal", Trainset.VIRM, EnumSet.allOf(TrainAmenity::class.java))
+    )
+    private val dummyServiceStops = mutableListOf(
         ServiceStop(passServiceId=119,arrival=null                                      ,departure=parseAmsTime("2026-05-08T18:36:00.000000"),stationId=358),
         ServiceStop(passServiceId=119,arrival=parseAmsTime("2026-05-08T19:28:00.000000"),departure=parseAmsTime("2026-05-08T19:30:00.000000"),stationId=376),
         ServiceStop(passServiceId=119,arrival=parseAmsTime("2026-05-08T19:49:00.000000"),departure=null                                      ,stationId=361),
     )
-    private val dummyAreas = listOf(
+    private val dummyAreas = mutableListOf(
         Area(1, "Nederland"),
         Area(10, "Noord-Holland"),
         Area(9, "Zuid-Holland"),
@@ -41,7 +43,7 @@ object BackendApi {
         Area(287, "'s-Gravenhage"),
         Area(145, "Amsterdam"),
     )
-    private val dummyStations = listOf(
+    private val dummyStations = mutableListOf(
         Station(358, "Amsterdam Centraal", "5a, IJ-hal, Centrum, Amsterdam, Noord-Holland, Nederland, 1012 AA, Nederland", LatLng(52.37888718232718, 4.900277682877522)),
         Station(361, "Rotterdam Centraal", "Spoor 8, Stationssingel, Provenierswijk, Noord, Rotterdam, Zuid-Holland, Nederland, 3033 HB, Nederland", LatLng(51.92499923833714, 4.468888827643443)),
         Station(376, "Den Haag HS", "Stationsplein, Stationsbuurt, Centrum, Den Haag, Zuid-Holland, Nederland, 2515 RT, Nederland", LatLng(52.06972122391006, 4.322500294829242)),
@@ -65,8 +67,10 @@ object BackendApi {
     }
 
     fun get_pass_service(id: Int): PassService {
-        assert(id == dummyService.id)
-        return dummyService
+        dummyServices.forEach {
+            if (it.id == id) return it
+        }
+        throw Resources.NotFoundException("Id not found: $id")
     }
 
     fun get_area_info(id: Int): Area {
@@ -106,28 +110,30 @@ object BackendApi {
         check(origin is Station)
         check(destination is Station)
 
-        val (departureStop, arrivalStop) = dummyServiceStops
-            .filter { it.passServiceId == dummyService.id } // actually does nothing because we only know stops for the one service
-            .let {
-                it.firstOrNull {
-                    it.stationId == origin.id
-                } to it.firstOrNull {
-                    it.stationId == destination.id
+        for (service in dummyServices) {
+            val (departureStop, arrivalStop) = dummyServiceStops
+                .filter { it.passServiceId == service.id }
+                .let {
+                    it.firstOrNull {
+                        it.stationId == origin.id
+                    } to it.firstOrNull {
+                        it.stationId == destination.id
+                    }
                 }
-            }
 
-        if (departureStop == null || arrivalStop == null) {
-            return@sequence
-        } else if (departureStop.departure == null || arrivalStop.arrival == null) {
-            return@sequence
-        } else if (departureStop.departure >= arrivalStop.arrival) {
-            return@sequence
-        } else if (departTime != null && departTime > departureStop.departure) {
-            return@sequence
-        } else if (arriveTime != null && arriveTime < arrivalStop.arrival) {
-            return@sequence
-        } else {
-            yield(Journey(persistentListOf(departureStop, arrivalStop)))
+            if (departureStop == null || arrivalStop == null) {
+                continue
+            } else if (departureStop.departure == null || arrivalStop.arrival == null) {
+                continue
+            } else if (departureStop.departure >= arrivalStop.arrival) {
+                continue
+            } else if (departTime != null && departTime > departureStop.departure) {
+                continue
+            } else if (arriveTime != null && arriveTime < arrivalStop.arrival) {
+                continue
+            } else {
+                yield(Journey(persistentListOf(departureStop, arrivalStop)))
+            }
         }
     }
 
@@ -170,4 +176,90 @@ object BackendApi {
             .filter { it.passServiceId == service_id }
             .filter { it.stationId == station_id }
             .first()
+
+    fun edit_station(id: Int, name: String? = null, address: String? = null, geom: LatLng? = null) {
+        val index = dummyStations.indexOfFirst { it.id == id }
+        require(index > 0)
+
+        val old = dummyStations[index]
+        dummyStations[index] = Station(
+            id = id,
+            name = name ?: old.name,
+            address = address ?: old.address,
+            geom = geom ?: old.geom
+        )
+    }
+
+    fun edit_area(id: Int, name: String? = null) {
+        val index = dummyAreas.indexOfFirst { it.id == id }
+        require(index > 0)
+        val old = dummyAreas[index]
+        dummyAreas[index] = Area(
+            id = id,
+            name = name ?: old.name
+        )
+    }
+
+    fun add_pass_service(title: String, trainset: Trainset, amenities: EnumSet<TrainAmenity>, stops: List<ServiceStop>)
+        = PassService(
+            id = (dummyServices.maxOfOrNull { it.id } ?: -1) + 1,
+            title,
+            trainset,
+            amenities,
+            stops
+        ).also { dummyServices.add(it) }
+
+    fun delete_pass_service(id: Int) {
+        dummyServiceStops.removeAll { it.passServiceId == id }
+        dummyServices.removeAll { it.id == id }
+    }
+
+    fun update_pass_service(
+        serviceId: Int,
+        trainset: Trainset? = null,
+        amenities: EnumSet<TrainAmenity>? = null,
+        stops: List<ServiceStop>? = null,
+    ) {
+        val serviceIndex = dummyServices.indexOfFirst { it.id == serviceId }
+        val oldService = dummyServices[serviceIndex]
+        val oldStops = dummyServiceStops.filter { it.passServiceId == serviceId }
+
+        val newTitle = oldService.title.let { oldTitle ->
+            oldTitle
+            .removeSuffix(oldStops.lastStationName())
+            .let {
+                if (it == oldTitle) null
+                else if (stops == null) null
+                else it + stops.lastStationName()
+            }
+        }
+
+        if (stops != null) {
+            check_stops_consistency(stops)
+            dummyServiceStops.removeAll { it.passServiceId == serviceId }
+            dummyServiceStops.addAll(stops)
+        }
+
+        if (trainset != null || amenities != null || newTitle != null) {
+            dummyServices[serviceIndex] = oldService.copy(
+                title = newTitle ?: oldService.title,
+                trainset = trainset ?: oldService.trainset,
+                amenities = amenities ?: oldService.amenities,
+            )
+        }
+    }
+
+    /**
+     * Throw [IllegalArgumentException] if stations or stop times overlap.
+     * @arg stops: List of stops for one [PassService]. Does not need to be sorted.
+     */
+    fun check_stops_consistency(stops: List<ServiceStop>) {
+        require(stops.map { it.passServiceId }.toSet().size == 1 )
+        require(stops.map { it.stationId }.toSet().size == stops.size )
+        require(
+            stops.sortedWith( compareBy(nullsFirst()) { it.arrival } )
+                .zipWithNext()
+                .all { (a, b) -> a.departure!! < b.arrival!! }
+        )
+    }
 }

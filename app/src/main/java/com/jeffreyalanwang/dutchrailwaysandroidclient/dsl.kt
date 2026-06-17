@@ -94,7 +94,7 @@ open class Place(
 }
 
 @Parcelize
-class PolygonData(
+data class PolygonData(
     val points: List<LatLng>,
     val holes: List<List<LatLng>> = emptyList(),
 ) : Parcelable
@@ -136,7 +136,7 @@ class Station(
 
 @Parcelize
 @Immutable
-class ServiceStop(
+data class ServiceStop(
     val arrival: ZonedDateTime?,
     val departure: ZonedDateTime?,
     val passServiceId: Int,
@@ -174,7 +174,7 @@ class ServiceStop(
 }
 
 @Parcelize
-class PassService(
+data class PassService(
     val id: Int,
     val title: String,
     val trainset: Trainset,

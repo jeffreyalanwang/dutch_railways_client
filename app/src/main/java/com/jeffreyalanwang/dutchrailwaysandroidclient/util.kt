@@ -248,9 +248,17 @@ fun <T, U> List<Pair<T, U>>.withFlatIndex()
 inline fun <T, U, R> T.letWith(receiver: U, block: U.(T) -> R): R
     = block(receiver, this)
 
-inline fun <T> T.letIf(condition: Boolean, then: (T)->T): T
-    = if (!condition) this else then(this)
+inline fun <T, R> T.letIf(
+    condition: (T) -> Boolean,
+    otherwise: (T) -> R,
+    then: (T) -> R,
+): R = if (condition(this)) then(this)
+    else otherwise(this)
 
+inline fun <T> T.letIf(condition: Boolean, then: (T)->T): T
+    = this.letIf({ condition }, { this }, then)
+
+fun List<ServiceStop>.lastStationName() = this.last().getStation().name
 
 context(tz: TimeZone)
 fun Instant.toLocalTime()
