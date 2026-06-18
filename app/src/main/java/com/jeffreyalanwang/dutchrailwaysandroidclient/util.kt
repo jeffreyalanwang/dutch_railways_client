@@ -12,7 +12,7 @@ import kotlin.time.Clock
 import kotlin.time.Instant
 import kotlin.time.toKotlinInstant
 
-fun <K, V> MutableMap<K, V>.applyAndSet(key: K, block: (V?)->V)
+fun <K, V> MutableMap<K, V>.applyAt(key: K, block: (V?)->V)
     = set(key, block(get(key)))
 
 fun <T> PersistentList<T>.removeLast()

@@ -8,6 +8,7 @@ import androidx.compose.runtime.saveable.rememberSerializable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation3.runtime.NavBackStack
+import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.serialization.NavBackStackSerializer
 import androidx.navigation3.runtime.serialization.NavKeySerializer
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -113,8 +114,14 @@ inline fun <reified T: AppNavArgs> rememberNavBackStack(
     }
 }
 
+fun <T: NavKey> NavBackStack<T>.clearToInitial() {
+    while (size > 1) {
+        removeAt(size - 1)
+    }
+}
+
 context(viewModel: ViewModel)
-private fun <T> Flow<T>.asStateWithInitialValueOf(initialValue: T)
+fun <T> Flow<T>.asStateWithInitialValueOf(initialValue: T)
     = this.stateIn(
         viewModel.viewModelScope,
         SharingStarted.Lazily,

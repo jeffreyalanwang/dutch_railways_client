@@ -21,7 +21,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBa
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.PassServiceDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.ConfirmDeletePassServiceDialog
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.ConfirmDeletePassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditAreaScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditPassServiceScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditStationScreen
@@ -31,6 +31,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EndpointTimePicker
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.StationSearchScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.TripFinderScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.clearToInitial
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.rememberNavBackStack
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.Endpoint
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.TripFinderViewModel
@@ -221,10 +222,16 @@ fun appEntries(
                             navArgs.id
                         )
                     }
-                    entry<ConfirmDeletePassServiceNavArgs> { navArgs ->
+                    entry<ConfirmDeletePassServiceNavArgs>(
+                        metadata = predictiveBackDialog()
+                    ) { navArgs ->
                         // Also has the responsibility of executing the deletion.
-                        ConfirmDeletePassServiceDialog(
-                            navArgs.id
+                        val service = BackendApi.get_pass_service(navArgs.id)
+                        ConfirmDeletePassService(
+                            service.id,
+                            service.title,
+                            onNavigateBack = { backstack.removeAt(backstack.lastIndex) },
+                            onClearStack = { backstack.clearToInitial() }
                         )
                     }
                 }
