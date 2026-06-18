@@ -1,3 +1,6 @@
+* if possible, remove TripFinderGraphChildNavArgs
+* "place as abstract class?"
+* sealed class to simplify linting? (when-statements would be exhaustive)
 * C/U/D functionality: in BackendApi and in new tab Composable
   * edit places
     * edit stations

@@ -107,6 +107,6 @@ private enum class AppDestinations(
 ) {
     // TODO HOME
     TRIP("Trip", R.drawable.ic_directions, TripFinderStartNavArgs),
-    STATIONS("Stations", R.drawable.ic_dr_station, StationSearchNavArgs),
-    // TODO EDIT
+    STATIONS("Stations", R.drawable.ic_dr_station, StationSearchStartNavArgs),
+    EDIT("Edit", R.drawable.ic_edit, EditStartNavArgs),
 }

@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -95,6 +96,7 @@ fun AreaDetailScreen(
     area: Area,
     onNavigate: (StationDetailNavArgs) -> Unit,
     onNavigateBack: () -> Unit,
+    actionsSlot: @Composable (RowScope.() -> Unit)? = null,
 ) {
     Scaffold(
         topBar = {
@@ -107,11 +109,13 @@ fun AreaDetailScreen(
                             contentDescription = "Back",
                         )
                     }
-                }
+                },
+                actions =  actionsSlot ?: {},
             )
         },
         modifier = Modifier.fillMaxSize(),
     ) { innerPadding ->
+
         Box(Modifier.verticalScroll(rememberScrollState())) {
             Card(Modifier.padding(innerPadding + PaddingValues(10.dp))) {
                 AreaDetail(

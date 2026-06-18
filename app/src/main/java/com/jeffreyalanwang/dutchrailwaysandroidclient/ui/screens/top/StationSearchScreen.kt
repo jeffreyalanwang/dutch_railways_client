@@ -135,15 +135,17 @@ fun StationSearchScreen(onNavigate: (PassServiceDetailNavArgs)->Unit) {
                     }
                 ) }
             ) {
-                PlaceSearchResults(
-                    Station::class,
-                    textFieldState.text.toString(),
-                    onResultClick = { id, name ->
-                        textFieldState.setTextAndPlaceCursorAtEnd(name)
-                        scope.launch { searchBarState.animateToCollapsed() }
-                        stationState = BackendApi.get_station_info(id)
-                    }
-                )
+                Column( Modifier.verticalScroll(rememberScrollState()) ) {
+                    PlaceSearchResults(
+                        Station::class,
+                        textFieldState.text.toString(),
+                        onResultClick = { id, name ->
+                            textFieldState.setTextAndPlaceCursorAtEnd(name)
+                            scope.launch { searchBarState.animateToCollapsed() }
+                            stationState = BackendApi.get_station_info(id)
+                        }
+                    )
+                }
             }
         },
         modifier = Modifier.fillMaxSize()

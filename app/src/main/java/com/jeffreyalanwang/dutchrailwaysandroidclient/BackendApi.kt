@@ -3,6 +3,7 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 import android.content.res.Resources
 import com.google.android.gms.maps.model.LatLng
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toJavaLocalDateTime
@@ -27,7 +28,7 @@ private fun parseAmsTime(s: String)
 object BackendApi {
     private const val BACKEND_URL = "http://msword-jw125.duckdns.org"
 
-    private val dummyServices = mutableListOf(
+    private val dummyPassServices = mutableListOf(
         PassService(119, "Intercity 2263 to Rotterdam Centraal", Trainset.VIRM, EnumSet.allOf(TrainAmenity::class.java))
     )
     private val dummyServiceStops = mutableListOf(
@@ -66,8 +67,20 @@ object BackendApi {
         return candidates.sortedByDescending{ it.second }.take(10).map{ it.first }
     }
 
+    fun autocomplete_pass_service(query: String): List<PassService> {
+        return dummyPassServices
+            .sortedByDescending {
+                maxOf(
+                    fuzzratio(query, it.title),
+                    fuzzratio(query, AppStringFormats.Time(it.getStops().first().departure!!)),
+                    fuzzratio(query, AppStringFormats.Time(it.getStops().last().arrival!!)),
+                    fuzzratio(query, it.trainset.name),
+                )
+            }
+    }
+
     fun get_pass_service(id: Int): PassService {
-        dummyServices.forEach {
+        dummyPassServices.forEach {
             if (it.id == id) return it
         }
         throw Resources.NotFoundException("Id not found: $id")
@@ -110,7 +123,7 @@ object BackendApi {
         check(origin is Station)
         check(destination is Station)
 
-        for (service in dummyServices) {
+        for (service in dummyPassServices) {
             val (departureStop, arrivalStop) = dummyServiceStops
                 .filter { it.passServiceId == service.id }
                 .let {
@@ -202,16 +215,16 @@ object BackendApi {
 
     fun add_pass_service(title: String, trainset: Trainset, amenities: EnumSet<TrainAmenity>, stops: List<ServiceStop>)
         = PassService(
-            id = (dummyServices.maxOfOrNull { it.id } ?: -1) + 1,
+            id = (dummyPassServices.maxOfOrNull { it.id } ?: -1) + 1,
             title,
             trainset,
             amenities,
             stops
-        ).also { dummyServices.add(it) }
+        ).also { dummyPassServices.add(it) }
 
     fun delete_pass_service(id: Int) {
         dummyServiceStops.removeAll { it.passServiceId == id }
-        dummyServices.removeAll { it.id == id }
+        dummyPassServices.removeAll { it.id == id }
     }
 
     fun update_pass_service(
@@ -220,8 +233,8 @@ object BackendApi {
         amenities: EnumSet<TrainAmenity>? = null,
         stops: List<ServiceStop>? = null,
     ) {
-        val serviceIndex = dummyServices.indexOfFirst { it.id == serviceId }
-        val oldService = dummyServices[serviceIndex]
+        val serviceIndex = dummyPassServices.indexOfFirst { it.id == serviceId }
+        val oldService = dummyPassServices[serviceIndex]
         val oldStops = dummyServiceStops.filter { it.passServiceId == serviceId }
 
         val newTitle = oldService.title.let { oldTitle ->
@@ -241,7 +254,7 @@ object BackendApi {
         }
 
         if (trainset != null || amenities != null || newTitle != null) {
-            dummyServices[serviceIndex] = oldService.copy(
+            dummyPassServices[serviceIndex] = oldService.copy(
                 title = newTitle ?: oldService.title,
                 trainset = trainset ?: oldService.trainset,
                 amenities = amenities ?: oldService.amenities,
@@ -251,7 +264,7 @@ object BackendApi {
 
     /**
      * Throw [IllegalArgumentException] if stations or stop times overlap.
-     * @arg stops: List of stops for one [PassService]. Does not need to be sorted.
+     * @param stops: List of stops for one [PassService]. Does not need to be sorted.
      */
     fun check_stops_consistency(stops: List<ServiceStop>) {
         require(stops.map { it.passServiceId }.toSet().size == 1 )

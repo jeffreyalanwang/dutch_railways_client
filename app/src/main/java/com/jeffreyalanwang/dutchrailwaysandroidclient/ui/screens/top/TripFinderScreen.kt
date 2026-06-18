@@ -7,9 +7,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheet
 import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.Icon
@@ -63,7 +65,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.JourneyListNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PlaceDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TimePickerNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.EndpointTimePickerNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphChildNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderStartNavArgs
@@ -73,8 +75,8 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PlaceSearchR
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.rememberDualSearchBarState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailWithoutMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.JourneyDetailWithoutMap
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailWithoutMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.PassServiceDetail
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailWithoutMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.JourneyList
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.boundsForDisplay
@@ -284,7 +286,7 @@ private fun TripFinderScreen(
         isSubmitQueryAllowed = viewModelState.canSubmitQuery,
         onSubmitQuery = viewModel::loadJourneys,
 
-        onOpenTimePicker = { viewModel.pushUserRequested(TimePickerNavArgs(forEndpoint = it)) },
+        onOpenTimePicker = { viewModel.pushUserRequested(EndpointTimePickerNavArgs(forEndpoint = it)) },
 
         bottomSheetContent = bottomSheetContent,
     )
@@ -487,15 +489,17 @@ private inline fun expandedSearchFactory(
                 )
             }
         ) {
-            PlaceSearchResults(
-                Place::class,
-                query = textFieldState.text.toString(),
-                onResultClick = { id, name ->
-                    textFieldState.setTextAndPlaceCursorAtEnd(name)
-                    onNewSelection(BackendApi.get_place_info(id))
-                    onFinishSearch()
-                },
-            )
+            Column( Modifier.verticalScroll(rememberScrollState()) ) {
+                PlaceSearchResults(
+                    Place::class,
+                    query = textFieldState.text.toString(),
+                    onResultClick = { id, name ->
+                        textFieldState.setTextAndPlaceCursorAtEnd(name)
+                        onNewSelection(BackendApi.get_place_info(id))
+                        onFinishSearch()
+                    },
+                )
+            }
         }
     }
 }
