@@ -62,18 +62,6 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="DutchRailwaysAndroidClientApp">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-06-06T18:24:17.314258718Z">
-          <Target type="BOOT_WITH_SNAPSHOT">
-            <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7_GApps.avd" />
-            </handle>
-            <Snapshot name="snap_2026-05-10_17-35-03" path="$USER_HOME$/.android/avd/Virtual_Pixel_7_GApps.avd/snapshots/snap_2026-05-10_17-35-03" />
-          </Target>
-        </DropdownSelection>
-        <DialogSelection />
-      </SelectionState>
       <SelectionState runConfigName="unitTest">
         <option name="selectionMode" value="DROPDOWN" />
         <DropdownSelection timestamp="2026-05-22T17:27:16.762599939Z">
