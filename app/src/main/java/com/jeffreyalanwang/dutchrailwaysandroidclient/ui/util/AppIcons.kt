@@ -10,9 +10,10 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainsetQuality
 import kotlin.reflect.KClass
 
 object AppIcons {
-    fun Trainset(trainset: Trainset) = when (trainset.quality) {
+    fun Trainset(trainset: Trainset?) = when (trainset?.quality) {
         TrainsetQuality.OLD -> R.drawable.ic_dr_traintype_slow
         TrainsetQuality.NEW -> R.drawable.ic_dr_traintype_fast
+        null -> R.drawable.ic_dr_trainservice
     }
 
     fun Amenity(amenity: TrainAmenity) = when(amenity) {

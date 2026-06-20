@@ -33,11 +33,13 @@ private fun IconWithBadgePreview() {
 fun IconWithBadge(
     badge: Painter,
     modifier: Modifier = Modifier,
+    sizeRatio: Float = 1/2f,
+    overlapRatio: Float = 1/2f,
     icon: @Composable () -> Unit,
 ) {
     BadgeLayout(modifier) {
         icon()
-        Icon(badge, null, Modifier.badge(2/3f, .87f))
+        Icon(badge, null, Modifier.badge(sizeRatio, overlapRatio))
     }
 }
 
@@ -84,8 +86,6 @@ object BadgeLayoutScope {
 @Composable
 private fun BadgeLayout(
     modifier: Modifier = Modifier,
-    sizeRatio: Float = 2/3f,
-    overlapRatio: Float = .87f,
     content: @Composable BadgeLayoutScope.() -> Unit,
 ) = Layout(
         modifier = modifier,
@@ -100,6 +100,7 @@ private fun BadgeLayout(
                 measurables[if (badgeIndex == 0) 1 else 0] to
                 measurables[badgeIndex]
             }
+        val (sizeRatio, overlapRatio) = badgeMeasurable.parentData as BadgeParentData
 
         fun iconSize(totalSize: Int): Float {
             // badge non-overlapped size is [sizeRatio * iconSize * (1 - overlapRatio)]

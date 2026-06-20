@@ -1,12 +1,12 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util
 
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.toJavaLocalTime
 import java.time.format.DateTimeFormatter
 import java.time.format.FormatStyle
 import java.time.temporal.TemporalAccessor
 import kotlin.time.Duration
-import kotlin.time.ExperimentalTime
 
 object AppStringFormats {
     fun Time(time: TemporalAccessor)
@@ -28,5 +28,23 @@ object AppStringFormats {
         )
 
         return components.joinToString(" ")
+    }
+
+    fun passServiceTitle(
+        oldTitle: String?,
+        lastStop: ServiceStop?,
+    ): String {
+        val trainName = oldTitle
+                ?.indexOf(" to ") // "Intercity 2398 to Rotterdam Centraal"
+                ?.let { index ->
+                    if (index < 0) oldTitle
+                    else oldTitle.substring(0, index)
+                }
+                ?: "Train"
+
+        return lastStop
+            ?.getStation()
+            ?.run { "$trainName to $name" }
+            ?: trainName
     }
 }

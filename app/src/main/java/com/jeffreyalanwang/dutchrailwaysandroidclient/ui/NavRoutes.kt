@@ -23,9 +23,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.PassServi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.ConfirmDeletePassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditAreaScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditPassServiceScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditStationScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.NewPassServiceScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditActions
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EndpointTimePicker
@@ -212,15 +210,17 @@ fun appEntries(
                     entry<NewPassServiceNavArgs> { navArgs ->
                         val basedOnService = navArgs.basedOnId
                             ?.let { BackendApi.get_pass_service(it) }
-                        NewPassServiceScreen(
-                            basedOnService,
-                            onNavigate = { newNavArgs -> backstack.add(newNavArgs) }
-                        )
+                        TODO()
+//                        NewPassServiceScreen(
+//                            basedOnService,
+//                            onNavigate = { newNavArgs -> backstack.add(newNavArgs) }
+//                        )
                     }
                     entry<EditPassServiceNavArgs> { navArgs ->
-                        EditPassServiceScreen(
-                            navArgs.id
-                        )
+                        TODO()
+//                        EditPassServiceScreen(
+//                            navArgs.id
+//                        )
                     }
                     entry<ConfirmDeletePassServiceNavArgs>(
                         metadata = predictiveBackDialog()

@@ -1,3 +1,5 @@
+* implement amenities floaters
+* implement edit amenities
 * if possible, remove TripFinderGraphChildNavArgs
 * "place as abstract class?"
 * sealed class to simplify linting? (when-statements would be exhaustive)

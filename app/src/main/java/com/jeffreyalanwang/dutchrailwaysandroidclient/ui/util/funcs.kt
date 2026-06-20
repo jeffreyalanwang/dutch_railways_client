@@ -3,7 +3,9 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.minus
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.saveable.rememberSerializable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -22,6 +24,9 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AppNavArgs
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
+
+inline fun <reified T> Set<T>.toMutableStateSet()
+    = mutableStateSetOf(*toTypedArray())
 
 fun <K, V> Map<K, V>.toMutableStateMap()
     = mutableStateMapOf(*entries.map { (k, v) -> k to v }.toTypedArray())

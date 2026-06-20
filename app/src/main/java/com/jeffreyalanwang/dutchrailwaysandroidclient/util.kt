@@ -5,18 +5,30 @@ import com.google.android.gms.maps.model.LatLngBounds
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 import kotlin.time.Clock
 import kotlin.time.Instant
+import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
+
+fun <T> MutableList<T>.applyAt(index: Int, block: (T)->T) {
+    this[index] = block(this[index])
+}
 
 fun <K, V> MutableMap<K, V>.applyAt(key: K, block: (V?)->V)
     = set(key, block(get(key)))
 
 fun <T> PersistentList<T>.removeLast()
     = this.removeAt(size - 1)
+
+fun <T, R> Pair<T, T>.map(block: (T) -> R): Pair<R, R>
+    = block(first) to block(second)
+
+fun <T, U, R> Pair<T, T>.zip(other: Pair<U, U>, block: (T, U) -> R): Pair<R, R>
+    = block(first, other.first) to block(second, other.second)
 
 fun <T> Iterable<T>.toPair(): Pair<T, T> {
     val iterator = this.iterator()
@@ -264,10 +276,11 @@ context(tz: TimeZone)
 fun Instant.toLocalTime()
     = this.toLocalDateTime(tz).time
 
-
 fun ZonedDateTime.toKotlinInstant()
     = this.toInstant().toKotlinInstant()
 
+fun Instant.toZonedDateTime(zone: ZoneId): ZonedDateTime
+    = this.toJavaInstant().atZone(zone)
 
 operator fun ZonedDateTime.minus(other: ZonedDateTime)
     = this.toKotlinInstant().minus(other.toKotlinInstant())
