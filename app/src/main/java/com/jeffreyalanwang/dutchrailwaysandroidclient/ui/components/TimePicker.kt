@@ -23,11 +23,44 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letWith
 import com.jeffreyalanwang.dutchrailwaysandroidclient.toLocalTime
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TimePickerNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.DialogResult
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlin.time.Clock
+
+/**
+ * Requires [ResultEventBusNavEntryDecorator] to be used.
+ */
+@Composable
+fun TimePicker(
+    navArgs: TimePickerNavArgs<*>,
+    onNavigateBack: () -> Unit,
+) {
+    val resultBus = LocalResultEventBus.current
+    if (navArgs.clearable) {
+        ClearableTimePicker(
+            title = navArgs.title,
+            initialTime = navArgs.initialTime,
+            onDismiss = onNavigateBack,
+            onConfirm = {
+                resultBus.sendResult(
+                    DialogResult(it, navArgs.tag)
+                )
+                onNavigateBack()
+            }
+        )
+    } else {
+        NonClearableTimePicker(
+            title = navArgs.title,
+            initialTime = navArgs.initialTime,
+            onDismiss = onNavigateBack
+        )
+    }
+}
 
 @Preview(widthDp = 350, heightDp = 500)
 @Composable
@@ -55,7 +88,6 @@ private fun ClearableTimePickerDialogPreview() {
         )
     }
 }
-
 
 @Composable
 fun ClearableTimePickerDialog(
