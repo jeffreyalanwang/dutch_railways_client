@@ -15,6 +15,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.onLayoutRectChanged
 import androidx.compose.ui.platform.LocalDensity
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.fill
 import kotlin.math.max
 
 /**
@@ -51,7 +52,7 @@ fun MarginButtonsBox(
                 content = left ?: {}
             )
             Box(
-                modifier = Modifier.weight(1f),
+                modifier = Modifier.fill(),
                 content = content,
             )
             Box(

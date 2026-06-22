@@ -246,7 +246,7 @@ fun DiscreteGridRow(
     discreteGridControl: DiscreteGridControl,
     modifier: Modifier = Modifier,
     gap: Dp = 0.dp,
-    //TODO because this is a row, give it the parameters of Row (or at least, verticalAlignment)
+    verticalAlignment: Alignment.Vertical = Alignment.Top,
     content: @Composable DiscreteGridRowScope.()->Unit,
 ) {
     Layout(
@@ -281,6 +281,7 @@ fun DiscreteGridRow(
                 constraints.copy(
                     minWidth = 0,
                     maxWidth = measurable.maxIntrinsicWidth(rigidsMaxH),
+                    minHeight =  0,
                 )
             )
         }
@@ -302,11 +303,12 @@ fun DiscreteGridRow(
                 constraints.copy(
                     minWidth = 0,
                     maxWidth = discreteGridControl.centerFillWidth(),
+                    minHeight = 0,
                 )
             )
         }
 
-        // Get position values TODO if this doesn't work, try moving into layout
+        // Get position values
         val alignments: List<Alignment.Horizontal> = measurables
             .map {
                 (it.parentData as? SubchildParentData)?.cellAlign
@@ -315,17 +317,32 @@ fun DiscreteGridRow(
         val widths = rigidPlaceables.map { (it ?: fillPlaceable)!!.width }
         val positions = discreteGridControl.positions(alignments, widths)
 
+        val containerHeight = max(rigidsMaxH, fillPlaceable?.height ?: 0)
         layout(
             width = discreteGridControl.totalWidth,
-            height = max(rigidsMaxH, fillPlaceable?.height ?: 0)
+            height = containerHeight
         ) {
             positions.forEachIndexed { i, pos ->
-                if (i == centerIdx) {
-                    fillPlaceable!!.place(pos, 0)
+                val placeable = if (i == centerIdx) {
+                    fillPlaceable!!
                 } else {
-                    rigidPlaceables[i]!!.place(pos, 0)
+                    rigidPlaceables[i]!!
                 }
+                val yPos = getYPos(verticalAlignment, placeable.height, containerHeight)
+                placeable.place(pos, yPos)
             }
         }
     }
 }
+
+private fun getYPos(
+    verticalAlignment: Alignment.Vertical,
+    itemHeight: Int,
+    containerHeight: Int
+): Int =
+    when (verticalAlignment) {
+        Alignment.Top -> 0
+        Alignment.CenterVertically -> (containerHeight - itemHeight) / 2
+        Alignment.Bottom -> containerHeight - itemHeight
+        else -> throw IllegalArgumentException() // doesn't exist anyway
+    }

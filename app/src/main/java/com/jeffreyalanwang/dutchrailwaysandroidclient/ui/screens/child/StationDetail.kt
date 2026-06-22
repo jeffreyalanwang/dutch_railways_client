@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
@@ -199,7 +198,7 @@ private fun StationTimetable(
     stops: List<ServiceStop>,
     modifier: Modifier = Modifier,
     padding: PaddingValues = PaddingValues.Zero,
-    onNavigate: (PassServiceDetailNavArgs) -> Unit
+    onNavigate: (PassServiceDetailNavArgs) -> Unit,
 ) {
     val gap = 10.dp
     val gridControl = remember(stops) { DiscreteGridControl() }
@@ -214,6 +213,7 @@ private fun StationTimetable(
                 .fillMaxWidth()
                 .padding(padding.horizontalOnly()),
             gap,
+            Alignment.CenterVertically,
         ) {
             Spacer(Modifier.width(24.dp))
             Text(
@@ -268,6 +268,7 @@ private fun StationRow(
             .fillMaxWidth()
             .height(IntrinsicSize.Min),
         gap = gap,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(
             icon, // TODO be more efficient with getting trainset (don't get all properties of the service)
@@ -279,7 +280,7 @@ private fun StationRow(
         Text(
             title,
             modifier = Modifier
-                .wrapContentHeight()
+//                .wrapContentHeight()
                 .cellAlign(Alignment.Start)
                 .fill()
         )
@@ -287,14 +288,14 @@ private fun StationRow(
             if (arriveTime == null) EM_DASH else AppStringFormats.Time(arriveTime),
             softWrap = false,
             modifier = Modifier
-                .wrapContentHeight()
+//                .wrapContentHeight()
                 .cellAlign(Alignment.CenterHorizontally)
         )
         Text(
             if (departTime == null) EM_DASH else AppStringFormats.Time(departTime),
             softWrap = false,
             modifier = Modifier
-                .wrapContentHeight()
+//                .wrapContentHeight()
                 .cellAlign(Alignment.CenterHorizontally)
         )
     }

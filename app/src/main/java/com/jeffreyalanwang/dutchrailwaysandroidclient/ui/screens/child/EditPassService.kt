@@ -2,6 +2,8 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child
 
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -18,6 +20,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
@@ -27,6 +30,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -54,6 +58,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
@@ -349,8 +354,8 @@ private fun EditStops(
                                         padding.calculateEndPadding(this)
                                     }
                             ),
-//                        horizontalArrangement = Arrangement.spacedBy(8.dp), TODO
-//                        verticalAlignment = Alignment.CenterVertically
+                        gap = 8.dp,
+                        verticalAlignment = Alignment.CenterVertically,
                     ) {
                         ReorderDragHandle(
                             hapticFeedback,
@@ -367,30 +372,52 @@ private fun EditStops(
                                 ),
                         )
 
-                        Text(
-                            stop.getStation().name,
-                            Modifier.fill(),
-                        )
+                        FormField(
+                            enabled = true, // TODO
+                            isError = false, // TODO
+                            onClick = {}, // TODO
+                            modifier = Modifier.fill()
+                        ) {
+                            Text(
+                                stop.getStation().name,
+                                softWrap = false,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
 
                         stop.arrival
                             ?.let {
-                                Text(
-                                    AppStringFormats.Time(it),
-                                    Modifier.alpha(
-                                        if (i == 0) .5f else 1f
-                                    ),
-                                )
+                                val enabled = (i != 0)
+                                FormField(
+                                    enabled = enabled,
+                                    isError = false, // TODO
+                                    onClick = {}, // TODO
+                                ) {
+                                    Text(
+                                        AppStringFormats.Time(it),
+                                        Modifier.alpha(
+                                            if (enabled) 1f else .5f
+                                        ),
+                                    )
+                                }
                             }
                             ?: Spacer(Modifier)
 
                         stop.departure
                             ?.let {
-                                Text(
-                                    AppStringFormats.Time(it),
-                                    Modifier.alpha(
-                                        if (i == stops.lastIndex) .5f else 1f
-                                    ),
-                                )
+                                val enabled = (i != stops.lastIndex)
+                                FormField(
+                                    enabled = enabled,
+                                    isError = false, // TODO
+                                    onClick = {}, // TODO
+                                ) {
+                                    Text(
+                                        AppStringFormats.Time(it),
+                                        Modifier.alpha(
+                                            if (enabled) 1f else .5f
+                                        ),
+                                    )
+                                }
                             }
                             ?: Spacer(Modifier)
                     }
@@ -427,6 +454,48 @@ fun ReorderableListItemScope.ReorderDragHandle(
             painterResource(R.drawable.ic_draghandle_vertical),
             contentDescription = "Reorder",
         )
+    }
+}
+
+@Composable
+fun FormField(
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isError: Boolean = false,
+    trailingIcon: @Composable (() -> Unit)? = null,
+    content: @Composable () -> Unit,
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    Box(
+        modifier
+            .height(IntrinsicSize.Min)
+            .width(IntrinsicSize.Max)
+    ) {
+        OutlinedTextFieldDefaults.Container(
+            enabled = true,
+            interactionSource = interactionSource,
+            isError = isError,
+            modifier = Modifier
+                .fillMaxSize()
+                .clickable(
+                    interactionSource = interactionSource,
+                    indication = null,
+                    onClick = onClick,
+                    enabled = enabled,
+                ),
+        )
+
+        Row(
+            Modifier.padding(4.dp),
+            Arrangement.spacedBy(4.dp),
+            Alignment.CenterVertically,
+        ) {
+            Box(Modifier.padding(4.dp)) {
+                content()
+                trailingIcon?.invoke()
+            }
+        }
     }
 }
 
