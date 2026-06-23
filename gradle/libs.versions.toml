@@ -23,9 +23,11 @@ uiTooling = "1.11.0"
 uiGraphics = "1.11.2"
 runtime = "1.11.2"
 foundationLayout = "1.11.2"
-navigation3 = "1.0.0"
+navigation3 = "1.2.0-alpha04"
 lifecycleViewmodel = "2.11.0-rc01"
 reorderable = "3.1.0"
+runtimeVersion = "1.11.3"
+animation = "1.11.3"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -61,6 +63,8 @@ androidx-navigation3-runtime = { group = "androidx.navigation3", name = "navigat
 androidx-navigation3-ui = { group = "androidx.navigation3", name = "navigation3-ui", version.ref = "navigation3" }
 androidx-lifecycle-viewmodel-navigation3 = { module = "androidx.lifecycle:lifecycle-viewmodel-navigation3", version.ref = "lifecycleViewmodel" }
 reorderable = { group = "sh.calvin.reorderable", name = "reorderable", version.ref = "reorderable" }
+androidx-runtime = { group = "androidx.compose.runtime", name = "runtime", version.ref = "runtimeVersion" }
+androidx-compose-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animation" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

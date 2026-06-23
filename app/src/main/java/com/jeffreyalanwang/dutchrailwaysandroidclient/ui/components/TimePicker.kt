@@ -3,6 +3,7 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
@@ -57,7 +58,13 @@ fun TimePicker(
         NonClearableTimePicker(
             title = navArgs.title,
             initialTime = navArgs.initialTime,
-            onDismiss = onNavigateBack
+            onDismiss = onNavigateBack,
+            onConfirm = {
+                resultBus.sendResult(
+                    DialogResult(it, navArgs.tag)
+                )
+                onNavigateBack()
+            }
         )
     }
 }
@@ -115,6 +122,42 @@ fun ClearableTimePicker(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
+) = TimePickerBase(
+        initialTime = initialTime,
+        onConfirm = onConfirm,
+        onDismiss = onDismiss,
+        modifier = modifier,
+        title = title,
+    ) {
+        TextButton(onClick = { onConfirm(null) }) {
+            Text("Clear and exit")
+        }
+    }
+
+@Composable
+fun NonClearableTimePicker(
+    initialTime: LocalTime?,
+    onConfirm: (LocalTime) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    title: String? = null,
+) = TimePickerBase(
+        initialTime = initialTime,
+        onConfirm = { onConfirm(it!!) },
+        onDismiss = onDismiss,
+        modifier = modifier,
+        title = title,
+        bottomRowExtras = {},
+    )
+
+@Composable
+private fun TimePickerBase(
+    initialTime: LocalTime?,
+    onConfirm: (LocalTime?) -> Unit,
+    onDismiss: () -> Unit,
+    modifier: Modifier = Modifier,
+    title: String? = null,
+    bottomRowExtras: @Composable RowScope.() -> Unit,
 ) {
     val _initialTime = initialTime
         ?: Clock.System.now()
@@ -142,9 +185,7 @@ fun ClearableTimePicker(
             TimePicker(timePickerState)
 
             Row {
-                TextButton(onClick = { onConfirm(null) }) {
-                    Text("Clear and exit")
-                }
+                bottomRowExtras()
 
                 Spacer(Modifier.weight(1f))
 

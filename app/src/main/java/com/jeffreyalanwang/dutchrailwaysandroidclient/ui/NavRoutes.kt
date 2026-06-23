@@ -13,11 +13,15 @@ import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
+import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
 import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.commonChildEntries
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy.Companion.predictiveBackDialog
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.TimePicker
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.PassServiceDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailScreen
@@ -26,13 +30,12 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditAreaS
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditStationScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditActions
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EndpointTimePicker
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.StationSearchScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.TripFinderScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.clearToInitial
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.rememberNavBackStack
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.Endpoint
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.TripFinderViewModel
+import kotlinx.datetime.LocalTime
 import kotlinx.serialization.Serializable
 
 /** All [NavKey] instances in this app should inherit from this type. */
@@ -66,7 +69,7 @@ interface EditGraphNavArgs: AppNavArgs
 
 /**
  * A page which all tabs' nested [NavDisplay]s should be able to navigate to.
- * Generally, these can all be added at once using [EntryProviderScope.tabEntries],
+ * Generally, these can all be added at once using [EntryProviderScope.commonChildEntries],
  * but can be delegated differently for specific tabs.
  */
 interface CommonChildNavArgs: AppNavArgs, TripFinderGraphChildNavArgs, EditGraphNavArgs
@@ -81,9 +84,9 @@ interface PlaceDetailNavArgs: CommonChildNavArgs { val id: Int }
 @Serializable data class AreaDetailNavArgs(override val id: Int) : PlaceDetailNavArgs
 @Serializable data class StationDetailNavArgs(override val id: Int) : PlaceDetailNavArgs
 @Serializable data class PassServiceDetailNavArgs(val id: Int) : CommonChildNavArgs
+@Serializable data class TimePickerNavArgs<T>(val tag: T, val title: String, val initialTime: LocalTime? = null, val clearable: Boolean = false) : CommonChildNavArgs
 @Serializable data object JourneyListNavArgs : AppNavArgs, TripFinderGraphChildNavArgs, TripFinderGraphMajorNavArgs
 @Serializable data class JourneyDetailNavArgs(val index: Int) : TripFinderGraphChildNavArgs
-@Serializable data class EndpointTimePickerNavArgs(val forEndpoint: Endpoint) : TripFinderGraphChildNavArgs
 @Serializable data class EditStationNavArgs(val id: Int) : EditGraphNavArgs
 @Serializable data class EditAreaNavArgs(val id: Int) : EditGraphNavArgs
 @Serializable data class NewPassServiceNavArgs(val basedOnId: Int? = null) : EditGraphNavArgs
@@ -111,24 +114,26 @@ fun appEntries(
             NavDisplay(
                 backStack = backStack,
                 onBack = { viewModel.popBack() },
-                sceneStrategy = remember {
-                    PredictiveBackDialogSceneStrategy<TripFinderGraphNavArgs>()
-                        .then(SinglePaneSceneStrategy())
+                entryDecorators = listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    rememberResultEventBusNavEntryDecorator(),
+                ),
+                sceneStrategies = remember {
+                    listOf(
+                        PredictiveBackDialogSceneStrategy(),
+                        SinglePaneSceneStrategy(),
+                    )
                 },
             ) { key ->
                 // Do not use [entryProvider { }]; this allows us to use a
                 // single composable as a default for most [NavArgs] types
                 when (key) {
-                    is EndpointTimePickerNavArgs -> NavEntry(
+                    is TimePickerNavArgs<*> -> NavEntry(
                         key = key,
                         metadata = predictiveBackDialog(),
                     ) { key ->
-                        key as EndpointTimePickerNavArgs
-                        EndpointTimePicker(
-                            key.forEndpoint,
-                            viewModel = viewModel,
-                            onDismiss = { viewModel.popBack() },
-                        )
+                        key as TimePickerNavArgs<*>
+                        TimePicker(key) { viewModel.popBack() }
                     }
 
                     else -> NavEntry(
@@ -162,7 +167,7 @@ fun appEntries(
                             onNavigate = { newNavArgs -> backstack.add(newNavArgs) }
                         )
                     }
-                    tabEntries(
+                    commonChildEntries(
                         { backstack.add(it) },
                         { backstack.removeAt(backstack.lastIndex) }
                     )
@@ -177,17 +182,23 @@ fun appEntries(
 
             NavDisplay(
                 backStack = backstack,
-                sceneStrategy = remember {
-                    PredictiveBackDialogSceneStrategy<EditGraphNavArgs>()
-                        .then(SinglePaneSceneStrategy())
+                sceneStrategies = remember {
+                    listOf(
+                        PredictiveBackDialogSceneStrategy(),
+                        SinglePaneSceneStrategy(),
+                    )
                 },
+                entryDecorators = listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    rememberResultEventBusNavEntryDecorator(),
+                ),
                 entryProvider = entryProvider {
                     entry<EditStartNavArgs> { navArgs ->
                         EditScreen(
                             onNavigate = { newNavArgs -> backstack.add(newNavArgs) }
                         )
                     }
-                    tabEntries(
+                    commonChildEntries(
                         onNavigate = { backstack.add(it) },
                         onNavigateBack = { backstack.removeAt(backstack.lastIndex) },
                     ) { navArgs ->
@@ -251,7 +262,7 @@ fun appEntries(
  *      but not for caller-provided [actions] slot.
  */
 @Suppress("UNCHECKED_CAST")
-fun <T: AppNavArgs> EntryProviderScope<T>.tabEntries(
+fun <T: AppNavArgs> EntryProviderScope<T>.commonChildEntries(
     onNavigate: (CommonChildNavArgs) -> Unit,
     onNavigateBack: () -> Unit,
     actions: @Composable (RowScope.(CommonChildNavArgs) -> Unit)? = null,
@@ -282,5 +293,10 @@ fun <T: AppNavArgs> EntryProviderScope<T>.tabEntries(
             onNavigateBack = onNavigateBack,
             actionsSlot = actions?.let{ { it(navArgs) } },
         )
+    }
+    entry<TimePickerNavArgs<*>>(
+        metadata = predictiveBackDialog(),
+    ) { navArgs ->
+        TimePicker(navArgs, onNavigateBack)
     }
 }

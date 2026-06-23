@@ -11,6 +11,9 @@ import java.time.ZonedDateTime
 import java.util.EnumSet
 import kotlin.time.Duration
 
+enum class Endpoint { Origin, Destination }
+enum class StopPoint { Arrival, Departure }
+
 enum class TrainsetQuality {OLD, NEW}
 enum class Trainset(val quality: TrainsetQuality) {
     SLT(TrainsetQuality.OLD),

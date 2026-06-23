@@ -7,19 +7,13 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AppBarWithSearch
-import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -37,12 +31,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
@@ -56,8 +50,9 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.EditStationNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NewPassServiceNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PassServiceSearchResults
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PlaceSearchResults
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.BaseSearchInputField
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.ExpandedSearch
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.SearchResult
 import kotlinx.coroutines.launch
 
 @Preview
@@ -91,94 +86,61 @@ fun EditScreen(onNavigate: (EditGraphNavArgs)->Unit) {
     }
 }
 
+const val ALL_SEARCH_PLACEHOLDER_TEXT = "Search places or trains"
+
 @Composable
 private fun TopBar(onNavigate: (CommonChildNavArgs) -> Unit) {
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
     val scope = rememberCoroutineScope()
 
-    @Composable
-    fun inputField(
-        leadingIcon: @Composable (() -> Unit)? = null,
-        trailingIcon: @Composable (() -> Unit)? = null,
-    ) {
-        SearchBarDefaults.InputField(
-            textFieldState = textFieldState,
-            searchBarState = searchBarState,
-            onSearch = { scope.launch { searchBarState.animateToCollapsed() } },
-            placeholder = {
-                Text(
-                    modifier = Modifier.clearAndSetSemantics {},
-                    text = "Search places or trains"
-                )
-            },
-            leadingIcon = leadingIcon,
-            trailingIcon = trailingIcon,
-        )
-    }
-
     AppBarWithSearch(
         state = searchBarState,
-        inputField = { inputField(
-            trailingIcon = {
-                Icon(
-                    painterResource(R.drawable.ic_search),
-                    contentDescription="Search",
-                )
-            }
-        ) }
+        inputField = {
+            BaseSearchInputField(
+                ALL_SEARCH_PLACEHOLDER_TEXT,
+                textFieldState,
+                searchBarState,
+            )
+        }
     )
-    ExpandedFullScreenSearchBar(
-        state = searchBarState,
-        inputField = { inputField(
-            leadingIcon = {
-                IconButton(
-                    onClick = {
-                        scope.launch { searchBarState.animateToCollapsed() }
-                    }
-                ) {
-                    Icon(
-                        painterResource(R.drawable.ic_back),
-                        contentDescription = "Close search",
-                    )
+
+    // Search all, but prioritize places
+    ExpandedSearch(
+        results = textFieldState
+            .text.toString()
+            .let {
+                with (BackendApi) {
+                    autocomplete_place(Place::class, it) +
+                            autocomplete_pass_service(it)
                 }
             },
-            trailingIcon = {
-                IconButton(
-                    onClick = textFieldState::clearText
-                ) {
-                    Icon(
-                        painterResource(R.drawable.ic_close),
-                        contentDescription = "Clear",
-                    )
-                }
+        resultToText = {
+            when (it) {
+                is Place -> it.name
+                is PassService -> it.title
+                else -> throw IllegalArgumentException()
             }
-        ) }
-    ) {
-        Column( Modifier.verticalScroll(rememberScrollState()) ) {
-            PlaceSearchResults(
-                Place::class,
-                textFieldState.text.toString(),
-                onResultClick = { id, name ->
-                    textFieldState.setTextAndPlaceCursorAtEnd(name)
-                    scope.launch { searchBarState.animateToCollapsed() }
-                    onNavigate(
-                        when (BackendApi.get_place_info(id)) {
-                            is Station -> StationDetailNavArgs(id)
-                            is Area -> AreaDetailNavArgs(id)
-                            else -> throw IllegalArgumentException()
-                        }
-                    )
+        },
+        placeholderText = ALL_SEARCH_PLACEHOLDER_TEXT,
+        textFieldState = textFieldState,
+        searchBarState = searchBarState,
+        onClose = { scope.launch { searchBarState.animateToCollapsed() } },
+        onSelectResult = {
+            onNavigate(
+                when (it) {
+                    is Station -> StationDetailNavArgs(it.id)
+                    is Area -> AreaDetailNavArgs(it.id)
+                    is PassService -> PassServiceDetailNavArgs(it.id)
+                    else -> throw IllegalArgumentException()
                 }
             )
-            PassServiceSearchResults(
-                textFieldState.text.toString(),
-                onResultClick = { id, name ->
-                    textFieldState.setTextAndPlaceCursorAtEnd(name)
-                    scope.launch { searchBarState.animateToCollapsed() }
-                    onNavigate(PassServiceDetailNavArgs(id))
-                }
-            )
+        },
+    ) { item, onClick ->
+        when (item) {
+            is Place -> SearchResult(item, onClick)
+            is PassService -> SearchResult(item, onClick)
+            else -> throw IllegalArgumentException()
         }
     }
 }

@@ -50,7 +50,7 @@ object BackendApi {
         Station(376, "Den Haag HS", "Stationsplein, Stationsbuurt, Centrum, Den Haag, Zuid-Holland, Nederland, 2515 RT, Nederland", LatLng(52.06972122391006, 4.322500294829242)),
     )
 
-    fun <T: Place> autocomplete_place(cls: KClass<T>, query: String): List<Place> { //TODO this should not be loading entire stations. just the data we need
+    fun <T: Place> autocomplete_place(cls: KClass<T>, query: String): List<T> { //TODO this should not be loading entire stations. just the data we need
         val candidates = ArrayList<Pair<Place, Double>>()
 
         if (cls.java.isAssignableFrom(Station::class.java)) {
@@ -64,7 +64,7 @@ object BackendApi {
             candidates.addAll(dummyAreas.map { Pair(it, fuzzratio(query, it.name)) })
         }
 
-        return candidates.sortedByDescending{ it.second }.take(10).map{ it.first }
+        return candidates.sortedByDescending { it.second }.take(10).map { it.first } as List<T>
     }
 
     fun autocomplete_pass_service(query: String): List<PassService> {

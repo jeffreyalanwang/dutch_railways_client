@@ -7,13 +7,8 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.foundation.text.input.clearText
-import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.BottomSheet
-import androidx.compose.material3.ExpandedFullScreenSearchBar
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
@@ -27,6 +22,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberStandardBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -42,6 +38,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation3.runtime.result.LocalResultEventBus
+import androidx.navigation3.runtime.result.ResultEffect
+import androidx.navigation3.runtime.result.ResultEventBus
 import com.google.android.gms.maps.CameraUpdate
 import com.google.maps.android.compose.ComposeMapColorScheme
 import com.google.maps.android.compose.GoogleMap
@@ -51,6 +50,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Endpoint
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Journey
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
@@ -65,29 +65,29 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.JourneyListNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PlaceDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.EndpointTimePickerNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TimePickerNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphChildNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderStartNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.AppBarWithDualSearch
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ClearableTimePicker
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PlaceSearchResults
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.rememberDualSearchBarState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailWithoutMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.JourneyDetailWithoutMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.PassServiceDetail
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailWithoutMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.JourneyList
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.ExpandedSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.DialogResult
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.boundsForDisplay
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.getMapCameraUpdate
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.paddedBelow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.topOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.DataState
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.Endpoint
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.TripFinderViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.coroutines.launch
+import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atDate
 import kotlinx.datetime.todayIn
@@ -108,18 +108,20 @@ private fun TripFinderScreenPreview() {
 
     val backStack by viewModel.backStack.collectAsState()
 
-    TripFinderScreen (
-        navArgs = backStack.last(),
-        viewModel = viewModel,
-        onNavigateMinor = { newNavArgs ->
-            scope.launch {
-                snackbarHostState.showSnackbar(
-                    newNavArgs.toString(),
-                    withDismissAction = true
-                )
-            }
-        },
-    )
+    CompositionLocalProvider(LocalResultEventBus provides remember { ResultEventBus() }) {
+        TripFinderScreen(
+            navArgs = backStack.last(),
+            viewModel = viewModel,
+            onNavigateMinor = { newNavArgs ->
+                scope.launch {
+                    snackbarHostState.showSnackbar(
+                        newNavArgs.toString(),
+                        withDismissAction = true
+                    )
+                }
+            },
+        )
+    }
 
     Column(Modifier.fillMaxSize(), Arrangement.Bottom) {
         SnackbarHost(hostState = snackbarHostState)
@@ -270,6 +272,35 @@ private fun TripFinderScreen(
 
     bottomSheetContent: @Composable (BoxScope.() -> Unit)?,
 ) {
+    // This overload calls the one below, with events and arguments
+    // translated to their corresponding members in [viewModel] and
+    // [viewModelState].
+
+    // Here, we are also making the decision that the user is inputting a
+    // time in their local device time zone, for their device's current date.
+    // (Outside [ClearableTimePicker], the application always uses
+    // [ZonedDateTime] or [Instant], and a date is always included.)
+    fun Instant.asLocalTimeInSystemLocale() =
+        with(TimeZone.currentSystemDefault()) {
+            this@asLocalTimeInSystemLocale.toLocalTime()
+        }
+    fun LocalTime.asInstantInSystemLocale() =
+        with(TimeZone.currentSystemDefault()) {
+            this@asInstantInSystemLocale
+            .atDate( Clock.System.todayIn(this) )
+            .toInstant()
+        }
+
+    ResultEffect<DialogResult<LocalTime?, Endpoint>> { result ->
+        val resultInstant = result.value?.asInstantInSystemLocale()
+        when (result.tag) {
+            Endpoint.Origin ->
+                viewModel.setTimeConstraints(departTime = resultInstant)
+            Endpoint.Destination ->
+                viewModel.setTimeConstraints(arriveTime = resultInstant)
+        }
+    }
+
     TripFinderScreen(
         setOrigin = { viewModel.setOrigin(it) },
         setDestination = { viewModel.setDestination(it) },
@@ -286,7 +317,16 @@ private fun TripFinderScreen(
         isSubmitQueryAllowed = viewModelState.canSubmitQuery,
         onSubmitQuery = viewModel::loadJourneys,
 
-        onOpenTimePicker = { viewModel.pushUserRequested(EndpointTimePickerNavArgs(forEndpoint = it)) },
+        onOpenTimePicker = { title: String, initialInstant: Instant?, forEndpoint: Endpoint ->
+            viewModel.pushUserRequested(
+                TimePickerNavArgs(
+                    tag = forEndpoint,
+                    title = title,
+                    initialTime = initialInstant?.asLocalTimeInSystemLocale(),
+                    clearable = true,
+                )
+            )
+        },
 
         bottomSheetContent = bottomSheetContent,
     )
@@ -309,7 +349,11 @@ private fun TripFinderScreen(
     isSubmitQueryAllowed: Boolean,
     onSubmitQuery: () -> Unit,
 
-    onOpenTimePicker: (Endpoint) -> Unit,
+    onOpenTimePicker: (
+        title: String,
+        initial: Instant?,
+        forEndpoint: Endpoint,
+    ) -> Unit,
 
     bottomSheetContent: @Composable (BoxScope.() -> Unit)?,
 ) {
@@ -352,7 +396,13 @@ private fun PersistentTopBar(
     isSubmitQueryAllowed: Boolean,
     arriveTime: Instant?,
     departTime: Instant?,
-    onOpenTimePicker: (Endpoint) -> Unit,
+
+    onOpenTimePicker: (
+        title: String,
+        initial: Instant?,
+        forEndpoint: Endpoint,
+    ) -> Unit,
+
     setOrigin: (Place?) -> Unit,
     setDestination: (Place?) -> Unit,
     onSubmitQuery: () -> Unit,
@@ -386,24 +436,36 @@ private fun PersistentTopBar(
             onFinishSearch = ::closeSearch,
             timeConstraintField = departTime,
             timeButtonContentDescription = "Select departure time",
-            onTimeConstraintButtonClick = { onOpenTimePicker(Endpoint.Origin) },
+            onTimeConstraintButtonClick = {
+                onOpenTimePicker(
+                    "Select departure time",
+                    departTime,
+                    Endpoint.Origin,
+                )
+            },
         ),
         inputField2 = inputFieldFactory(
             placeholderText = "Search arrival",
             onFinishSearch = ::closeSearch,
             timeConstraintField = arriveTime,
             timeButtonContentDescription = "Select arrival time",
-            onTimeConstraintButtonClick = { onOpenTimePicker(Endpoint.Destination) },
+            onTimeConstraintButtonClick = {
+                onOpenTimePicker(
+                    "Select arrival time",
+                    arriveTime,
+                    Endpoint.Destination,
+                )
+            },
         ),
         expandedSearch1 = expandedSearchFactory(
             placeholderText = "Search departure",
             onNewSelection = { setOrigin(it) },
-            onFinishSearch = ::closeSearch,
+            onCloseSearch = ::closeSearch,
         ),
         expandedSearch2 = expandedSearchFactory(
             placeholderText = "Search arrival",
             onNewSelection = { setDestination(it) },
-            onFinishSearch = ::closeSearch,
+            onCloseSearch = ::closeSearch,
         ),
     )
 }
@@ -448,59 +510,17 @@ private inline fun inputFieldFactory(
 }
 private inline fun expandedSearchFactory(
     placeholderText: String,
-    crossinline onNewSelection: (Place?) -> Unit,
-    crossinline onFinishSearch: () -> Unit,
+    noinline onNewSelection: (Place?) -> Unit,
+    crossinline onCloseSearch: () -> Unit,
 ): @Composable (TextFieldState, SearchBarState) -> Unit {
     return { textFieldState, searchBarState ->
-        ExpandedFullScreenSearchBar(
-            searchBarState,
-            inputField = {
-                SearchBarDefaults.InputField(
-                    textFieldState = textFieldState,
-                    searchBarState = searchBarState,
-                    leadingIcon = {
-                        IconButton(onClick = { onFinishSearch() }) {
-                            Icon(
-                                painterResource(R.drawable.ic_back),
-                                "Close search",
-                            )
-                        }
-                    },
-                    trailingIcon = {
-                        IconButton(
-                            onClick = {
-                                textFieldState.clearText()
-                                onNewSelection(null)
-                            },
-                        ) {
-                            Icon(
-                                painterResource(R.drawable.ic_close),
-                                "Clear search",
-                            )
-                        }
-                    },
-                    onSearch = { onFinishSearch() },
-                    placeholder = {
-                        Text(
-                            modifier = Modifier.clearAndSetSemantics {},
-                            text = placeholderText,
-                        )
-                    },
-                )
-            }
-        ) {
-            Column( Modifier.verticalScroll(rememberScrollState()) ) {
-                PlaceSearchResults(
-                    Place::class,
-                    query = textFieldState.text.toString(),
-                    onResultClick = { id, name ->
-                        textFieldState.setTextAndPlaceCursorAtEnd(name)
-                        onNewSelection(BackendApi.get_place_info(id))
-                        onFinishSearch()
-                    },
-                )
-            }
-        }
+        ExpandedSearch<Place>(
+            textFieldState = textFieldState,
+            searchBarState = searchBarState,
+            onSelectResult = onNewSelection,
+            onClose = { onCloseSearch() },
+            placeholderText = placeholderText,
+        )
     }
 }
 
@@ -645,64 +665,3 @@ private fun BottomSheetContent(
     onNavigate = onNavigate,
     Modifier.padding(horizontal = 10.dp)
 )
-
-@Composable
-fun EndpointTimePicker(
-    forEndpoint: Endpoint,
-    viewModel: TripFinderViewModel,
-    onDismiss: () -> Unit,
-) {
-    EndpointTimePicker(
-        forEndpoint = forEndpoint,
-        onDismiss = onDismiss,
-        departTime = viewModel.uiState.collectAsState().value.departTime,
-        arriveTime = viewModel.uiState.collectAsState().value.arriveTime,
-        setDepartTime = { viewModel.setTimeConstraints(departTime = it) },
-        setArriveTime = { viewModel.setTimeConstraints(arriveTime = it) },
-    )
-}
-
-@Composable
-fun EndpointTimePicker(
-    forEndpoint: Endpoint,
-    onDismiss: () -> Unit,
-
-    departTime: Instant?,
-    setDepartTime: (Instant?) -> Unit,
-
-    arriveTime: Instant?,
-    setArriveTime: (Instant?) -> Unit,
-) {
-    val title = when (forEndpoint) {
-        Endpoint.Origin -> "Select depart time"
-        Endpoint.Destination -> "Select arrive time"
-    }
-    val initialInstant = when (forEndpoint) {
-        Endpoint.Origin -> departTime
-        Endpoint.Destination -> arriveTime
-    }
-
-    val setTime = when (forEndpoint) {
-        Endpoint.Origin -> { it: Instant? -> setDepartTime(it) }
-        Endpoint.Destination -> { it: Instant? -> setArriveTime(it) }
-    }
-    ClearableTimePicker(
-        title = title,
-        initialTime = with(TimeZone.currentSystemDefault()) { initialInstant?.toLocalTime() },
-        onConfirm = { selectedTime ->
-            setTime(
-                // Here, we are making the decision that the user is inputting a time
-                // in their local device time zone, for their device's current date.
-                // (Outside [ClearableTimePicker], the application always uses
-                // [ZonedDateTime] or [Instant], and a date is always included.)
-                with(TimeZone.currentSystemDefault()) {
-                    selectedTime
-                        ?.atDate( Clock.System.todayIn(this) )
-                        ?.toInstant()
-                }
-            )
-            onDismiss()
-        },
-        onDismiss = onDismiss,
-    )
-}

@@ -57,8 +57,10 @@ android {
 }
 
 dependencies {
+    implementation(libs.androidx.compose.animation)
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.runtime)
+    implementation(libs.androidx.runtime)
     implementation(libs.androidx.ui.graphics)
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.activity.compose)

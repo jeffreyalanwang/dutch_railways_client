@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Endpoint
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Journey
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
@@ -33,9 +34,6 @@ import kotlinx.coroutines.launch
 import kotlin.time.Clock
 import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
-
-enum class Endpoint { Origin, Destination }
-
 
 data class DataState(
     val origin: Place? = null,

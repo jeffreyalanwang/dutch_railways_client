@@ -3,7 +3,10 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import kotlinx.collections.immutable.PersistentList
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toJavaLocalDateTime
+import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.datetime.toLocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -23,6 +26,24 @@ fun <K, V> MutableMap<K, V>.applyAt(key: K, block: (V?)->V)
 
 fun <T> PersistentList<T>.removeLast()
     = this.removeAt(size - 1)
+
+infix fun <T: Comparable<U>, U> T?.geBothElvis(other: U?): Boolean? {
+    return if (this == null || other == null) null
+        else this >= other
+}
+
+infix fun <T: Any, U: Any> T?.toBothElvis(that: U?): Pair<T, U>? {
+    return if (this == null || that == null) null
+        else this to that
+}
+
+fun <T: Any, U: Any, R> Pair<T?, U?>.letBothElvis(block: (T, U) -> R): R? {
+    val (a, b) = this
+    return (
+        if (a == null || b == null) null
+        else block(a, b)
+    )
+}
 
 fun <T, R> Pair<T, T>.map(block: (T) -> R): Pair<R, R>
     = block(first) to block(second)
@@ -272,9 +293,15 @@ inline fun <T> T.letIf(condition: Boolean, then: (T)->T): T
 
 fun List<ServiceStop>.lastStationName() = this.last().getStation().name
 
+fun LocalDateTime.toZonedDateTime(zone: ZoneId): ZonedDateTime
+    = this.toJavaLocalDateTime().atZone(zone)
+
 context(tz: TimeZone)
 fun Instant.toLocalTime()
     = this.toLocalDateTime(tz).time
+
+fun ZonedDateTime.toKotlinLocalDateTime()
+    = this.toLocalDateTime().toKotlinLocalDateTime()
 
 fun ZonedDateTime.toKotlinInstant()
     = this.toInstant().toKotlinInstant()
