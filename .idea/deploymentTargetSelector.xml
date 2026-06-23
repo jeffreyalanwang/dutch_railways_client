@@ -26,18 +26,6 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="RoutePlannerScreenTest">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-06-06T18:24:17.314258718Z">
-          <Target type="BOOT_WITH_SNAPSHOT">
-            <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7_GApps.avd" />
-            </handle>
-            <Snapshot name="snap_2026-05-10_17-35-03" path="$USER_HOME$/.android/avd/Virtual_Pixel_7_GApps.avd/snapshots/snap_2026-05-10_17-35-03" />
-          </Target>
-        </DropdownSelection>
-        <DialogSelection />
-      </SelectionState>
       <SelectionState runConfigName="unitTest">
         <option name="selectionMode" value="DROPDOWN" />
         <DropdownSelection timestamp="2026-05-22T17:27:16.762599939Z">
@@ -108,6 +96,17 @@
         <DialogSelection />
       </SelectionState>
       <SelectionState runConfigName="TripFinderScreenPreview">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-06-23T02:01:47.796670888Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="Default" identifier="serial=192.168.240.112:5555;connection=1c9e3f16" />
+            </handle>
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="PassServiceDetailPreview">
         <option name="selectionMode" value="DROPDOWN" />
         <DropdownSelection timestamp="2026-06-23T02:01:47.796670888Z">
           <Target type="DEFAULT_BOOT">

@@ -1,5 +1,10 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,7 +20,9 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
@@ -133,26 +140,39 @@ fun PassServiceDetail(
     modifier: Modifier = Modifier
 ) {
     val stops = remember { service.getStops() }
-    var areAmenitiesExpanded by remember { mutableStateOf(false) }
+    var isHeaderExpanded by remember { mutableStateOf(false) }
 
     Column(modifier.fillMaxWidth()) {
         Row(
-            Modifier.clickable{ areAmenitiesExpanded = !areAmenitiesExpanded },
+            Modifier.clickable{ isHeaderExpanded = !isHeaderExpanded },
             verticalAlignment = Alignment.Bottom,
         ) {
             // Icon (based on rolling stock)
-            Icon(
-                painterResource(AppIcons.Trainset(service.trainset)),
-                "Train icon",
-                Modifier
-                    .size(72.dp + 20.dp)
-            )
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                AnimatedVisibility (
+                    isHeaderExpanded,
+                    Modifier
+                        .sizeIn(maxHeight = 0.dp)
+                        .wrapContentHeight(unbounded = true)
+                        .padding(bottom = 2.dp),
+                    fadeIn() + slideInVertically { it / 2 },
+                    fadeOut() + slideOutVertically { it / 2 },
+                ) {
+                    Text(service.trainset.name)
+                }
+                Icon(
+                    painterResource(AppIcons.Trainset(service.trainset)),
+                    "Train icon",
+                    Modifier
+                        .size(72.dp + 20.dp)
+                )
+            }
 
             // Amenities TODO add popup with names + rolling stock name
             AmenityBadgeSet(
                 service.amenities,
                 modifier=Modifier.offset(x=-25.dp, y=-7.5.dp),
-                isExpanded = areAmenitiesExpanded,
+                isExpanded = isHeaderExpanded,
             )
         }
 
