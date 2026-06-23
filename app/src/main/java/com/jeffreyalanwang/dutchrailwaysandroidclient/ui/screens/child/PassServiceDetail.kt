@@ -1,7 +1,6 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens
 
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
@@ -9,7 +8,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -23,7 +21,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -33,18 +30,14 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Color.Companion.Transparent
-import androidx.compose.ui.graphics.drawscope.Fill
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -53,9 +46,9 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
-import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getCurrStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.AmenityBadgeSet
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.LineSegmentWithPoint
@@ -65,7 +58,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
-import java.util.EnumSet
 
 @Preview
 @Composable
@@ -141,9 +133,13 @@ fun PassServiceDetail(
     modifier: Modifier = Modifier
 ) {
     val stops = remember { service.getStops() }
+    var areAmenitiesExpanded by remember { mutableStateOf(false) }
 
     Column(modifier.fillMaxWidth()) {
-        Row(verticalAlignment = Alignment.Bottom) {
+        Row(
+            Modifier.clickable{ areAmenitiesExpanded = !areAmenitiesExpanded },
+            verticalAlignment = Alignment.Bottom,
+        ) {
             // Icon (based on rolling stock)
             Icon(
                 painterResource(AppIcons.Trainset(service.trainset)),
@@ -155,7 +151,8 @@ fun PassServiceDetail(
             // Amenities TODO add popup with names + rolling stock name
             AmenityBadgeSet(
                 service.amenities,
-                modifier=Modifier.offset(x=-25.dp, y=-7.5.dp)
+                modifier=Modifier.offset(x=-25.dp, y=-7.5.dp),
+                isExpanded = areAmenitiesExpanded,
             )
         }
 
@@ -170,73 +167,6 @@ fun PassServiceDetail(
 
         // Stops (arrive; depart; station)
         Stops(stops, onNavigate, padding=PaddingValues(horizontal=10.dp))
-    }
-}
-
-private const val badgeContentProportion = .7f
-
-@Composable
-private fun AmenityBadgeSet(
-    amenities: EnumSet<TrainAmenity>,
-    modifier: Modifier = Modifier,
-    height: Dp = 15.dp,
-    color: Color = LocalContentColor.current,
-    bgColor: Color = MaterialTheme.colorScheme.background,
-) {
-    if (amenities.isEmpty()) return Text(
-        "No amenities",
-        color = color,
-        fontStyle = Italic,
-        modifier = modifier.padding(vertical = 5.dp),
-    )
-
-    Row(
-        modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(
-            (-1 * (1 - badgeContentProportion) * height.value / 2).dp
-        ),
-    ) {
-        amenities.forEach {
-            AmenityBadge(
-                it,
-                modifier = Modifier.size(height),
-                color = color,
-                bgColor = bgColor
-            )
-        }
-    }
-}
-
-@Composable
-private fun AmenityBadge(
-    amenity: TrainAmenity,
-    modifier: Modifier = Modifier,
-    color: Color = LocalContentColor.current,
-    bgColor: Color = Transparent,
-) {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = modifier
-            .defaultMinSize(15.dp)
-            .drawWithContent {
-                val circleOuterRadius = size.minDimension / 2
-                val borderThickness = size.minDimension / 12
-
-                drawCircle(bgColor, radius = circleOuterRadius, style = Fill)
-                drawContent()
-                drawCircle(
-                    color,
-                    radius = (circleOuterRadius - (borderThickness / 2)),
-                    style = Stroke(borderThickness),
-                )
-            }
-    ) {
-        Icon(
-            painterResource( AppIcons.Amenity(amenity) ),
-            contentDescription = amenity.friendlyName,
-            tint = color,
-            modifier = Modifier.fillMaxSize(badgeContentProportion)
-        )
     }
 }
 
