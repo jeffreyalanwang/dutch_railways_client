@@ -431,6 +431,7 @@ private fun EditStops(
 
                 FormField(
                     onClick = { selectingStationForIndex = i },
+                    isError = stops.count { it.stationId == stop.stationId } > 1,
                     modifier = Modifier.fill()
                 ) {
                     Text(
@@ -445,7 +446,7 @@ private fun EditStops(
                         val enabled = (i != 0)
                         FormField(
                             enabled = enabled,
-                            isError = enabled && !checkStopValidity(i, stops),
+                            isError = enabled && !checkStopTimeValidity(i, stops),
                             onClick = {
                                 onEditTime(
                                     stop.stationId,
@@ -466,7 +467,7 @@ private fun EditStops(
                         val enabled = (i != stops.lastIndex)
                         FormField(
                             enabled = enabled,
-                            isError = enabled && !checkStopValidity(i, stops),
+                            isError = enabled && !checkStopTimeValidity(i, stops),
                             onClick = {
                                 onEditTime(
                                     stop.stationId,
@@ -586,7 +587,7 @@ private fun generateStopTimes(
     throw IllegalArgumentException()
 }
 
-private fun checkStopValidity(index: Int, stops: List<ServiceStop>): Boolean {
+private fun checkStopTimeValidity(index: Int, stops: List<ServiceStop>): Boolean {
     val stop = stops[index]
     val stopArrival = stop.arrival
     val stopDeparture = stop.departure
