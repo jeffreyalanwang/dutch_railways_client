@@ -70,6 +70,8 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphChildNav
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderStartNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.AppBarWithDualSearch
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialog
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.TimePicker
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.rememberDualSearchBarState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailWithoutMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.JourneyDetailWithoutMap
@@ -110,7 +112,7 @@ private fun TripFinderScreenPreview() {
 
     CompositionLocalProvider(LocalResultEventBus provides remember { ResultEventBus() }) {
         TripFinderScreen(
-            navArgs = backStack.last(),
+            navArgs = backStack.last { it !is TimePickerNavArgs<*> },
             viewModel = viewModel,
             onNavigateMinor = { newNavArgs ->
                 scope.launch {
@@ -121,6 +123,13 @@ private fun TripFinderScreenPreview() {
                 }
             },
         )
+        backStack.last().let {
+            if (it is TimePickerNavArgs<*>) {
+                PredictiveBackDialog({ viewModel.popBack() }) {
+                    TimePicker(it) { viewModel.popBack() }
+                }
+            }
+        }
     }
 
     Column(Modifier.fillMaxSize(), Arrangement.Bottom) {

@@ -8,23 +8,29 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.TimeInput
 import androidx.compose.material3.TimePicker
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation3.runtime.result.LocalResultEventBus
+import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letWith
 import com.jeffreyalanwang.dutchrailwaysandroidclient.toLocalTime
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TimePickerNavArgs
@@ -52,7 +58,8 @@ fun TimePicker(
                     DialogResult(it, navArgs.tag)
                 )
                 onNavigateBack()
-            }
+            },
+            enableKeyboard = navArgs.enableKeyboard,
         )
     } else {
         NonClearableTimePicker(
@@ -64,7 +71,8 @@ fun TimePicker(
                     DialogResult(it, navArgs.tag)
                 )
                 onNavigateBack()
-            }
+            },
+            enableKeyboard = navArgs.enableKeyboard,
         )
     }
 }
@@ -103,6 +111,7 @@ fun ClearableTimePickerDialog(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
+    enableKeyboard: Boolean = true,
 ) {
     Dialog(onDismissRequest = onDismiss) {
         ClearableTimePicker(
@@ -110,7 +119,8 @@ fun ClearableTimePickerDialog(
             onConfirm,
             onDismiss,
             modifier,
-            title
+            title,
+            enableKeyboard,
         )
     }
 }
@@ -122,12 +132,14 @@ fun ClearableTimePicker(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
+    enableKeyboard: Boolean = true,
 ) = TimePickerBase(
         initialTime = initialTime,
         onConfirm = onConfirm,
         onDismiss = onDismiss,
         modifier = modifier,
         title = title,
+        enableKeyboard = enableKeyboard,
     ) {
         TextButton(onClick = { onConfirm(null) }) {
             Text("Clear and exit")
@@ -141,12 +153,14 @@ fun NonClearableTimePicker(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
+    enableKeyboard: Boolean = true,
 ) = TimePickerBase(
         initialTime = initialTime,
         onConfirm = { onConfirm(it!!) },
         onDismiss = onDismiss,
         modifier = modifier,
         title = title,
+        enableKeyboard = enableKeyboard,
         bottomRowExtras = {},
     )
 
@@ -157,8 +171,10 @@ private fun TimePickerBase(
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
+    enableKeyboard: Boolean = true,
     bottomRowExtras: @Composable RowScope.() -> Unit,
 ) {
+    var isUsingDial by rememberSaveable { mutableStateOf(true) }
     val _initialTime = initialTime
         ?: Clock.System.now()
             .letWith(TimeZone.currentSystemDefault()) { it.toLocalTime() }
@@ -182,9 +198,26 @@ private fun TimePickerBase(
                 Spacer(Modifier.height(20.dp))
             }
 
-            TimePicker(timePickerState)
+            if (isUsingDial) {
+                TimePicker(timePickerState)
+            } else {
+                TimeInput(timePickerState)
+            }
 
             Row {
+                if (enableKeyboard) {
+                    IconButton(
+                        onClick = { isUsingDial = !isUsingDial }
+                    ) {
+                        if (isUsingDial) Icon(
+                            painterResource(R.drawable.ic_keyboard),
+                            contentDescription = "Use keyboard",
+                        ) else Icon(
+                            painterResource(R.drawable.ic_clock),
+                            contentDescription = "Use dial",
+                        )
+                    }
+                }
                 bottomRowExtras()
 
                 Spacer(Modifier.weight(1f))

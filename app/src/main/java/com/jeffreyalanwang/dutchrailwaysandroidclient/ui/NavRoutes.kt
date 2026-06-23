@@ -81,10 +81,7 @@ interface PlaceDetailNavArgs: CommonChildNavArgs { val id: Int }
 @Serializable data object EditStartNavArgs : AppNavArgs, EditGraphNavArgs
 
 // Child navigation routes' NavKey types
-@Serializable data class AreaDetailNavArgs(override val id: Int) : PlaceDetailNavArgs
-@Serializable data class StationDetailNavArgs(override val id: Int) : PlaceDetailNavArgs
-@Serializable data class PassServiceDetailNavArgs(val id: Int) : CommonChildNavArgs
-@Serializable data class TimePickerNavArgs<T>(val tag: T, val title: String, val initialTime: LocalTime? = null, val clearable: Boolean = false) : CommonChildNavArgs
+
 @Serializable data object JourneyListNavArgs : AppNavArgs, TripFinderGraphChildNavArgs, TripFinderGraphMajorNavArgs
 @Serializable data class JourneyDetailNavArgs(val index: Int) : TripFinderGraphChildNavArgs
 @Serializable data class EditStationNavArgs(val id: Int) : EditGraphNavArgs
@@ -92,6 +89,18 @@ interface PlaceDetailNavArgs: CommonChildNavArgs { val id: Int }
 @Serializable data class NewPassServiceNavArgs(val basedOnId: Int? = null) : EditGraphNavArgs
 @Serializable data class EditPassServiceNavArgs(val id: Int) : EditGraphNavArgs
 @Serializable data class ConfirmDeletePassServiceNavArgs(val id: Int) : EditGraphNavArgs
+
+@Serializable data class AreaDetailNavArgs(override val id: Int) : PlaceDetailNavArgs
+@Serializable data class StationDetailNavArgs(override val id: Int) : PlaceDetailNavArgs
+@Serializable data class PassServiceDetailNavArgs(val id: Int) : CommonChildNavArgs
+@Serializable data class TimePickerNavArgs<T>(
+    val tag: T,
+    val title: String,
+    val initialTime: LocalTime? = null,
+    val clearable: Boolean = false,
+    val enableKeyboard: Boolean = true,
+) : CommonChildNavArgs
+
 
 /**
  * Returns navigation entries for pages in the main screen's bottom navbar.
