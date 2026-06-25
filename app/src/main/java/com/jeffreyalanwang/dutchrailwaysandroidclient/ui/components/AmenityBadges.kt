@@ -50,6 +50,7 @@ import androidx.compose.ui.util.fastSumBy
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letIf
+import com.jeffreyalanwang.dutchrailwaysandroidclient.runReversed
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
 
 @Preview(widthDp = 300, heightDp = 200)
@@ -272,8 +273,8 @@ private fun ExpandableBadgeSet(
         val collapsedWidth = placeables
             .run { fastSumBy { it.width } + (collapsedGap * (size - 1)) }
 
-        val expandedHeight = placeables
-            .run { fastSumBy { it.height } + (expandedGap * (size - 1)) }
+//        val expandedHeight = placeables
+//            .run { fastSumBy { it.height } + (expandedGap * (size - 1)) }
 
         layout(collapsedWidth, collapsedHeight) {
             // TODO vertical position when expanded: find a place within window insets/parent composable
@@ -296,15 +297,14 @@ private fun ExpandableBadgeSet(
             val yPos = if (progressY == 0f) null // use [collapsedY]
                 else placeables
                     .drop(1) // drop the top item, since we work from bottom
-                    .reversed()
-                    .runningFold(
-                        0 +                               // top of collapsed-row layout
-                        (placeables.getOrNull(2)?.height  // further down a little
-                            ?: 0)
-                    ) { acc, placeable ->
-                        acc - placeable.height
+                    .runReversed {
+                        runningFold(
+                            if (size < 2) 0     // <, not <=, since we already dropped 1
+                            else first().height // start one item-height lower than collapsed-row
+                        ) { acc, placeable ->
+                            acc - placeable.height
+                        }
                     }
-                    .reversed()
                     .map { expandedY ->
                         collapsedY +
                         progressY * (expandedY - collapsedY)

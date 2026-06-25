@@ -278,6 +278,10 @@ fun <T, U> List<Pair<T, U>>.withFlatIndex()
         .withIndex()
         .map { (index, pair) -> Triple(index, pair.first, pair.second) }
 
+/** Run [block] on reversed list, then un-reverse before returning. */
+fun <T, U> List<T>.runReversed(block: List<T>.() -> List<U>)
+    = this.reversed().block().reversed()
+
 inline fun <T, U, R> T.letWith(receiver: U, block: U.(T) -> R): R
     = block(receiver, this)
 
