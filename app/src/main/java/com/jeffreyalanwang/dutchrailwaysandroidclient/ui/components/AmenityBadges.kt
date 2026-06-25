@@ -1,14 +1,11 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components
 
 import android.annotation.SuppressLint
-import androidx.compose.animation.BoundsTransform
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.keyframesWithSpline
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
@@ -17,7 +14,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -27,10 +23,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,18 +37,20 @@ import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.shadow.Shadow
-import androidx.compose.ui.layout.LookaheadScope
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastMaxOfOrDefault
+import androidx.compose.ui.util.fastRoundToInt
+import androidx.compose.ui.util.fastSumBy
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letIf
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.animateBounds
 
 @Preview(widthDp = 300, heightDp = 200)
 @Composable
@@ -224,58 +220,105 @@ private fun ExpandableBadgeSet(
     collapsedGap: Dp = 0.dp,
     expandedGap: Dp = 0.dp,
     badgesToLabels: List<Pair<@Composable () -> Unit, @Composable () -> Unit>>,
-) = LookaheadScope {
-        val isExpandedState by rememberUpdatedState(isExpanded)
-
-        @Composable
-        fun item(badge: @Composable () -> Unit, label: @Composable () -> Unit) {
+) {
+    @Composable
+    fun item(
+        badge: @Composable () -> Unit,
+        label: @Composable () -> Unit,
+    ) {
+        Row {
+            GlowBox(isExpanded) { badge() }
             Row(
-                Modifier.animateBounds(
-                    boundsTransform = BoundsTransform { from, to ->
-                        keyframesWithSpline {
-                            val distanceX = (to.topLeft.x - from.topLeft.x)
-                            val distanceY = (to.topLeft.y - from.topLeft.y)
-
-                            from at 0
-                            from.translate(distanceX * 1/2f, distanceY * 1/4f) atFraction .25f
-                            from.translate(distanceX * 3/4f, distanceY * 1/2f) atFraction .75f
-                            to atFraction 1f
-                        }
-                    },
-                )
+                Modifier
+                    .width(0.dp)
+                    .wrapContentWidth(
+                        Alignment.Start,
+                        unbounded = true
+                    )
             ) {
-                GlowBox(isExpandedState) { badge() }
-                if (isExpandedState) {
-                    Row(
-                        Modifier
-                            .width(0.dp)
-                            .wrapContentWidth(
-                                Alignment.Start,
-                                unbounded = true
-                            )
-                    ) {
-                        Spacer(Modifier.width(expandedGap))
-                        GlowBox { label() }
-                    }
-                }
-            }
-        }
-        val items = badgesToLabels.map { (badge, label) ->
-            remember(badge, label) { movableContentOf { item(badge, label) } }
-        }
-
-        Box() {
-            if (!isExpanded) {
-                Row(modifier.size(0.dp).wrapContentSize(align = Alignment.BottomStart, unbounded = true), horizontalArrangement = Arrangement.spacedBy(collapsedGap)) {
-                    items.forEach { it() }
-                }
-            } else {
-                Column(modifier.size(0.dp).wrapContentSize(align = Alignment.TopStart, unbounded = true), verticalArrangement = Arrangement.spacedBy(expandedGap)) {
-                    items.forEach { it() }
+                Spacer(Modifier.width(expandedGap))
+                AnimatedVisibility(isExpanded) {
+                    GlowBox { label() }
                 }
             }
         }
     }
+
+    val progressX by animateFloatAsState(
+        if (isExpanded) 1f else 0f,
+        if (isExpanded) MaterialTheme.motionScheme.fastSpatialSpec()
+            else MaterialTheme.motionScheme.slowSpatialSpec(),
+    )
+    val progressY by animateFloatAsState(
+        if (isExpanded) 1f else 0f,
+        if (isExpanded) MaterialTheme.motionScheme.slowSpatialSpec()
+            else MaterialTheme.motionScheme.fastSpatialSpec(),
+    )
+
+    Layout(
+        modifier = modifier,
+        content = {
+            badgesToLabels
+                .forEach { (badge, label) -> item(badge, label) }
+        }
+    ) { measurables, constraints ->
+        val placeables = measurables.map { it.measure(constraints) }
+        val collapsedGap = collapsedGap.toPx().fastRoundToInt()
+        val expandedGap = expandedGap.toPx().fastRoundToInt()
+
+        // These will be the bounds seen by parent composables
+        // regardless of whether we have expanded outside of them.
+        val collapsedHeight = placeables.fastMaxOfOrDefault(0) { it.height }
+        val collapsedWidth = placeables
+            .run { fastSumBy { it.width } + (collapsedGap * (size - 1)) }
+
+        val expandedHeight = placeables
+            .run { fastSumBy { it.height } + (expandedGap * (size - 1)) }
+
+        layout(collapsedWidth, collapsedHeight) {
+            // TODO vertical position when expanded: find a place within window insets/parent composable
+
+            // Collapsed layout is a row, expanded is a column;
+            // so these are constants
+            val collapsedY = 0
+            val expandedX = (placeables.firstOrNull()?.width ?: 0) / 2
+
+            val xPos = if (progressX == 1f) null // use [expandedX]
+                else placeables
+                    .dropLast(1)
+                    .runningFold(0) { acc, placeable ->
+                        acc + placeable.width + collapsedGap
+                    }
+                    .map { collapsedX ->
+                        collapsedX +
+                        progressX * (expandedX - collapsedX)
+                    }
+            val yPos = if (progressY == 0f) null // use [collapsedY]
+                else placeables
+                    .drop(1) // drop the top item, since we work from bottom
+                    .reversed()
+                    .runningFold(
+                        0 +                               // top of collapsed-row layout
+                        (placeables.getOrNull(2)?.height  // further down a little
+                            ?: 0)
+                    ) { acc, placeable ->
+                        acc - placeable.height
+                    }
+                    .reversed()
+                    .map { expandedY ->
+                        collapsedY +
+                        progressY * (expandedY - collapsedY)
+                    }
+
+            placeables.forEachIndexed { i, placeable ->
+                placeable.placeRelative(
+                    xPos?.get(i)?.fastRoundToInt() ?: expandedX,
+                    yPos?.get(i)?.fastRoundToInt() ?: collapsedY,
+                )
+            }
+        }
+    }
+}
 
 /** Draws and animates enter/exit of background for expanded [AmenityBadgeSet]. */
 @SuppressLint("ModifierParameter")
@@ -303,9 +346,9 @@ private fun GlowBox(
             MaterialTheme.shapes.small,
             Shadow(
                 color = White,
-                alpha = .5f * progress,
-                radius = 10.dp,
-                spread = 5.dp * progress,
+                alpha = .75f * progress,
+                radius = 2.5.dp,
+                spread = 2.5.dp * progress,
                 offset = DpOffset.Zero,
             ),
         ),
