@@ -1,12 +1,19 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util
 
+import androidx.compose.animation.BoundsTransform
+import androidx.compose.animation.animateBounds
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.minus
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.saveable.rememberSerializable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.LookaheadScope
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation3.runtime.NavBackStack
@@ -24,6 +31,20 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AppNavArgs
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
+
+context (lookaheadScope: LookaheadScope)
+fun Modifier.animateBounds(
+    modifier: Modifier = Modifier,
+    boundsTransform: BoundsTransform
+        = BoundsTransform { _, _ ->
+            spring(
+                dampingRatio = Spring.DampingRatioNoBouncy,
+                stiffness = Spring.StiffnessMediumLow,
+                visibilityThreshold = Rect.VisibilityThreshold,
+            )
+        },
+    animateMotionFrameOfReference: Boolean = false,
+) = animateBounds(lookaheadScope, modifier, boundsTransform, animateMotionFrameOfReference)
 
 inline fun <reified T> Set<T>.toMutableStateSet()
     = mutableStateSetOf(*toTypedArray())

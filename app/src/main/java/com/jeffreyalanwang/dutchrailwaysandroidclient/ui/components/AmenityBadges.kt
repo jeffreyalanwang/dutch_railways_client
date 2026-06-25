@@ -1,26 +1,23 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.Spring
+import android.annotation.SuppressLint
+import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.keyframes
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.expandHorizontally
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.shrinkHorizontally
+import androidx.compose.animation.core.keyframesWithSpline
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.layout.wrapContentWidth
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
@@ -28,15 +25,17 @@ import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.dropShadow
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.graphics.Color.Companion.Transparent
@@ -44,19 +43,18 @@ import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.shadow.Shadow
-import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
-import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letIf
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.animateBounds
 
 @Preview(widthDp = 300, heightDp = 200)
 @Composable
@@ -65,11 +63,12 @@ private fun AmenityBadgePreview() {
     var isExpanded by remember { mutableStateOf(true) }
     Card {
         Box(
-            Modifier.fillMaxSize(),
+            Modifier
+                .fillMaxSize()
+                .clickable { isExpanded = !isExpanded },
             contentAlignment = Alignment.Center,
         ) {
             Row(
-                Modifier.onFocusChanged { isExpanded = it.hasFocus },
                 verticalAlignment = Alignment.Bottom,
             ) {
                 Icon(
@@ -79,12 +78,16 @@ private fun AmenityBadgePreview() {
                         .size(72.dp + 20.dp)
                 )
 
-                AmenityBadgeSet(
-                    amenities,
-                    isExpanded = isExpanded,
-                    onModify = { amenities = it },
-                    modifier = Modifier.offset(x = -25.dp, y = -7.5.dp)
-                )
+                Box { // Test that we display expanded badges on top
+                    EditAmenityBadgeSet(
+                        amenities,
+                        isExpanded = isExpanded,
+                        onModify = { amenities = it },
+                        modifier = Modifier.offset(x = -25.dp, y = -7.5.dp)
+                    )
+
+                    Text("Test content", color = Color.Blue)
+                }
             }
         }
     }
@@ -92,26 +95,12 @@ private fun AmenityBadgePreview() {
 
 private const val badgeContentProportion = .7f
 
-/** Placed behind [AmenityBadgeSet] when it is in expanded state. */
-@Composable
-fun Modifier.glow()
-    = this.dropShadow(
-        MaterialTheme.shapes.small,
-        Shadow(
-            color = White,
-            alpha = .5f,
-            radius = 10.dp,
-            spread = 5.dp,
-            offset = DpOffset.Zero,
-        ),
-    )
-
 @Composable
 fun EditAmenityBadgeSet(
     amenities: Set<TrainAmenity>,
+    onModify: ((Set<TrainAmenity>) -> Unit),
     modifier: Modifier = Modifier,
     isExpanded: Boolean = false,
-    onModify: ((Set<TrainAmenity>) -> Unit)? = null,
     height: Dp = 15.dp,
     color: Color = LocalContentColor.current,
     bgColor: Color = MaterialTheme.colorScheme.background,
@@ -160,125 +149,168 @@ private fun AmenityBadgeSetBase(
         modifier = modifier.padding(vertical = 5.dp),
     )
 
-    val gap = (-1 * (1 - badgeContentProportion) * height.value / 2).dp
+    val isModifiable = (onModify != null)
+    var confirmDeleteOf by
+        remember(
+            isExpanded, // Reset to null when collapsed
+            isModifiable,
+            amenities.size
+        ) { mutableStateOf<Int?>(null) }
 
-    val badgeSizePx = with (LocalDensity.current) { height.toPx() }
-    val gapPx = with (LocalDensity.current) {
-        gap.toPx()
+    /** Flips the [confirmDeleteOf] state between null and not null. */
+    fun toggleConfirmDelete(index: Int) {
+        confirmDeleteOf = if (confirmDeleteOf == null) index
+                          else null
     }
 
-    val isModifiable = (onModify != null)
-    var confirmDeleteOf by remember { mutableStateOf<TrainAmenity?>(null) }
+    val gap = (-1 * (1 - badgeContentProportion) * height.value / 2).dp
 
-    val progressX by animateFloatAsState(
-        if (isExpanded) 1f else 0f,
-        if (isExpanded) MaterialTheme.motionScheme.fastSpatialSpec()
-            else MaterialTheme.motionScheme.slowSpatialSpec(),
-    )
-    val progressY by animateFloatAsState(
-        if (isExpanded) 1f else 0f,
-        if (isExpanded) MaterialTheme.motionScheme.slowSpatialSpec()
-            else MaterialTheme.motionScheme.fastSpatialSpec(),
-    )
-
-    fun xOffset(i: Int) = progressX * -(badgeSizePx + gapPx) * (i - 1)
-    fun yOffset(i: Int) = progressY * -(badgeSizePx - gapPx) * (amenities.size - 2 - i)
-
-    Row(
+    ExpandableBadgeSet(
+        isExpanded,
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(gap),
-    ) {
-        amenities.forEachIndexed { i, it ->
-            Row(
-                if (progressX == 0f) Modifier
-                else Modifier
-                    .zIndex(100f)
-                    .offset {
-                        IntOffset(
-                            x = xOffset(i).toInt(),
-                            y = yOffset(i).toInt(),
-                        )
-                    },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // The [DeleteBadge] will only become visible
-                // in the case that [isModifiable == true].
-                if (confirmDeleteOf != it) {
-                    AmenityBadge(
+        collapsedGap = gap,
+        expandedGap = -gap,
+        badgesToLabels =
+            amenities.mapIndexed { i, it ->
+                val isConfirmingDelete = (confirmDeleteOf == i)
+
+                val badge = @Composable {
+                    if (!isConfirmingDelete) AmenityBadge(
                         it,
-                        modifier = Modifier
-                            .size(height)
-                            .letIf(isExpanded) { m -> m.glow() }
+                        modifier = Modifier.size(height)
                             .letIf(isExpanded && isModifiable) { m ->
-                                m.clickable {
-                                    confirmDeleteOf =
-                                        if (confirmDeleteOf == null) it
-                                            else null
-                                }
+                                m.clickable { toggleConfirmDelete(i) }
                             },
                         color = color,
                         bgColor = bgColor
                     )
-                } else {
-                    DeleteBadge(
+                    else DeleteBadge(
                         Modifier
-                            .glow()
                             .size(height)
+                            // [DeleteBadge] can always assume
+                            // [isExpanded == true && isModifiable == true]
                             .clickable {
-                                onModify!!(amenities - it)
+                                onModify!!(amenities.minus(it))
                             }
                     )
                 }
-                AnimatedVisibility (
-                    isExpanded,
-                    Modifier
-                        .sizeIn(maxWidth = 0.dp)
-                        .wrapContentWidth(
-                            unbounded = true,
-                            align = Alignment.Start
-                        )
-                        .padding(start = 5.dp),
-                    fadeIn() +
-                        expandHorizontally(
-                            spring(
-                                Spring.DampingRatioLowBouncy,
-                                Spring.StiffnessLow
-                            )
-                        ),
-                    fadeOut(
-                        keyframes {
-                            durationMillis = 100
-                            1f at 0 using FastOutSlowInEasing
-                            .25f at 25 using LinearOutSlowInEasing
-                            0f at 100
-                        }
-                    ) + shrinkHorizontally(
-                        spring(
-                            Spring.DampingRatioLowBouncy,
-                            Spring.StiffnessLow
-                        )
-                    ),
-                ) {
+
+                val label = @Composable {
                     Text(
-                        if (confirmDeleteOf != it) it.friendlyName
-                            else "Delete ${it.friendlyName}?",
+                        if (confirmDeleteOf != i) it.friendlyName
+                        else "Delete ${it.friendlyName}?",
+
                         style = MaterialTheme.typography.labelSmall,
                         softWrap = false,
                         maxLines = 1,
-                        modifier = Modifier.glow()
-                            // This only shows when [isExpanded == true]
+                        modifier = Modifier
+                            // Can always assume [isExpanded == true]
                             .letIf<Modifier>(isModifiable) { m ->
-                                m.clickable {
-                                    confirmDeleteOf =
-                                        if (confirmDeleteOf == null) it
-                                        else null
-                                }
+                                m.clickable { toggleConfirmDelete(i) }
                             },
                     )
+                }
+
+                badge to label
+            }
+    )
+}
+
+/** Handles visual effects. */
+@Composable
+private fun ExpandableBadgeSet(
+    isExpanded: Boolean,
+    modifier: Modifier = Modifier,
+    collapsedGap: Dp = 0.dp,
+    expandedGap: Dp = 0.dp,
+    badgesToLabels: List<Pair<@Composable () -> Unit, @Composable () -> Unit>>,
+) = LookaheadScope {
+        val isExpandedState by rememberUpdatedState(isExpanded)
+
+        @Composable
+        fun item(badge: @Composable () -> Unit, label: @Composable () -> Unit) {
+            Row(
+                Modifier.animateBounds(
+                    boundsTransform = BoundsTransform { from, to ->
+                        keyframesWithSpline {
+                            val distanceX = (to.topLeft.x - from.topLeft.x)
+                            val distanceY = (to.topLeft.y - from.topLeft.y)
+
+                            from at 0
+                            from.translate(distanceX * 1/2f, distanceY * 1/4f) atFraction .25f
+                            from.translate(distanceX * 3/4f, distanceY * 1/2f) atFraction .75f
+                            to atFraction 1f
+                        }
+                    },
+                )
+            ) {
+                GlowBox(isExpandedState) { badge() }
+                if (isExpandedState) {
+                    Row(
+                        Modifier
+                            .width(0.dp)
+                            .wrapContentWidth(
+                                Alignment.Start,
+                                unbounded = true
+                            )
+                    ) {
+                        Spacer(Modifier.width(expandedGap))
+                        GlowBox { label() }
+                    }
+                }
+            }
+        }
+        val items = badgesToLabels.map { (badge, label) ->
+            remember(badge, label) { movableContentOf { item(badge, label) } }
+        }
+
+        Box() {
+            if (!isExpanded) {
+                Row(modifier.size(0.dp).wrapContentSize(align = Alignment.BottomStart, unbounded = true), horizontalArrangement = Arrangement.spacedBy(collapsedGap)) {
+                    items.forEach { it() }
+                }
+            } else {
+                Column(modifier.size(0.dp).wrapContentSize(align = Alignment.TopStart, unbounded = true), verticalArrangement = Arrangement.spacedBy(expandedGap)) {
+                    items.forEach { it() }
                 }
             }
         }
     }
+
+/** Draws and animates enter/exit of background for expanded [AmenityBadgeSet]. */
+@SuppressLint("ModifierParameter")
+@Composable
+private fun GlowBox(
+    isEnabled: Boolean = true,
+    modifier: Modifier = Modifier,
+    content: @Composable BoxScope.() -> Unit,
+) {
+    var isEnabledState by remember { mutableStateOf(false) }
+    DisposableEffect(isEnabled) {
+        isEnabledState = isEnabled
+        onDispose {
+            isEnabledState = false
+        }
+    }
+
+    val progress by animateFloatAsState(
+        if (isEnabledState) 1f else 0f,
+        MaterialTheme.motionScheme.slowSpatialSpec(),
+    )
+
+    Box(
+        modifier.dropShadow(
+            MaterialTheme.shapes.small,
+            Shadow(
+                color = White,
+                alpha = .5f * progress,
+                radius = 10.dp,
+                spread = 5.dp * progress,
+                offset = DpOffset.Zero,
+            ),
+        ),
+        content = content
+    )
 }
 
 @Composable
