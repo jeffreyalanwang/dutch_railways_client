@@ -302,7 +302,7 @@ private fun ExpandableBadgeSet(
                             if (size < 2) 0     // <, not <=, since we already dropped 1
                             else first().height // start one item-height lower than collapsed-row
                         ) { acc, placeable ->
-                            acc - placeable.height
+                            acc - placeable.height - expandedGap
                         }
                     }
                     .map { expandedY ->
