@@ -35,17 +35,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Color.Companion.Red
 import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.graphics.Color.Companion.White
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
@@ -53,16 +57,21 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letIf
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
-import java.util.EnumSet
 
 @Preview(widthDp = 300, heightDp = 200)
 @Composable
 private fun AmenityBadgePreview() {
-    var amenities by remember { mutableStateOf(EnumSet.allOf(TrainAmenity::class.java)) }
+    var amenities by remember { mutableStateOf(TrainAmenity.entries.toSet()) }
     var isExpanded by remember { mutableStateOf(true) }
-    Card(Modifier.clickable { isExpanded = !isExpanded }) {
-        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Row(verticalAlignment = Alignment.Bottom) {
+    Card {
+        Box(
+            Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            Row(
+                Modifier.onFocusChanged { isExpanded = it.hasFocus },
+                verticalAlignment = Alignment.Bottom,
+            ) {
                 Icon(
                     painterResource(R.drawable.ic_dr_trainservice),
                     "Train icon",
@@ -83,12 +92,63 @@ private fun AmenityBadgePreview() {
 
 private const val badgeContentProportion = .7f
 
+/** Placed behind [AmenityBadgeSet] when it is in expanded state. */
 @Composable
-fun AmenityBadgeSet(
-    amenities: EnumSet<TrainAmenity>,
+fun Modifier.glow()
+    = this.dropShadow(
+        MaterialTheme.shapes.small,
+        Shadow(
+            color = White,
+            alpha = .5f,
+            radius = 10.dp,
+            spread = 5.dp,
+            offset = DpOffset.Zero,
+        ),
+    )
+
+@Composable
+fun EditAmenityBadgeSet(
+    amenities: Set<TrainAmenity>,
     modifier: Modifier = Modifier,
     isExpanded: Boolean = false,
-    onModify: ((EnumSet<TrainAmenity>) -> Unit)? = null,
+    onModify: ((Set<TrainAmenity>) -> Unit)? = null,
+    height: Dp = 15.dp,
+    color: Color = LocalContentColor.current,
+    bgColor: Color = MaterialTheme.colorScheme.background,
+) = AmenityBadgeSetBase(
+    amenities,
+    modifier,
+    isExpanded,
+    onModify,
+    height,
+    color,
+    bgColor,
+)
+
+@Composable
+fun AmenityBadgeSet(
+    amenities: Set<TrainAmenity>,
+    modifier: Modifier = Modifier,
+    isExpanded: Boolean = false,
+    height: Dp = 15.dp,
+    color: Color = LocalContentColor.current,
+    bgColor: Color = MaterialTheme.colorScheme.background,
+) = AmenityBadgeSetBase(
+    amenities,
+    modifier,
+    isExpanded,
+    null,
+    height,
+    color,
+    bgColor,
+)
+
+@Composable
+private fun AmenityBadgeSetBase(
+    amenities: Set<TrainAmenity>,
+    modifier: Modifier = Modifier,
+    isExpanded: Boolean = false,
+    onModify: ((Set<TrainAmenity>) -> Unit)? = null,
     height: Dp = 15.dp,
     color: Color = LocalContentColor.current,
     bgColor: Color = MaterialTheme.colorScheme.background,
@@ -148,7 +208,8 @@ fun AmenityBadgeSet(
                         it,
                         modifier = Modifier
                             .size(height)
-                            .letIf(isModifiable) { m ->
+                            .letIf(isExpanded) { m -> m.glow() }
+                            .letIf(isExpanded && isModifiable) { m ->
                                 m.clickable {
                                     confirmDeleteOf =
                                         if (confirmDeleteOf == null) it
@@ -161,10 +222,10 @@ fun AmenityBadgeSet(
                 } else {
                     DeleteBadge(
                         Modifier
+                            .glow()
                             .size(height)
                             .clickable {
-                                onModify!!(
-                                    amenities.clone().apply { remove(it) })
+                                onModify!!(amenities - it)
                             }
                     )
                 }
@@ -204,7 +265,8 @@ fun AmenityBadgeSet(
                         style = MaterialTheme.typography.labelSmall,
                         softWrap = false,
                         maxLines = 1,
-                        modifier = Modifier
+                        modifier = Modifier.glow()
+                            // This only shows when [isExpanded == true]
                             .letIf<Modifier>(isModifiable) { m ->
                                 m.clickable {
                                     confirmDeleteOf =

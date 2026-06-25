@@ -168,7 +168,7 @@ fun PassServiceDetail(
                 )
             }
 
-            // Amenities TODO add popup with names + rolling stock name
+            // Amenities
             AmenityBadgeSet(
                 service.amenities,
                 modifier=Modifier.offset(x=-25.dp, y=-7.5.dp),

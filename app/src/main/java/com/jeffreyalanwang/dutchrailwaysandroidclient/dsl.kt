@@ -8,7 +8,6 @@ import kotlinx.collections.immutable.toImmutableList
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import java.time.ZonedDateTime
-import java.util.EnumSet
 import kotlin.time.Duration
 
 enum class Endpoint { Origin, Destination }
@@ -181,7 +180,7 @@ data class PassService(
     val id: Int,
     val title: String,
     val trainset: Trainset,
-    val amenities: EnumSet<TrainAmenity>,
+    val amenities: Set<TrainAmenity>,
     private var stops: List<ServiceStop>? = null,
 ) : Parcelable {
     fun getStops(): List<ServiceStop> {

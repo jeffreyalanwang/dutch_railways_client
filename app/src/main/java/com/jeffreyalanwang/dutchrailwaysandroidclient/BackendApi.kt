@@ -8,7 +8,6 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.toJavaLocalDateTime
 import java.time.ZoneId
-import java.util.EnumSet
 import kotlin.math.max
 import kotlin.reflect.KClass
 import kotlin.time.Instant
@@ -29,7 +28,7 @@ object BackendApi {
     private const val BACKEND_URL = "http://msword-jw125.duckdns.org"
 
     private val dummyPassServices = mutableListOf(
-        PassService(119, "Intercity 2263 to Rotterdam Centraal", Trainset.VIRM, EnumSet.allOf(TrainAmenity::class.java))
+        PassService(119, "Intercity 2263 to Rotterdam Centraal", Trainset.VIRM, TrainAmenity.entries.toSet())
     )
     private val dummyServiceStops = mutableListOf(
         ServiceStop(passServiceId=119,arrival=null                                      ,departure=parseAmsTime("2026-05-08T18:36:00.000000"),stationId=358),
@@ -213,7 +212,7 @@ object BackendApi {
         )
     }
 
-    fun add_pass_service(title: String, trainset: Trainset, amenities: EnumSet<TrainAmenity>, stops: List<ServiceStop>)
+    fun add_pass_service(title: String, trainset: Trainset, amenities: Set<TrainAmenity>, stops: List<ServiceStop>)
         = PassService(
             id = (dummyPassServices.maxOfOrNull { it.id } ?: -1) + 1,
             title,
@@ -230,7 +229,7 @@ object BackendApi {
     fun update_pass_service(
         serviceId: Int,
         trainset: Trainset? = null,
-        amenities: EnumSet<TrainAmenity>? = null,
+        amenities: Set<TrainAmenity>? = null,
         stops: List<ServiceStop>? = null,
     ) {
         val serviceIndex = dummyPassServices.indexOfFirst { it.id == serviceId }

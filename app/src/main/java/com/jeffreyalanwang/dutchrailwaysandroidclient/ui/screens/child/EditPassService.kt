@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
@@ -56,7 +57,6 @@ import androidx.compose.ui.hapticfeedback.HapticFeedbackType.Companion.SegmentFr
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontStyle
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -69,6 +69,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.StopPoint
+import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Trainset
 import com.jeffreyalanwang.dutchrailwaysandroidclient.applyAt
 import com.jeffreyalanwang.dutchrailwaysandroidclient.map
@@ -80,6 +81,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArg
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TimePickerNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.EditAmenityBadgeSet
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ElevatingReorderableItem
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.FormField
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.IconWithBadge
@@ -88,7 +90,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.ExpandedSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.DialogResult
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.toMutableStateSet
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalTime
@@ -227,9 +228,8 @@ private fun EditPassServiceScreenBase(
     var trainsetSelection by rememberSaveable {
         mutableStateOf( basedOnService?.trainset )
     }
-    val amenitiesMultiSelection = rememberSaveable {
-        (basedOnService?.amenities ?: emptySet())
-            .toMutableStateSet()
+    var amenitiesMultiSelection by rememberSaveable {
+        mutableStateOf(basedOnService?.amenities ?: emptySet<TrainAmenity>())
     }
     val stopsList = rememberSaveable {
         (basedOnService?.getStops() ?: emptyList())
@@ -264,10 +264,13 @@ private fun EditPassServiceScreenBase(
                 trainsetSelection
             ) { trainsetSelection = it }
 
-            Text(
-                "No amenities",
-                fontStyle = FontStyle.Italic,
-                modifier = Modifier.alpha(0.5f)
+            var areAmenitiesExpanded by remember { mutableStateOf(false) }
+            EditAmenityBadgeSet(
+                amenitiesMultiSelection,
+                modifier=Modifier
+                    .offset(x=-25.dp, y=-7.5.dp),
+                isExpanded = areAmenitiesExpanded,
+                onModify = { amenitiesMultiSelection = it }
             )
         }
 
