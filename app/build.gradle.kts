@@ -12,6 +12,7 @@ kotlin {
         optIn.add("androidx.compose.material3.ExperimentalMaterial3Api")
         freeCompilerArgs.addAll("-P", "plugin:org.jetbrains.kotlin.parcelize:experimentalCodeGeneration=true")
         freeCompilerArgs.add("-XXLanguage:+ContextParameters")
+        freeCompilerArgs.add("-XXLanguage:+NestedTypeAliases")
     }
 }
 
@@ -62,6 +63,8 @@ dependencies {
     implementation(libs.androidx.compose.foundation.layout)
     implementation(libs.androidx.compose.material3)
     implementation(libs.androidx.compose.runtime)
+    implementation(libs.androidx.compose.ui.unit)
+    implementation(libs.androidx.foundation.layout)
     implementation(libs.androidx.runtime)
     implementation(libs.androidx.ui.graphics)
     implementation(platform(libs.androidx.compose.bom))

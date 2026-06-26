@@ -31,6 +31,8 @@ animation = "1.11.3"
 animationCore = "1.11.3"
 material3Version = "1.4.0"
 uiVersion = "1.11.3"
+foundationLayoutVersion = "1.11.3"
+uiUnit = "1.11.3"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -71,6 +73,8 @@ androidx-compose-animation = { group = "androidx.compose.animation", name = "ani
 androidx-compose-animation-core = { group = "androidx.compose.animation", name = "animation-core", version.ref = "animationCore" }
 androidx-compose-material3 = { group = "androidx.compose.material3", name = "material3", version.ref = "material3Version" }
 ui = { group = "androidx.compose.ui", name = "ui", version.ref = "uiVersion" }
+androidx-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayoutVersion" }
+androidx-compose-ui-unit = { group = "androidx.compose.ui", name = "ui-unit", version.ref = "uiUnit" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

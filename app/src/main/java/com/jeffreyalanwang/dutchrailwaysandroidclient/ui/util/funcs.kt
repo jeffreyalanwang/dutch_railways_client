@@ -1,5 +1,7 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util
 
+import android.R.attr.x
+import android.R.attr.y
 import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.animateBounds
 import androidx.compose.animation.core.Spring
@@ -15,8 +17,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.LookaheadScope
+import androidx.compose.ui.layout.layout
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation3.runtime.NavBackStack
@@ -34,10 +41,15 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AppNavArgs
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
+import kotlin.math.max
 
 context(density: Density)
 fun DpOffset.toPx()
     = with(density) { Offset(x.toPx(), y.toPx()) }
+
+context(density: Density)
+fun IntSize.toDp()
+    = with(density) { DpSize(x.toDp(), y.toDp()) }
 
 context (lookaheadScope: LookaheadScope)
 fun Modifier.animateBounds(
@@ -160,3 +172,20 @@ fun <T> Flow<T>.asStateWithInitialValueOf(initialValue: T)
         SharingStarted.Lazily,
         initialValue = initialValue,
     )
+
+/**
+ * Similar to [Modifier.offset()], but also changes the size it takes up in
+ * the parent layout; this way, items further along a row or column are also
+ * shifted to preserve the original gap size.
+ */
+@Composable
+fun Modifier.shift(x: Dp = 0.dp, y: Dp = 0.dp)
+    = this.layout { measurable, constraints ->
+        val placeable = measurable.measure(constraints)
+        layout(
+            width = max(0, placeable.width + x.roundToPx()),
+            height = max(0, placeable.height + y.roundToPx()),
+        ) {
+            placeable.placeRelative(x.roundToPx(), y.roundToPx())
+        }
+    }

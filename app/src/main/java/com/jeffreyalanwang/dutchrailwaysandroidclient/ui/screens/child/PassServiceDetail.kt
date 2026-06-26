@@ -144,7 +144,7 @@ fun PassServiceDetail(
 
     Column(modifier.fillMaxWidth()) {
         Row(
-            Modifier.clickable{ isHeaderExpanded = !isHeaderExpanded },
+            Modifier.clickable { isHeaderExpanded = true },
             verticalAlignment = Alignment.Bottom,
         ) {
             // Icon (based on rolling stock)
@@ -173,6 +173,7 @@ fun PassServiceDetail(
                 service.amenities,
                 modifier=Modifier.offset(x=-25.dp, y=-7.5.dp),
                 isExpanded = isHeaderExpanded,
+                onSetExpanded = { isHeaderExpanded = it },
             )
         }
 

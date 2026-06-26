@@ -270,6 +270,7 @@ private fun EditPassServiceScreenBase(
                 modifier=Modifier
                     .offset(x=-25.dp, y=-7.5.dp),
                 isExpanded = areAmenitiesExpanded,
+                onSetExpanded = { areAmenitiesExpanded = it },
                 onModify = { amenitiesMultiSelection = it }
             )
         }

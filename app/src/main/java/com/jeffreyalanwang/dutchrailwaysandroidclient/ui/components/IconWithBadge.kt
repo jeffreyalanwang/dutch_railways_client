@@ -76,7 +76,7 @@ object BadgeLayoutScope {
         sizeRatio: Float = 1/2f,
         overlapRatio: Float = 1/2f,
     ): Modifier
-        = this.then(BadgeModifierElement(sizeRatio, overlapRatio))
+        = this then BadgeModifierElement(sizeRatio, overlapRatio)
 }
 
 /**

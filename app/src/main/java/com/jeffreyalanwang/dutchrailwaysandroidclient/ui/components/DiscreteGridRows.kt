@@ -223,7 +223,7 @@ object DiscreteGridRowScope {
      */
     @Stable
     fun Modifier.fill(): Modifier
-            = this.then(FillModifierElement)
+            = this then FillModifierElement
 
     /**
      * Alignment of an item within its "grid cell"
@@ -232,7 +232,7 @@ object DiscreteGridRowScope {
      */
     @Stable
     fun Modifier.cellAlign(alignment: Alignment.Horizontal): Modifier
-            = this.then(CellAlignModifierElement(alignment))
+            = this then CellAlignModifierElement(alignment)
 }
 
 /**
