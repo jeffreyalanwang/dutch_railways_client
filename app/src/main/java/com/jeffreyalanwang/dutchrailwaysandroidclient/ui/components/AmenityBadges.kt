@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -45,8 +44,10 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.ParentDataModifierNode
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.tooling.preview.Preview
@@ -55,28 +56,31 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.round
 import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMaxOfOrDefault
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.fastSumBy
+import androidx.compose.ui.window.Popup
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
 import com.jeffreyalanwang.dutchrailwaysandroidclient.associateWithIndexed
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letIf
 import com.jeffreyalanwang.dutchrailwaysandroidclient.runReversed
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ExpandableBadgeSetUtilScope.Target
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.toPx
 import com.jeffreyalanwang.dutchrailwaysandroidclient.zipOnKeys
 
 @Preview(widthDp = 300, heightDp = 200)
 @Composable
 private fun AmenityBadgePreview() {
     var amenities by remember { mutableStateOf(TrainAmenity.entries.toSet()) }
-    var isExpanded by remember { mutableStateOf(true) }
+    var isExpanded by remember { mutableStateOf(false) }
     Card {
         Box(
             Modifier
-                .fillMaxSize()
-                .clickable { isExpanded = !isExpanded },
+                .fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
             Row(
@@ -90,12 +94,20 @@ private fun AmenityBadgePreview() {
                 )
 
                 Box { // Test that we display expanded badges on top
-                    EditAmenityBadgeSet(
-                        amenities,
-                        isExpanded = isExpanded,
-                        onModify = { amenities = it },
-                        modifier = Modifier.offset(x = -25.dp, y = -7.5.dp)
-                    )
+                    Popup(
+                        offset = with (LocalDensity.current) {
+                            DpOffset(-25.dp, -7.5.dp).toPx().round()
+                        },
+                        onDismissRequest = { isExpanded = false },
+                    ) {
+                        EditAmenityBadgeSet(
+                            amenities,
+                            isExpanded = isExpanded,
+                            onModify = { amenities = it },
+                            modifier = Modifier
+                                .clickable { isExpanded = !isExpanded }
+                        )
+                    }
 
                     Text("Test content", color = Color.Blue)
                 }
@@ -227,39 +239,19 @@ private fun AmenityBadgeSetBase(
     )
 }
 
-private enum class Target { Expanded, Collapsed, None }
+private object ExpandableBadgeSetUtilScope {
+    enum class _target { Expanded, Collapsed, Neither }
+    typealias Target = _target // allows visibility in scope
 
-private fun Modifier.id(amenity: TrainAmenity) =
-    this.then(AmenityIdModifierElement(amenity))
-
-@Immutable
-private data class AmenityIdModifierElement(val amenity: TrainAmenity) : ModifierNodeElement<AmenityIdModifierNode>() {
-    override fun create() = AmenityIdModifierNode(amenity)
-    override fun update(node: AmenityIdModifierNode) {
-        node.amenity = this.amenity
-    }
-}
-
-private class AmenityIdModifierNode(var amenity: TrainAmenity) : ParentDataModifierNode, Modifier.Node() {
-    override fun Density.modifyParentData(parentData: Any?): Any = amenity
-}
-
-/** Handles visual effects. */
-@Composable
-private fun ExpandableBadgeSet(
-    isExpanded: Boolean,
-    modifier: Modifier = Modifier,
-    collapsedGap: Dp = 0.dp,
-    expandedGap: Dp = 0.dp,
-    badgesToLabels: Map<TrainAmenity, Pair<@Composable () -> Unit, @Composable () -> Unit>>,
-) {
     /** Build each item with animated glow + animated label visibility. */
     @Composable
-    fun item(
+    fun Item(
         id: TrainAmenity,
         badge: @Composable () -> Unit,
         label: @Composable () -> Unit,
-    ) {
+        isExpanded: Boolean,
+        expandedGap: Dp,
+    ) = with (AmenityModifierScope) {
         Row(Modifier.id(amenity = id)) {
             GlowBox(isExpanded) { badge() }
             Row(
@@ -278,8 +270,42 @@ private fun ExpandableBadgeSet(
         }
     }
 
+    val Measurable.amenity
+        get() = this.parentData as TrainAmenity
+
+    private object AmenityModifierScope {
+        fun Modifier.id(amenity: TrainAmenity) =
+            this.then(AmenityIdModifierElement(amenity))
+
+        @Immutable
+        data class AmenityIdModifierElement(val amenity: TrainAmenity) :
+            ModifierNodeElement<AmenityIdModifierNode>() {
+            override fun create() = AmenityIdModifierNode(amenity)
+            override fun update(node: AmenityIdModifierNode) {
+                node.amenity = this.amenity
+            }
+        }
+
+        class AmenityIdModifierNode(var amenity: TrainAmenity) :
+            ParentDataModifierNode, Modifier.Node() {
+            override fun Density.modifyParentData(parentData: Any?): Any =
+                amenity
+        }
+    }
+}
+
+/** Handles visual effects. */
+@Composable
+private fun ExpandableBadgeSet(
+    isExpanded: Boolean,
+    modifier: Modifier = Modifier,
+    collapsedGap: Dp = 0.dp,
+    expandedGap: Dp = 0.dp,
+    badgesToLabels: Map<TrainAmenity, Pair<@Composable () -> Unit, @Composable () -> Unit>>,
+) = with (ExpandableBadgeSetUtilScope) {
+
     /** Used to set the AnimationSpecs (motionSpecX, motionSpecY). */
-    var animatingTo by remember { mutableStateOf(Target.None) }
+    var animatingTo by remember { mutableStateOf(Target.Neither) }
     LaunchedEffect(isExpanded) {
         animatingTo = if (isExpanded) Target.Expanded
                       else Target.Collapsed
@@ -291,7 +317,7 @@ private fun ExpandableBadgeSet(
                 fastSpatialSpec<Int>() to slowSpatialSpec<Int>()
             Target.Collapsed ->
                 slowSpatialSpec<Int>() to fastSpatialSpec<Int>()
-            Target.None ->
+            Target.Neither ->
                 defaultSpatialSpec<Int>() to defaultSpatialSpec<Int>()
         }
     }
@@ -319,7 +345,7 @@ private fun ExpandableBadgeSet(
                 dest.y == curr.second.intValue
             }
         if (allComplete) {
-            animatingTo = Target.None
+            animatingTo = Target.Neither
         }
     }
 
@@ -327,15 +353,17 @@ private fun ExpandableBadgeSet(
         modifier = modifier,
         content = {
             for ((amenity, composables) in badgesToLabels) {
-                item(
+                Item(
                     id = amenity,
                     badge = composables.first,
                     label = composables.second,
+                    isExpanded = isExpanded,
+                    expandedGap = expandedGap,
                 )
             }
         }
     ) { unidentifiedMeasurables, constraints ->
-        val measurables = unidentifiedMeasurables.fastMap { it.parentData as TrainAmenity to it}
+        val measurables = unidentifiedMeasurables.fastMap { it.amenity to it}
         val placeables = measurables.fastMap { (id, m) -> id to m.measure(constraints) }
         val collapsedGap = collapsedGap.toPx().fastRoundToInt()
         val expandedGap = expandedGap.toPx().fastRoundToInt()
@@ -390,6 +418,7 @@ private fun ExpandableBadgeSet(
             }
         }
     }
+
 }
 
 /** Draws and animates enter/exit of background for expanded [AmenityBadgeSet]. */

@@ -12,8 +12,11 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.saveable.rememberSerializable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.LookaheadScope
+import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.DpOffset
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation3.runtime.NavBackStack
@@ -31,6 +34,10 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AppNavArgs
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
+
+context(density: Density)
+fun DpOffset.toPx()
+    = with(density) { Offset(x.toPx(), y.toPx()) }
 
 context (lookaheadScope: LookaheadScope)
 fun Modifier.animateBounds(
