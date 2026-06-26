@@ -3,6 +3,7 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components
 import android.annotation.SuppressLint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -22,7 +23,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.IntState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.asIntState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -38,20 +45,27 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.node.ModifierNodeElement
+import androidx.compose.ui.node.ParentDataModifierNode
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastMap
 import androidx.compose.ui.util.fastMaxOfOrDefault
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.compose.ui.util.fastSumBy
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
+import com.jeffreyalanwang.dutchrailwaysandroidclient.associateWithIndexed
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letIf
 import com.jeffreyalanwang.dutchrailwaysandroidclient.runReversed
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
+import com.jeffreyalanwang.dutchrailwaysandroidclient.zipOnKeys
 
 @Preview(widthDp = 300, heightDp = 200)
 @Composable
@@ -168,7 +182,7 @@ private fun AmenityBadgeSetBase(
         collapsedGap = gap,
         expandedGap = -gap,
         badgesToLabels =
-            amenities.mapIndexed { i, it ->
+            amenities.associateWithIndexed { i, it ->
                 val isConfirmingDelete = (confirmDeleteOf == i)
 
                 val badge = @Composable {
@@ -213,6 +227,23 @@ private fun AmenityBadgeSetBase(
     )
 }
 
+private enum class Target { Expanded, Collapsed, None }
+
+private fun Modifier.id(amenity: TrainAmenity) =
+    this.then(AmenityIdModifierElement(amenity))
+
+@Immutable
+private data class AmenityIdModifierElement(val amenity: TrainAmenity) : ModifierNodeElement<AmenityIdModifierNode>() {
+    override fun create() = AmenityIdModifierNode(amenity)
+    override fun update(node: AmenityIdModifierNode) {
+        node.amenity = this.amenity
+    }
+}
+
+private class AmenityIdModifierNode(var amenity: TrainAmenity) : ParentDataModifierNode, Modifier.Node() {
+    override fun Density.modifyParentData(parentData: Any?): Any = amenity
+}
+
 /** Handles visual effects. */
 @Composable
 private fun ExpandableBadgeSet(
@@ -220,14 +251,16 @@ private fun ExpandableBadgeSet(
     modifier: Modifier = Modifier,
     collapsedGap: Dp = 0.dp,
     expandedGap: Dp = 0.dp,
-    badgesToLabels: List<Pair<@Composable () -> Unit, @Composable () -> Unit>>,
+    badgesToLabels: Map<TrainAmenity, Pair<@Composable () -> Unit, @Composable () -> Unit>>,
 ) {
+    /** Build each item with animated glow + animated label visibility. */
     @Composable
     fun item(
+        id: TrainAmenity,
         badge: @Composable () -> Unit,
         label: @Composable () -> Unit,
     ) {
-        Row {
+        Row(Modifier.id(amenity = id)) {
             GlowBox(isExpanded) { badge() }
             Row(
                 Modifier
@@ -245,58 +278,89 @@ private fun ExpandableBadgeSet(
         }
     }
 
-    val progressX by animateFloatAsState(
-        if (isExpanded) 1f else 0f,
-        if (isExpanded) MaterialTheme.motionScheme.fastSpatialSpec()
-            else MaterialTheme.motionScheme.slowSpatialSpec(),
-    )
-    val progressY by animateFloatAsState(
-        if (isExpanded) 1f else 0f,
-        if (isExpanded) MaterialTheme.motionScheme.slowSpatialSpec()
-            else MaterialTheme.motionScheme.fastSpatialSpec(),
-    )
+    /** Used to set the AnimationSpecs (motionSpecX, motionSpecY). */
+    var animatingTo by remember { mutableStateOf(Target.None) }
+    LaunchedEffect(isExpanded) {
+        animatingTo = if (isExpanded) Target.Expanded
+                      else Target.Collapsed
+        // [Target.None] is set by [onAnimComplete()]
+    }
+    val (motionSpecX, motionSpecY) = with (MaterialTheme.motionScheme) {
+        when (animatingTo) {
+            Target.Expanded ->
+                fastSpatialSpec<Int>() to slowSpatialSpec<Int>()
+            Target.Collapsed ->
+                slowSpatialSpec<Int>() to fastSpatialSpec<Int>()
+            Target.None ->
+                defaultSpatialSpec<Int>() to defaultSpatialSpec<Int>()
+        }
+    }
+
+    /** Coordinates (in Px) of each item. */
+    val destLocations = remember { mutableStateMapOf<TrainAmenity, IntOffset>() }
+
+    lateinit var onAnimComplete: () -> Unit
+    /** The actual coordinates of each item on screen, as animated states. */
+    val animLocationStates: Map<TrainAmenity, Pair<IntState, IntState>> =
+        destLocations.mapValues { (amenity, coords) ->
+            key(amenity) {
+                animateIntAsState(coords.x, motionSpecX) { onAnimComplete() }
+                    .asIntState() to
+                animateIntAsState(coords.y, motionSpecY) { onAnimComplete() }
+                    .asIntState()
+            }
+        }
+    onAnimComplete = {
+        val allComplete =
+            (destLocations zipOnKeys animLocationStates)
+            .values
+            .all { (dest, curr) ->
+                dest.x == curr.first.intValue &&
+                dest.y == curr.second.intValue
+            }
+        if (allComplete) {
+            animatingTo = Target.None
+        }
+    }
 
     Layout(
         modifier = modifier,
         content = {
-            badgesToLabels
-                .forEach { (badge, label) -> item(badge, label) }
+            for ((amenity, composables) in badgesToLabels) {
+                item(
+                    id = amenity,
+                    badge = composables.first,
+                    label = composables.second,
+                )
+            }
         }
-    ) { measurables, constraints ->
-        val placeables = measurables.map { it.measure(constraints) }
+    ) { unidentifiedMeasurables, constraints ->
+        val measurables = unidentifiedMeasurables.fastMap { it.parentData as TrainAmenity to it}
+        val placeables = measurables.fastMap { (id, m) -> id to m.measure(constraints) }
         val collapsedGap = collapsedGap.toPx().fastRoundToInt()
         val expandedGap = expandedGap.toPx().fastRoundToInt()
 
-        // These will be the bounds seen by parent composables
-        // regardless of whether we have expanded outside of them.
-        val collapsedHeight = placeables.fastMaxOfOrDefault(0) { it.height }
-        val collapsedWidth = placeables
-            .run { fastSumBy { it.width } + (collapsedGap * (size - 1)) }
+        // Prepare destination (i.e. non-animated) position values
+        // TODO vertical position when expanded: find a place within window insets/parent composable
 
-//        val expandedHeight = placeables
-//            .run { fastSumBy { it.height } + (expandedGap * (size - 1)) }
+        // Collapsed layout is a row, expanded is a column;
+        // so these are constants
+        val collapsedY = 0
+        val expandedX = (placeables.firstOrNull()?.second?.width ?: 0) / 2
 
-        layout(collapsedWidth, collapsedHeight) {
-            // TODO vertical position when expanded: find a place within window insets/parent composable
-
-            // Collapsed layout is a row, expanded is a column;
-            // so these are constants
-            val collapsedY = 0
-            val expandedX = (placeables.firstOrNull()?.width ?: 0) / 2
-
-            val xPos = if (progressX == 1f) null // use [expandedX]
-                else placeables
-                    .dropLast(1)
-                    .runningFold(0) { acc, placeable ->
+        val xPos = if (isExpanded) List(placeables.size) { expandedX }
+            else // get collapsedX
+                placeables.run {
+                    dropLast(1).runningFold(0) { acc, (_, placeable) ->
                         acc + placeable.width + collapsedGap
                     }
-                    .map { collapsedX ->
-                        collapsedX +
-                        progressX * (expandedX - collapsedX)
-                    }
-            val yPos = if (progressY == 0f) null // use [collapsedY]
-                else placeables
+                }
+
+        val yPos = if (!isExpanded) List(placeables.size) { collapsedY }
+            else // get expandedY
+                placeables
                     .drop(1) // drop the top item, since we work from bottom
+                    .fastMap { it.second }
                     .runReversed {
                         runningFold(
                             if (size < 2) 0     // <, not <=, since we already dropped 1
@@ -304,17 +368,25 @@ private fun ExpandableBadgeSet(
                         ) { acc, placeable ->
                             acc - placeable.height - expandedGap
                         }
-                    }
-                    .map { expandedY ->
-                        collapsedY +
-                        progressY * (expandedY - collapsedY)
-                    }
+                }
 
-            placeables.forEachIndexed { i, placeable ->
-                placeable.placeRelative(
-                    xPos?.get(i)?.fastRoundToInt() ?: expandedX,
-                    yPos?.get(i)?.fastRoundToInt() ?: collapsedY,
-                )
+        val coordsList = xPos.zip(yPos) { x, y -> IntOffset(x, y) }
+            .let { coords -> placeables.map { it.first } zip coords }
+            .toMap()
+        destLocations.putAll(coordsList)
+
+        // These will be the bounds seen by parent composables
+        // regardless of whether we have expanded outside of them.
+        val collapsedHeight = placeables
+            .fastMaxOfOrDefault(0) { it.second.height }
+        val collapsedWidth = placeables
+            .run { fastSumBy { it.second.width } + (collapsedGap * (size - 1)) }
+
+        layout(collapsedWidth, collapsedHeight) {
+            // zipOnKeys skips placing values in [placeables]
+            // if they are not yet in [animLocationStates]
+            placeables.toMap().zipOnKeys(animLocationStates) { placeable, (x, y) ->
+                placeable.placeRelative(x.intValue, y.intValue)
             }
         }
     }

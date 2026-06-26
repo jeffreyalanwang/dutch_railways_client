@@ -58,6 +58,18 @@ fun <T> Iterable<T>.toPair(): Pair<T, T> {
     return out
 }
 
+infix fun <K, V1, V2> Map<K, V1>.zipOnKeys(other: Map<K, V2>)
+    = this.zipOnKeys(other) { a, b -> a to b }
+
+fun <K, V1, V2, R> Map<K, V1>.zipOnKeys(other: Map<K, V2>, block: (V1, V2) -> R): Map<K, R>
+    = (this.keys intersect other.keys)
+        .associateWith {
+            block(
+                this.getValue(it),
+                other.getValue(it),
+                )
+        }
+
 fun <T, U: Comparable<U>> Iterable<T>.isSorted(selector: (T)->U)
     = this
         .map { selector(it) }
@@ -106,6 +118,32 @@ fun <T, U: Comparable<U>> Iterable<Sequence<T>>.flattenSorted(selector: (T) -> U
         }
     }
 
+inline fun <T, reified U: Comparable<U>> List<List<T>>.flattenSorted(selector: (T) -> U): List<T> {
+    val sourceLists = this
+    val nextIndices = Array(this.size) { 0 }
+    val nextValues = Array(this.size) { i -> this[i].getOrNull(0)?.let{ selector(it) } }
+    val out = ArrayList<T>(sourceLists.sumOf { it.size })
+
+    while (nextValues.any { it != null }) {
+        val listIdx = nextValues
+            .withIndex()
+            .filter { it.value != null }
+            .minBy { it.value!! }
+            .index
+
+        val itemIdx = nextIndices[listIdx]
+        out += sourceLists[listIdx][itemIdx]
+
+        nextValues[listIdx] = sourceLists[listIdx]
+            .getOrNull(
+                ++nextIndices[listIdx]
+            )
+            ?.let { selector(it) }
+    }
+
+    return out
+}
+
 fun <T> Iterable<Sequence<T>>.flattenRoundRobin()
         = sequence<T> {
     val sources = this@flattenRoundRobin.map { it.iterator() }.toMutableList()
@@ -119,6 +157,178 @@ fun <T> Iterable<Sequence<T>>.flattenRoundRobin()
             sources.removeAt(i)
         }
         i %= sources.size
+    }
+}
+
+/**
+ *  All indices are based from the original/old list.
+ *  Guaranteed to be sorted by index.
+ *  Most recent mutations are last in the list.
+ */
+class Diff<T>(val mutations: List<Mutation<T>>): List<Diff.Mutation<T>> by mutations {
+    val containsRemoval
+        get() = { any { it is Mutation.Remove } }
+    val containsAddition
+        get() = { any { it is Mutation.Add } }
+
+    fun <K, V> applyOn(
+        subject: MutableMap<K, V>,
+        onRemove: ((Int, K, V) -> Unit)? = null,
+        onAdd: (Int, addedItem: T) -> Pair<K, V>,
+    ) = applyOn(
+        subject,
+        remove = { i ->
+            val key = keys.toList()[i]
+            val value = remove(key)!!
+            key to value
+        },
+        add = { i, (key, value) -> add(i, key, value) },
+        onRemove = { i, (key, value) -> onRemove?.invoke(i, key, value) },
+        onAdd = onAdd,
+    )
+
+    fun applyOn(
+        subject: MutableList<T>,
+        onRemove: ((Int, T) -> Unit)? = null,
+        onAdd: (Int, addedItem: T) -> T = { i, it -> it },
+    ) = applyOn(
+        subject,
+        remove = { i -> removeAt(i) },
+        add = { i, it -> add(i, it) },
+        onRemove = onRemove,
+        onAdd = onAdd,
+    )
+
+    /**
+     * [remove] and [add] define operations on [subject].
+     * [onRemove] and [onAdd] provide/handle item values.
+     */
+    private fun <TCollection, TItem> applyOn(
+        subject: TCollection,
+        remove: TCollection.(Int) -> TItem,
+        add: TCollection.(Int, added: TItem) -> Unit,
+        onRemove: ((Int, TItem) -> Unit)? = null,
+        onAdd: (Int, addedItem: T) -> TItem,
+    ) = applyOn(
+        remove = { index ->
+            val removed = subject.remove(index)
+            onRemove?.invoke(index, removed)
+        },
+        add = { index, item ->
+            val itemToAdd = onAdd.invoke(index, item)
+            subject.add(index, itemToAdd)
+        },
+    )
+
+    fun applyOn(
+        remove: (Int) -> Unit,
+        add: (Int, addedItem: T) -> Unit,
+    ) {
+        for (mutation in asReversed()) {
+            with (mutation) {
+                when (this) {
+                    is Mutation.Remove -> remove(index)
+                    is Mutation.Add -> add(index, item)
+                }
+            }
+        }
+    }
+
+    sealed interface Mutation<T> {
+        data class Remove<T>(val index: Int): Mutation<T>
+        data class Add<T>(val index: Int, val item: T): Mutation<T>
+    }
+
+    companion object {
+        /**
+         * Requirements:
+         *  * [old] and [new] do not contain duplicates within themselves.
+         *  * Items in [old] and [new] are in the same order.
+         *
+         * When a removal and addition occur adjacent to each other,
+         *  the removal is assumed to have been done first.
+         * */
+        fun <T> of(old: List<T>, new: List<T>): Diff<T> {
+            check(old.toSet().size == old.size)
+            check(new.toSet().size == new.size)
+
+            var iOld = 0
+            var iNew = 0
+            val out = mutableListOf<Mutation<T>>()
+            while (iOld < old.size && iNew < new.size) {
+                if (old[iOld] == new[iNew]) {
+                    iOld++
+                    iNew++
+                    continue
+                }
+
+                val a = new.indexOf(old[iOld])
+                val b = old.indexOf(new[iNew])
+
+                if (a >= 0 && b >= 0) {
+                    check(a > iNew)
+                    check(b > iOld)
+                    throw IllegalArgumentException(
+                        "Items switched order:"
+                        + " ${old[iOld]} at old[$iOld] and new[$a]"
+                        + " ${new[iNew]} at old[$b] and new[$iNew]"
+                    )
+                } else if (a >= 0) {
+                    check(a > iNew)
+                    while (a > iNew) {
+                        out += Mutation.Add(iOld, new[iNew])
+                        iNew++
+                        check(new[iNew] !in old)
+                    }
+
+                    // At this point, old[iOld] == new[iNew]
+                    iOld++
+                    iNew++
+                } else if (b >= 0) {
+                    check(b > iOld)
+                    while (b > iOld) {
+                        out += Mutation.Remove(iOld)
+                        iOld++
+                        check(old[iOld] !in new)
+                    }
+
+                    // At this point, old[iOld] == new[iNew]
+                    iOld++
+                    iNew++
+                } else { // curr element in [old] must be removed,
+                         // and curr element in [new] must be added;
+                         // potentially, there are no more elements in common
+                    // Assume removals first
+                    while (iOld <= old.lastIndex && old[iOld] !in new) {
+                        out += Mutation.Remove(iOld)
+                        iOld++
+                    }
+                    // Additions are processed in next loop iteration,
+                    // or if we are at the end, then below
+                }
+            }
+
+            while (iNew <= new.lastIndex) {
+                out += Mutation.Add(iOld, new[iNew])
+                iNew++
+            }
+
+            return Diff(out)
+        }
+    }
+}
+
+fun <K, V> MutableMap<K, V>.add(index: Int, key: K, value: V) {
+    val keysList = keys.toList()
+    val popped = (keysList.lastIndex downTo index)
+        .map {
+            keys.toList()[index].let {
+                it to remove(it)!!
+            }
+        }
+    put(key, value)
+    for ((k, v) in popped.asReversed()) {
+        put(k, v)
     }
 }
 
@@ -272,6 +482,19 @@ infix fun <T, U> Iterable<T>.zipIndexed(other: Iterable<U>): List<Triple<Int, T,
 
     return list
 }
+
+fun <K, V> Collection<K>.associateWithIndexed(
+    valueSelector: (Int, K) -> V
+) = LinkedHashMap<K, V>(
+        (size / 0.75F + 1.0F).toInt()
+            .coerceAtLeast(16)
+    )
+    .apply {
+        forEachIndexed { i, key ->
+            set(key, valueSelector(i, key))
+        }
+    }
+
 
 fun <T, U> List<Pair<T, U>>.withFlatIndex()
     = this
