@@ -285,7 +285,13 @@ private fun ExpandableBadgeSet(
     var destPopupOffset by remember { mutableStateOf(IntOffset.Zero) }
 
     lateinit var onAnimComplete: () -> Unit
-    /** The actual coordinates of each item on screen, as animated states. */
+    /**
+     * The actual coordinates of each item on screen, as animated states.
+     * Best practice (performance & maintainability-wise) would be to develop
+     * a way to directly animate [Rect] values with different [AnimationSpec]s
+     * for x & y axes; however, that would require access to several complex
+     * internal/private components behind Compose animation API.
+     */
     val animLocationStates: Map<TrainAmenity, Pair<IntState, IntState>> =
         destLocations.mapValues { (amenity, coords) ->
             key(amenity) {
