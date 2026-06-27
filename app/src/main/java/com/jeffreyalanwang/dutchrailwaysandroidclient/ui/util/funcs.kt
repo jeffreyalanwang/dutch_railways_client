@@ -4,24 +4,35 @@ import android.R.attr.x
 import android.R.attr.y
 import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.animateBounds
+import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.VisibilityThreshold
+import androidx.compose.animation.core.animateIntAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.minus
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateSetOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSerializable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.DpSize
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -42,6 +53,16 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 import kotlin.math.max
+
+fun Constraints.copy(
+    height: Int? = null,
+    width: Int? = null,
+) = this.copy(
+    minHeight = height ?: this.minHeight,
+    maxHeight = height ?: this.maxHeight,
+    minWidth = width ?: this.minWidth,
+    maxWidth = width ?: this.maxWidth,
+)
 
 context(density: Density)
 fun DpOffset.toPx()
@@ -189,3 +210,44 @@ fun Modifier.shift(x: Dp = 0.dp, y: Dp = 0.dp)
             placeable.placeRelative(x.roundToPx(), y.roundToPx())
         }
     }
+
+@Composable
+fun animateIntOffsetAsState(
+    targetValue: IntOffset,
+    animationSpecs: Pair<AnimationSpec<Int>, AnimationSpec<Int>> =
+        spring(visibilityThreshold = Int.VisibilityThreshold)
+            .let { it to it },
+    label: String = "IntOffsetAnimation",
+    finishedListener: ((IntOffset) -> Unit)? = null,
+): State<IntOffset> {
+    val (targetX, targetY) = targetValue
+
+    var doneAnimatingX by remember { mutableStateOf(false) }
+    var doneAnimatingY by remember { mutableStateOf(false) }
+
+    LaunchedEffect(targetX) { doneAnimatingX = false }
+    LaunchedEffect(targetY) { doneAnimatingY = false }
+
+    lateinit var onFinished: () -> Unit
+    val currX by
+        animateIntAsState(targetValue.x, animationSpecs.first, "${label}X") {
+            doneAnimatingX = true
+            if (doneAnimatingY) onFinished()
+        }
+    val currY by
+        animateIntAsState(targetValue.y, animationSpecs.second, "${label}Y") {
+            doneAnimatingY = true
+            if (doneAnimatingX) onFinished()
+        }
+
+    val outState = remember { derivedStateOf { IntOffset(currX, currY) } }
+    val out by outState
+
+    onFinished = finishedListener
+        ?.let {
+            { finishedListener.invoke(out) }
+        }
+        ?: {}
+
+    return outState
+}
