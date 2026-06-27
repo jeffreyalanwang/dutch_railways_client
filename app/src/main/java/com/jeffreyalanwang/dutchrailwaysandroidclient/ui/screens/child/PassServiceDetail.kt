@@ -144,7 +144,7 @@ fun PassServiceDetail(
 
     Column(modifier.fillMaxWidth()) {
         Row(
-            Modifier.clickable { isHeaderExpanded = true },
+            Modifier.clickable(null, null) { isHeaderExpanded = true },
             verticalAlignment = Alignment.Bottom,
         ) {
             // Icon (based on rolling stock)
@@ -154,7 +154,7 @@ fun PassServiceDetail(
                     Modifier
                         .sizeIn(maxHeight = 0.dp)
                         .wrapContentHeight(unbounded = true)
-                        .padding(bottom = 2.dp),
+                        .padding(bottom = 4.dp),
                     fadeIn() + slideInVertically { it / 2 },
                     fadeOut() + slideOutVertically { it / 2 },
                 ) {
@@ -171,7 +171,7 @@ fun PassServiceDetail(
             // Amenities
             AmenityBadgeSet(
                 service.amenities,
-                modifier=Modifier.offset(x=-25.dp, y=-7.5.dp),
+                contentModifier=Modifier.offset(x=-25.dp, y=-7.5.dp),
                 isExpanded = isHeaderExpanded,
                 onSetExpanded = { isHeaderExpanded = it },
             )

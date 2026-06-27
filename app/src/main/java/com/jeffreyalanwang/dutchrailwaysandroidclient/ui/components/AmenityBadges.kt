@@ -12,11 +12,12 @@ import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
@@ -70,7 +71,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.zipOnKeys
 @Preview(widthDp = 300, heightDp = 200)
 @Composable
 private fun AmenityBadgePreview() {
-    val snackbarState = remember { SnackbarHostState() }
     var amenities by remember { mutableStateOf(TrainAmenity.entries.toSet()) }
     var isExpanded by remember { mutableStateOf(false) }
     Card {
@@ -90,6 +90,7 @@ private fun AmenityBadgePreview() {
                         .size(72.dp + 20.dp)
                 )
 
+                // Test that we are not clipped by nested layout
                 EditAmenityBadgeSet(
                     amenities,
                     onModify = { amenities = it },
@@ -121,7 +122,7 @@ fun EditAmenityBadgeSet(
     onModify: ((Set<TrainAmenity>) -> Unit),
     isExpanded: Boolean,
     onSetExpanded: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
+    contentModifier: Modifier = Modifier,
     containerModifier: Modifier = Modifier,
     height: Dp = 15.dp,
     color: Color = LocalContentColor.current,
@@ -130,7 +131,7 @@ fun EditAmenityBadgeSet(
     amenities,
     isExpanded,
     onSetExpanded,
-    modifier = modifier,
+    contentModifier = contentModifier,
     containerModifier = containerModifier,
     onModify = onModify,
     height,
@@ -143,7 +144,7 @@ fun AmenityBadgeSet(
     amenities: Set<TrainAmenity>,
     isExpanded: Boolean,
     onSetExpanded: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
+    contentModifier: Modifier = Modifier,
     containerModifier: Modifier = Modifier,
     height: Dp = 15.dp,
     color: Color = LocalContentColor.current,
@@ -152,7 +153,7 @@ fun AmenityBadgeSet(
     amenities,
     isExpanded,
     onSetExpanded,
-    modifier = modifier,
+    contentModifier = contentModifier,
     containerModifier = containerModifier,
     onModify = null,
     height,
@@ -165,7 +166,7 @@ private fun AmenityBadgeSetBase(
     amenities: Set<TrainAmenity>,
     isExpanded: Boolean,
     onSetExpanded: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
+    contentModifier: Modifier = Modifier,
     containerModifier: Modifier = Modifier,
     onModify: ((Set<TrainAmenity>) -> Unit)? = null,
     height: Dp = 15.dp,
@@ -176,7 +177,7 @@ private fun AmenityBadgeSetBase(
         "No amenities",
         color = color,
         fontStyle = Italic,
-        modifier = modifier.padding(vertical = 5.dp),
+        modifier = contentModifier.padding(vertical = 5.dp),
     )
 
     val isModifiable = (onModify != null)
@@ -198,7 +199,7 @@ private fun AmenityBadgeSetBase(
     ExpandableBadgeSet(
         isExpanded,
         onSetExpanded,
-        modifier = modifier,
+        contentModifier = contentModifier,
         containerModifier = containerModifier,
         collapsedGap = gap,
         expandedGap = -gap,
@@ -253,7 +254,7 @@ private fun AmenityBadgeSetBase(
 private fun ExpandableBadgeSet(
     isExpanded: Boolean,
     onSetExpanded: (Boolean) -> Unit,
-    modifier: Modifier = Modifier,
+    contentModifier: Modifier = Modifier,
     containerModifier: Modifier = Modifier,
     collapsedGap: Dp = 0.dp,
     expandedGap: Dp = 0.dp,
@@ -318,6 +319,7 @@ private fun ExpandableBadgeSet(
                 badgesToLabels.size * (collapsedHeight + collapsedGap) - collapsedGap,
                 collapsedHeight,
             )
+            .wrapContentSize(Alignment.TopStart, unbounded = true)
     ) {
         Popup(
             alignment = Alignment.TopStart,
@@ -327,11 +329,12 @@ private fun ExpandableBadgeSet(
                 focusable = isExpanded, // seems required to use [onDismissRequest],
                                         // but blocks any other click listeners on the screen
                 dismissOnClickOutside = true,
+                clippingEnabled = false,
             ),
-            onDismissRequest = if (isExpanded) { { onSetExpanded(false) } } else null,
+            onDismissRequest = { if (isExpanded) onSetExpanded(false) },
         ) {
             Layout(
-                modifier = modifier.clickable { onSetExpanded(!isExpanded) },
+                modifier = contentModifier.clickable(null, null) { onSetExpanded(!isExpanded) },
                 content = {
                     for ((amenity, composables) in badgesToLabels) {
                         Item(
@@ -348,15 +351,13 @@ private fun ExpandableBadgeSet(
                 val placeablesWithId = placeables.map { it.amenity to it }
 
                 // Prepare destination (i.e. non-animated) position values
-                // TODO vertical position when expanded: find a place within window insets/parent composable
-
                 val (locations, parentSize) =
                     basicLinearLayout(
                         layout = if (!isExpanded) Row else Column,
                         keyedPlaceables = placeablesWithId,
                         gapPx = if (!isExpanded)
-                            collapsedGap.roundToPx()
-                        else expandedGap.roundToPx()
+                                    collapsedGap.roundToPx()
+                                else expandedGap.roundToPx()
                     )
 
                 destLocations.putAll(locations)
@@ -407,6 +408,13 @@ private object ExpandableBadgeSetUtilScope {
             AnimatedVisibility(isExpanded) {
                 GlowBox(
                     modifier = Modifier.padding(start = badgeLabelGap)
+                        .letIf(!isExpanded) {
+                            // during transition to collapsed,
+                            // measure at final width (i.e. 0) for accurate animation
+                            it
+                                .width(0.dp)
+                                .wrapContentSize(unbounded = true)
+                        }
                 ) {
                     label()
                 }
