@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.calculateEndPadding
 import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,6 +18,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
+import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.rememberScrollState
@@ -90,6 +92,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.ExpandedSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.DialogResult
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.providesWindowInsets
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalTime
@@ -225,6 +228,8 @@ private fun EditPassServiceScreenBase(
     onFinished: (PassService) -> Unit,
     onCancelled: () -> Unit,
 ) {
+    var amenityBadgesBounds by WindowInsets.safeContent.let { remember { mutableStateOf(it) } }
+
     var trainsetSelection by rememberSaveable {
         mutableStateOf( basedOnService?.trainset )
     }
@@ -258,7 +263,10 @@ private fun EditPassServiceScreenBase(
         }
     }
 
-    Column(modifier.fillMaxWidth()) {
+    Column(modifier
+        .fillMaxWidth()
+        .providesWindowInsets{ amenityBadgesBounds = it }
+    ) {
         Row(verticalAlignment = Alignment.Bottom) {
             EditRollingStockIcon(
                 trainsetSelection
@@ -272,7 +280,7 @@ private fun EditPassServiceScreenBase(
                 isExpanded = areAmenitiesExpanded,
                 onSetExpanded = { areAmenitiesExpanded = it },
                 onModify = { amenitiesMultiSelection = it },
-                windowInsets = TODO(),
+                windowInsets = amenityBadgesBounds,
             )
         }
 

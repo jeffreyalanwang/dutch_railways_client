@@ -28,7 +28,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.LookaheadScope
+import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.layout
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
@@ -39,6 +41,7 @@ import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.roundToIntRect
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import androidx.navigation3.runtime.NavBackStack
@@ -76,6 +79,24 @@ fun DpOffset.toPx()
 context(density: Density)
 fun IntSize.toDp()
     = with(density) { DpSize(x.toDp(), y.toDp()) }
+
+fun Modifier.providesWindowInsets(block: (WindowInsets) -> Unit)
+    = onGloballyPositioned {
+        val bounds = it
+            .boundsInWindow(clipBounds = true)
+            .roundToIntRect()
+
+        val insets = with (bounds) {
+            WindowInsets(
+                left = left,
+                top = top,
+                right = width - right,
+                bottom = height - bottom,
+            )
+        }
+
+        block(insets)
+    }
 
 context (lookaheadScope: LookaheadScope)
 fun Modifier.animateBounds(

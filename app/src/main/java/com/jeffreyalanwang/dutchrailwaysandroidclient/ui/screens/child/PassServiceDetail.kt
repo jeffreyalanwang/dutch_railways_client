@@ -13,12 +13,14 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
+import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
@@ -62,6 +64,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.LineSegmentW
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.providesWindowInsets
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import kotlinx.coroutines.launch
 import java.time.ZonedDateTime
@@ -141,8 +144,9 @@ fun PassServiceDetail(
 ) {
     val stops = remember { service.getStops() }
     var isHeaderExpanded by remember { mutableStateOf(false) }
+    var amenityBadgesBounds by WindowInsets.safeContent.let { remember { mutableStateOf(it) } }
 
-    Column(modifier.fillMaxWidth()) {
+    Column(modifier.fillMaxWidth().providesWindowInsets { amenityBadgesBounds = it }) {
         Row(
             Modifier.clickable(null, null) { isHeaderExpanded = true },
             verticalAlignment = Alignment.Bottom,
@@ -174,7 +178,7 @@ fun PassServiceDetail(
                 containerModifier = Modifier.offset(x = -25.dp, y = -7.5.dp),
                 isExpanded = isHeaderExpanded,
                 onSetExpanded = { isHeaderExpanded = it },
-                windowInsets = TODO(),
+                windowInsets = amenityBadgesBounds,
             )
         }
 
