@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
@@ -25,7 +26,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
@@ -45,20 +45,24 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
+import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.ParentDataModifierNode
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.times
 import androidx.compose.ui.util.fastMap
-import androidx.compose.ui.util.fastSumBy
 import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
@@ -69,7 +73,9 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.letWith
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ExpandableBadgeSetUtilScope.Target
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.animateIntOffsetAsState
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.asRectInWindow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.copy
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.movedInto
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.shift
 import com.jeffreyalanwang.dutchrailwaysandroidclient.zipOnKeys
 
@@ -77,8 +83,8 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.zipOnKeys
 @Composable
 private fun AmenityBadgePreview() {
     var amenities by remember { mutableStateOf(TrainAmenity.entries.toSet()) }
-    var isExpanded by remember { mutableStateOf(false) }
-    Card {
+    var isExpanded by remember { mutableStateOf(true) }
+    Card(Modifier.size(300.dp, 200.dp)) {
         Box(
             Modifier
                 .fillMaxSize()
@@ -103,6 +109,7 @@ private fun AmenityBadgePreview() {
                     onSetExpanded = { isExpanded = it },
                     containerModifier = Modifier
                         .shift(-25.dp, -7.5.dp),
+                    windowInsets = WindowInsets(top = 20.dp, right = 20.dp),
                 )
 
                 // Test that we display expanded badges on top
@@ -121,12 +128,14 @@ private fun AmenityBadgePreview() {
 
 private const val badgeContentProportion = .7f
 
+@SuppressLint("ModifierParameter")
 @Composable
 fun EditAmenityBadgeSet(
     amenities: Set<TrainAmenity>,
     onModify: ((Set<TrainAmenity>) -> Unit),
     isExpanded: Boolean,
     onSetExpanded: (Boolean) -> Unit,
+    windowInsets: WindowInsets,
     contentModifier: Modifier = Modifier,
     containerModifier: Modifier = Modifier,
     collapsedBadgeSize: Dp = 15.dp,
@@ -137,6 +146,7 @@ fun EditAmenityBadgeSet(
     amenities,
     isExpanded,
     onSetExpanded,
+    windowInsets = windowInsets,
     contentModifier = contentModifier,
     containerModifier = containerModifier,
     onModify = onModify,
@@ -146,11 +156,13 @@ fun EditAmenityBadgeSet(
     bgColor,
 )
 
+@SuppressLint("ModifierParameter")
 @Composable
 fun AmenityBadgeSet(
     amenities: Set<TrainAmenity>,
     isExpanded: Boolean,
     onSetExpanded: (Boolean) -> Unit,
+    windowInsets: WindowInsets,
     contentModifier: Modifier = Modifier,
     containerModifier: Modifier = Modifier,
     collapsedBadgeSize: Dp = 15.dp,
@@ -161,6 +173,7 @@ fun AmenityBadgeSet(
     amenities,
     isExpanded,
     onSetExpanded,
+    windowInsets = windowInsets,
     contentModifier = contentModifier,
     containerModifier = containerModifier,
     onModify = null,
@@ -170,11 +183,13 @@ fun AmenityBadgeSet(
     bgColor,
 )
 
+@SuppressLint("ModifierParameter")
 @Composable
 private fun AmenityBadgeSetBase(
     amenities: Set<TrainAmenity>,
     isExpanded: Boolean,
     onSetExpanded: (Boolean) -> Unit,
+    windowInsets: WindowInsets,
     contentModifier: Modifier = Modifier,
     containerModifier: Modifier = Modifier,
     onModify: ((Set<TrainAmenity>) -> Unit)? = null,
@@ -211,6 +226,7 @@ private fun AmenityBadgeSetBase(
         onSetExpanded,
         collapsedBadgeSize = collapsedBadgeSize,
         expandedBadgeSize = expandedBadgeSize,
+        windowInsets = windowInsets,
         contentModifier = contentModifier,
         containerModifier = containerModifier,
         collapsedGap = gap,
@@ -267,12 +283,14 @@ private fun AmenityBadgeSetBase(
  *      These two parameters describe the size the badge slots will voluntarily
  *      be, not the size to which they should be coerced by this composable.
  */
+@SuppressLint("ModifierParameter")
 @Composable
 private fun ExpandableBadgeSet(
     isExpanded: Boolean,
     onSetExpanded: (Boolean) -> Unit,
     collapsedBadgeSize: Dp,
     expandedBadgeSize: Dp,
+    windowInsets: WindowInsets,
     contentModifier: Modifier = Modifier,
     containerModifier: Modifier = Modifier,
     collapsedGap: Dp = 0.dp,
@@ -280,36 +298,44 @@ private fun ExpandableBadgeSet(
     badgesToLabels: Map<TrainAmenity, Pair<@Composable () -> Unit, @Composable () -> Unit>>,
 ) = with (ExpandableBadgeSetUtilScope) {
 
-    /** Used to set the AnimationSpecs (motionSpecX, motionSpecY). */
-    var animatingTo by remember { mutableStateOf(Target.Neither) }
-    LaunchedEffect(isExpanded) {
-        animatingTo = if (isExpanded) Target.Expanded
-                      else Target.Collapsed
-        // [Target.None] is set by [onAnimComplete()]
+    var animatingTo by remember(isExpanded) {
+        mutableStateOf(
+            if (isExpanded) Target.Expanded
+            else Target.Collapsed
+            // [Target.None] is set by [onAnimComplete()]
+        )
     }
-    val (motionSpecX, motionSpecY, motionSpecSize) =
-        with (MaterialTheme.motionScheme) {
-            when (animatingTo) {
-                Target.Expanded ->
-                    Triple( fastSpatialSpec<Int>(), slowSpatialSpec<Int>(), slowSpatialSpec<Int>() )
-                Target.Collapsed ->
-                    Triple( slowSpatialSpec(),      fastSpatialSpec(),      defaultSpatialSpec()   )
-                Target.Neither ->
-                    Triple( defaultSpatialSpec(),   defaultSpatialSpec(),   defaultSpatialSpec()   )
-            }
-        }
+    var containerInWindow by remember { mutableStateOf(IntRect.Zero) }
+    var popupSize by remember { mutableStateOf(IntSize.Zero) }
+
+    val (motionSpecX, motionSpecY, motionSpecSize) = getMotionSpecs(animatingTo)
 
     /** Coordinates (in Px) of each item. */
     val destLocations = remember { mutableStateMapOf<TrainAmenity, IntOffset>() }
-    var destPopupOffset by remember { mutableStateOf(IntOffset.Zero) }
     val destBadgeSize = (if (!isExpanded) collapsedBadgeSize else expandedBadgeSize)
         .letWith(LocalDensity.current) { it.roundToPx() }
+    val destPopupOffset = popupOffsetFromContainer(
+        isExpanded,
+        boundsInWindow = windowInsets
+            .asRectInWindow(LocalDensity.current, LocalResources.current.displayMetrics),
+        containerInWindow = containerInWindow.topLeft,
+        popupSize = popupSize,
+        desiredOffset =
+            with (LocalDensity.current) {
+                IntOffset(
+                    x = collapsedBadgeSize.roundToPx() / 2,
+                    y = containerInWindow.height - popupSize.height +
+                            if (badgesToLabels.size <= 2) 0
+                            else (expandedGap + expandedBadgeSize * 2).roundToPx(),
+                )
+            },
+    )
 
     lateinit var onAnimComplete: () -> Unit
     /**
      * The actual coordinates of each item on screen, as animated state values.
      * Best practice (performance & maintainability-wise) would be to develop
-     * a way to directly animate [Rect] values with different [AnimationSpec]s
+     * a way to directly animate [IntOffset] values with different [AnimationSpec]s
      * for x & y axes; however, that would require access to several complex
      * internal/private components behind Compose animation API.
      */
@@ -341,10 +367,15 @@ private fun ExpandableBadgeSet(
     Box(
         containerModifier
             .size(
+                // Always sized as if collapsed
                 width = badgesToLabels.size * collapsedBadgeSize +
                         (badgesToLabels.size - 1) * collapsedGap,
                 height = collapsedBadgeSize,
             )
+            .onGloballyPositioned {
+                containerInWindow =
+                    IntRect(it.positionInWindow().round(), it.size)
+            }
             .wrapContentSize(Alignment.TopStart, unbounded = true)
     ) {
         // [Popup()] allows us to display above all other elements on the screen,
@@ -361,7 +392,8 @@ private fun ExpandableBadgeSet(
             onDismissRequest = { if (isExpanded) onSetExpanded(false) },
         ) {
             Layout(
-                modifier = contentModifier.clickable(null, null) { onSetExpanded(!isExpanded) },
+                modifier = contentModifier
+                    .clickable(null, null) { onSetExpanded(!isExpanded) },
                 content = {
                     for ((amenity, composables) in badgesToLabels) {
                         Item(
@@ -374,15 +406,15 @@ private fun ExpandableBadgeSet(
                     }
                 }
             ) { measurables, constraints ->
-                val badgeSizeConstraints = constraints.copy(
+                val itemConstraints = constraints.copy(
                     height = animBadgeSize,
                     width = if (!isExpanded) animBadgeSize else null,
                 )
-                val placeables = measurables.fastMap { it.measure(badgeSizeConstraints) }
+                val placeables = measurables.fastMap { it.measure(itemConstraints) }
                 val placeablesWithId = placeables.map { it.amenity to it }
 
                 // Calculate destination (i.e. non-animated) position values
-                val (locations, parentSize) =
+                val template =
                     basicLinearLayout(
                         layout = if (!isExpanded) Row else Column,
                         keyedPlaceables = placeablesWithId,
@@ -390,23 +422,12 @@ private fun ExpandableBadgeSet(
                                     collapsedGap.roundToPx()
                                 else expandedGap.roundToPx()
                     )
-                val popupOffsetFromBox = if (!isExpanded) IntOffset.Zero
-                    else IntOffset(
-                        collapsedBadgeSize.roundToPx() / 2,
-                        placeables
-                            .dropLast(2)
-                            .fastSumBy { it.height + expandedGap.roundToPx() }
-                            .unaryMinus()
-                    )
 
                 // Animate to those positions
-                destLocations.putAll(locations)
-                destPopupOffset = popupOffsetFromBox
+                destLocations.putAll(template.first)
+                popupSize = template.second
 
-                layout(
-                    width = parentSize.width,
-                    height = parentSize.height,
-                ) {
+                layout(popupSize.width, height = popupSize.height) {
                     // zipOnKeys skips placing values in [placeables]
                     // if they are not yet in [animLocationStates]
                     placeablesWithId.toMap()
@@ -417,7 +438,6 @@ private fun ExpandableBadgeSet(
             }
         }
     }
-
 }
 
 @Suppress("ClassName")
@@ -452,8 +472,8 @@ private object ExpandableBadgeSetUtilScope {
                             // during transition to collapsed,
                             // measure at final width (i.e. 0) for accurate animation
                             it
-                            .width(0.dp)
-                            .wrapContentSize(unbounded = true)
+                                .width(0.dp)
+                                .wrapContentSize(unbounded = true)
                         }
                 ) {
                     label()
@@ -499,6 +519,47 @@ private object ExpandableBadgeSetUtilScope {
 
     val Placeable.amenity
         get() = this.parentData as TrainAmenity
+
+    /** @return motionSpecX, motionSpecY, motionSpecSize */
+    @Composable
+    fun getMotionSpecs(animatingTo: Target)
+        = with (MaterialTheme.motionScheme) {
+            when (animatingTo) {
+                Target.Expanded ->
+                    Triple( fastSpatialSpec<Int>(), slowSpatialSpec<Int>(), slowSpatialSpec<Int>() )
+                Target.Collapsed ->
+                    Triple( slowSpatialSpec(),      fastSpatialSpec(),      defaultSpatialSpec()   )
+                Target.Neither ->
+                    Triple( defaultSpatialSpec(),   defaultSpatialSpec(),   defaultSpatialSpec()   )
+            }
+        }
+
+    /**
+     * @param desiredOffset:
+     *      The desired offset of the popup from the container,
+     *      when it is expanded.
+     */
+    fun popupOffsetFromContainer(
+        isExpanded: Boolean,
+        boundsInWindow: IntRect,
+        containerInWindow: IntOffset,
+        popupSize: IntSize,
+        desiredOffset: IntOffset,
+    ): IntOffset {
+        if (!isExpanded) return IntOffset.Zero
+
+        // Declared below: offsets are relative to container
+        val bounds = boundsInWindow.translate(-containerInWindow)
+        val actual =
+            IntRect(desiredOffset, popupSize)
+                .movedInto(
+                    bounds,
+                    xOverflow = 0,
+                    yOverflow = bounds.center.y - (popupSize.height / 2),
+                )
+
+        return actual.topLeft
+    }
 
     private object AmenityModifierScope {
         fun Modifier.id(amenity: TrainAmenity) =

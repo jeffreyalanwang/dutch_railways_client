@@ -160,6 +160,9 @@ fun <T> Iterable<Sequence<T>>.flattenRoundRobin()
     }
 }
 
+fun IntRange.Companion.from(start: Int, size: Int)
+    = start..(start + size)
+
 /**
  *  All indices are based from the original/old list.
  *  Guaranteed to be sorted by index.

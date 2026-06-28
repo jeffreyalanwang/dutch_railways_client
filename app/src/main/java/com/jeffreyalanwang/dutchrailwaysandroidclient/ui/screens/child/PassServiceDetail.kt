@@ -171,9 +171,10 @@ fun PassServiceDetail(
             // Amenities
             AmenityBadgeSet(
                 service.amenities,
-                containerModifier = Modifier.offset(x=-25.dp, y=-7.5.dp),
+                containerModifier = Modifier.offset(x = -25.dp, y = -7.5.dp),
                 isExpanded = isHeaderExpanded,
                 onSetExpanded = { isHeaderExpanded = it },
+                windowInsets = TODO(),
             )
         }
 

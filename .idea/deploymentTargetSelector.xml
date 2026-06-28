@@ -86,10 +86,10 @@
       </SelectionState>
       <SelectionState runConfigName="PassServiceDetailPreview">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-06-23T02:01:47.796670888Z">
+        <DropdownSelection timestamp="2026-06-28T22:24:54.189245864Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="Default" identifier="serial=192.168.240.112:5555;connection=1c9e3f16" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Pixel_7_GApps.avd" />
             </handle>
           </Target>
         </DropdownSelection>
@@ -97,10 +97,10 @@
       </SelectionState>
       <SelectionState runConfigName="AmenityBadgePreview">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-06-23T02:01:47.796670888Z">
+        <DropdownSelection timestamp="2026-06-28T22:46:20.208720427Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="Default" identifier="serial=192.168.240.112:5555;connection=1c9e3f16" />
+              <DeviceId pluginId="Default" identifier="serial=192.168.240.112:5555;connection=23dd17af" />
             </handle>
           </Target>
         </DropdownSelection>

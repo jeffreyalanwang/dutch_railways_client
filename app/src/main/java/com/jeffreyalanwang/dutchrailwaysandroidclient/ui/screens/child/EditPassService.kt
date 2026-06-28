@@ -271,7 +271,8 @@ private fun EditPassServiceScreenBase(
                     .offset(x=-25.dp, y=-7.5.dp),
                 isExpanded = areAmenitiesExpanded,
                 onSetExpanded = { areAmenitiesExpanded = it },
-                onModify = { amenitiesMultiSelection = it }
+                onModify = { amenitiesMultiSelection = it },
+                windowInsets = TODO(),
             )
         }
 
