@@ -3,7 +3,9 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child
 import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -17,6 +19,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndSelectAll
@@ -35,6 +38,7 @@ import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
@@ -73,6 +77,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Trainset
 import com.jeffreyalanwang.dutchrailwaysandroidclient.applyAt
 import com.jeffreyalanwang.dutchrailwaysandroidclient.map
+import com.jeffreyalanwang.dutchrailwaysandroidclient.plus
 import com.jeffreyalanwang.dutchrailwaysandroidclient.toKotlinInstant
 import com.jeffreyalanwang.dutchrailwaysandroidclient.toKotlinLocalDateTime
 import com.jeffreyalanwang.dutchrailwaysandroidclient.toZonedDateTime
@@ -90,9 +95,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.ExpandedSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.DialogResult
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.providesWindowInsets
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalTime
@@ -319,7 +322,7 @@ private fun EditPassServiceScreenBase(
                     Modifier.padding(horizontal = 4.dp)
                 )
 
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(10.dp))
             }
         }
 
@@ -403,117 +406,165 @@ private fun EditStops(
 
     val discreteGridControl = remember { DiscreteGridControl() }
 
-    ReorderableColumn(
-        list = stops,
-        onSettle = { iFrom, iTo ->
-            // TODO this is terrible
-            with (stops) {
-                val item = removeAt(iFrom)
+    Column (modifier.padding(padding)) {
+        ReorderableColumn(
+            list = stops,
+            onSettle = { iFrom, iTo ->
+                // TODO this is terrible
+                with(stops) {
+                    val item = removeAt(iFrom)
 
-                // Change to respect our new neighbors + new position
-                val newItem = item.withTimesWithin(
-                    earliest = getOrNull(iTo - 1)
-                        ?.run { departure!!.plusMinutes(1).toKotlinInstant() },
-                    latest = getOrNull(iTo + 1)
-                        ?.run { arrival!!.minusMinutes(1).toKotlinInstant() },
-                )
+                    // Change to respect our new neighbors + new position
+                    val newItem = item.withTimesWithin(
+                        earliest = getOrNull(iTo - 1)
+                            ?.run {
+                                departure!!.plusMinutes(1).toKotlinInstant()
+                            },
+                        latest = getOrNull(iTo + 1)
+                            ?.run {
+                                arrival!!.minusMinutes(1).toKotlinInstant()
+                            },
+                    )
 
-                add(iTo, newItem)
+                    add(iTo, newItem)
+                }
+            },
+            onMove = {
+                hapticFeedback?.performHapticFeedback(SegmentFrequentTick)
             }
-        },
-        modifier = modifier.padding(padding.verticalOnly()),
-        onMove = {
-            hapticFeedback?.performHapticFeedback(SegmentFrequentTick)
-        }
-    ) { i, stop, isDragging ->
+        ) { i, stop, isDragging ->
 
-        // TODO remove arrival or departure field + clear it for the first or last
-        // TODO find an ID that does not change no matter how we modify the stop
-        ElevatingReorderableItem(isDragging, stop.stationId, color = Transparent) {
-            DiscreteGridRow(
-                discreteGridControl = discreteGridControl,
-                Modifier
-                    .height(IntrinsicSize.Min)
-                    .fillMaxWidth()
-                    .padding(padding.horizontalOnly()),
-                gap = 2.dp,
-                verticalAlignment = Alignment.CenterVertically,
+            // TODO remove arrival or departure field + clear it for the first or last
+            // TODO find an ID that does not change no matter how we modify the stop
+            ElevatingReorderableItem(
+                isDragging,
+                stop.stationId,
+                color = Transparent
             ) {
-                ReorderDragHandle(
-                    hapticFeedback,
-                    Modifier.padding(horizontal = 4.dp),
-                )
-
-                FormField(
-                    onClick = { selectingStationForIndex = i },
-                    isError = stops.count { it.stationId == stop.stationId } > 1,
-                    modifier = Modifier.fill()
+                DiscreteGridRow(
+                    discreteGridControl = discreteGridControl,
+                    Modifier
+                        .height(IntrinsicSize.Min)
+                        .fillMaxWidth(),
+                    gap = 2.dp,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        stop.getStation().name,
-                        softWrap = false,
-                        overflow = TextOverflow.Ellipsis,
+                    ReorderDragHandle(
+                        hapticFeedback,
+                        Modifier.padding(horizontal = 4.dp),
                     )
-                }
 
-                stop.arrival
-                    ?.let {
-                        val enabled = (i != 0)
-                        FormField(
-                            enabled = enabled,
-                            isError = enabled && !checkStopTimeValidity(i, stops),
-                            onClick = {
-                                onEditTime(
-                                    stop.stationId,
-                                    StopPoint.Arrival,
-                                    "Edit arrival time for ${stop.getStation().name}",
-                                    it,
-                                )
-                            },
-                            modifier = Modifier.alpha( if (enabled) 1f else .5f )
-                        ) {
-                            Text(AppStringFormats.Time(it))
-                        }
-                    }
-                    ?: Spacer(Modifier)
-
-                stop.departure
-                    ?.let {
-                        val enabled = (i != stops.lastIndex)
-                        FormField(
-                            enabled = enabled,
-                            isError = enabled && !checkStopTimeValidity(i, stops),
-                            onClick = {
-                                onEditTime(
-                                    stop.stationId,
-                                    StopPoint.Departure,
-                                    "Edit departure time for ${stop.getStation().name}",
-                                    it,
-                                )
-                            },
-                            modifier = Modifier.alpha( if (enabled) 1f else .5f )
-                        ) {
-                            Text(AppStringFormats.Time(it))
-                        }
-                    }
-                    ?: Spacer(Modifier)
-
-                IconButton(
-                    { stops.removeAt(i) },
-                    Modifier.size(
-                        IconButtonDefaults.smallContainerSize(
-                            IconButtonDefaults.IconButtonWidthOption.Narrow
+                    FormField(
+                        onClick = { selectingStationForIndex = i },
+                        isError = stops.count { it.stationId == stop.stationId } > 1,
+                        modifier = Modifier.fill()
+                    ) {
+                        Text(
+                            stop.getStation().name,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
                         )
-                    )
-                ) {
-                    Icon(
-                        painterResource(R.drawable.ic_trash),
-                        contentDescription = "Delete stop",
-                    )
+                    }
+
+                    stop.arrival
+                        ?.let {
+                            val enabled = (i != 0)
+                            FormField(
+                                enabled = enabled,
+                                isError = enabled && !checkStopTimeValidity(
+                                    i,
+                                    stops
+                                ),
+                                onClick = {
+                                    onEditTime(
+                                        stop.stationId,
+                                        StopPoint.Arrival,
+                                        "Edit arrival time for ${stop.getStation().name}",
+                                        it,
+                                    )
+                                },
+                                modifier = Modifier.alpha(if (enabled) 1f else .5f)
+                            ) {
+                                Text(AppStringFormats.Time(it))
+                            }
+                        }
+                        ?: Spacer(Modifier)
+
+                    stop.departure
+                        ?.let {
+                            val enabled = (i != stops.lastIndex)
+                            FormField(
+                                enabled = enabled,
+                                isError = enabled && !checkStopTimeValidity(
+                                    i,
+                                    stops
+                                ),
+                                onClick = {
+                                    onEditTime(
+                                        stop.stationId,
+                                        StopPoint.Departure,
+                                        "Edit departure time for ${stop.getStation().name}",
+                                        it,
+                                    )
+                                },
+                                modifier = Modifier.alpha(if (enabled) 1f else .5f)
+                            ) {
+                                Text(AppStringFormats.Time(it))
+                            }
+                        }
+                        ?: Spacer(Modifier)
+
+                    IconButton(
+                        { stops.removeAt(i) },
+                        Modifier.size(
+                            IconButtonDefaults.smallContainerSize(
+                                IconButtonDefaults.IconButtonWidthOption.Narrow
+                            )
+                        )
+                    ) {
+                        Icon(
+                            painterResource(R.drawable.ic_trash),
+                            contentDescription = "Delete stop",
+                        )
+                    }
                 }
             }
+
         }
 
+        TextButton (
+            onClick = {
+                val times = generateStopTimes(
+                    oldTimes = null to null,
+                    bounds = stops.last()
+                        .run { departure ?: (arrival!! + 1.minutes) }
+                        .toKotlinInstant() to null
+                )
+                val stop = ServiceStop(
+                    arrival = times.first.toZonedDateTime(stops.last().timezone),
+                    departure = null,
+                    passServiceId =  stops.last().passServiceId,
+                    stationId = stops.last().stationId,
+                )
+                stops.add(stop)
+            },
+            contentPadding = PaddingValues(horizontal = 4.dp),
+        ) {
+            Row(
+                Modifier.fillMaxWidth(),
+                Arrangement.spacedBy(2.dp),
+                Alignment.CenterVertically,
+            ) {
+                Icon(
+                    painterResource(R.drawable.ic_add),
+                    contentDescription = "Add stop",
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Add stop",
+                )
+            }
+        }
     }
 
     // Popup station search

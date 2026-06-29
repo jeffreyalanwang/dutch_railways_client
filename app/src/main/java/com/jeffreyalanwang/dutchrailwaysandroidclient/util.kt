@@ -13,7 +13,9 @@ import java.time.ZonedDateTime
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 import kotlin.time.Clock
+import kotlin.time.Duration
 import kotlin.time.Instant
+import kotlin.time.toJavaDuration
 import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
 
@@ -523,6 +525,9 @@ inline fun <T> T.letIf(condition: Boolean, then: (T)->T): T
     = this.letIf({ condition }, { this }, then)
 
 fun List<ServiceStop>.lastStationName() = this.last().getStation().name
+
+operator fun ZonedDateTime.plus(duration: Duration): ZonedDateTime
+    = this + duration.toJavaDuration()
 
 fun LocalDateTime.toZonedDateTime(zone: ZoneId): ZonedDateTime
     = this.toJavaLocalDateTime().atZone(zone)
