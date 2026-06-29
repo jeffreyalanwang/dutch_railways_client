@@ -17,16 +17,6 @@ import kotlin.time.Instant
 import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
 
-fun <T> MutableList<T>.applyAt(index: Int, block: (T)->T) {
-    this[index] = block(this[index])
-}
-
-fun <K, V> MutableMap<K, V>.applyAt(key: K, block: (V?)->V)
-    = set(key, block(get(key)))
-
-fun <T> PersistentList<T>.removeLast()
-    = this.removeAt(size - 1)
-
 infix fun <T: Comparable<U>, U> T?.geBothElvis(other: U?): Boolean? {
     return if (this == null || other == null) null
         else this >= other
@@ -170,9 +160,9 @@ fun IntRange.Companion.from(start: Int, size: Int)
  */
 class Diff<T>(val mutations: List<Mutation<T>>): List<Diff.Mutation<T>> by mutations {
     val containsRemoval
-        get() = { any { it is Mutation.Remove } }
+        get() = any { it is Mutation.Remove }
     val containsAddition
-        get() = { any { it is Mutation.Add } }
+        get() = any { it is Mutation.Add }
 
     fun <K, V> applyOn(
         subject: MutableMap<K, V>,
@@ -383,14 +373,14 @@ fun <T, U: Comparable<U>> timesSorted(
     // Each item holds the next index in [b]
     //  with which this position in [a] is not yet paired.
     // Values always decrease as index increases.
-    val aNextToPair = MutableList(a.size, { 0 })
+    val aNextToPair = MutableList(a.size) { 0 }
 
     // Each item holds, based on this position in [aNextToPair],
     //  the next pairing's value by [combine].
     // It holds [null] if it will definitely not be paired next
     //  (i.e. its value in [aNextToPair] is the same as
     //  that of another item at a lower index).
-    val aNextPairValue = MutableList<U?>(a.size, { null })
+    val aNextPairValue = MutableList<U?>(a.size) { null }
         .apply { this[0] = getSortKey(a[0] to b[0]) }
 
     while (aNextToPair.any { it != b.size }) {
@@ -450,11 +440,21 @@ fun <T, U: Comparable<U>> timesSorted(
     }
 }
 
-fun <T> List<T>.update(index: Int, value: T): List<T> {
-    val newList = this.toMutableList()
-    newList[index] = value
-    return newList
+fun <T> MutableList<T>.applyAt(index: Int, block: (T)->T) {
+    this[index] = block(this[index])
 }
+
+fun <K, V> MutableMap<K, V>.applyAt(key: K, block: (V?)->V)
+        = set(key, block(get(key)))
+
+fun <T> PersistentList<T>.removeLast()
+        = this.removeAt(size - 1)
+
+fun <T> List<T>.update(index: Int, block: (T) -> T)
+    = mapIndexed { i, item -> if (i == index) block(item) else item }
+
+fun <T> List<T>.update(index: Int, value: T): List<T>
+    = update(index) { value }
 
 fun <T> List<T>.plusInsert(index: Int, element: T): List<T> {
     return this.subList(0, index)
@@ -463,8 +463,9 @@ fun <T> List<T>.plusInsert(index: Int, element: T): List<T> {
 }
 
 fun <T> List<T>.dropAt(index: Int): List<T> {
-    return this.subList(0, index)
-        .plus(this.subList(index, this.size).drop(1))
+    return this.subList(0, index) +
+        this.subList(index, this.size)
+            .drop(1)
 }
 
 infix fun <T, U> Array<out T>.zipIndexed(other: Iterable<U>): List<Triple<Int, T, U>>
@@ -553,8 +554,7 @@ operator fun Instant.compareTo(other: ZonedDateTime)
 class ReadOnlyLateInit<T> : ReadWriteProperty<Any?, T> {
     private var value: T? = null
     var isInitialized = false
-        get() = field
-        private set(x) { field = x }
+        private set
 
     override fun getValue(thisRef: Any?, property: KProperty<*>): T {
         if (!isInitialized) {

@@ -80,7 +80,7 @@ operator fun ServiceStop.plus(other: Journey)
         = Journey(other.stops.plusInsert(0, this).toImmutableList())
 
 @Parcelize
-open class Place(
+sealed class Place(
     val id: Int,
     val name: String
 ) : Parcelable {

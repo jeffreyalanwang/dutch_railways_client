@@ -26,7 +26,7 @@ fun LineSegment(
     thickness: Dp,
     isStart: Boolean,
     isEnd: Boolean,
-    modifier: Modifier = Modifier.Companion,
+    modifier: Modifier = Modifier,
     content: @Composable BoxScope.()->Unit
 ) = Box(
     modifier = modifier

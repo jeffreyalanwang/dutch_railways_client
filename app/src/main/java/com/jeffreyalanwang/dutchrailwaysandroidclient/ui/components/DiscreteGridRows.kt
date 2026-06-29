@@ -48,7 +48,7 @@ class DiscreteGridControl {
     /**
      * In px.
      */
-    public var totalWidth: Int
+    var totalWidth: Int
         get() = _totalWidth
         private set(value) { _totalWidth = value }
 
@@ -94,7 +94,7 @@ class DiscreteGridControl {
      *  as in [this.widths] (the maximum across the column).
      */
     internal fun positions(alignments: List<Alignment.Horizontal>, itemWidths: List<Int>): List<Int> {
-        val out = MutableList<Int>(elementCount) { 0 }
+        val out = MutableList(elementCount) { 0 }
 
         var leftPos = 0
         for (i in 0..<(centerIdx ?: elementCount)) {
@@ -147,7 +147,7 @@ class DiscreteGridControl {
      *  new values from [incomingWidths].
      * [incomingWidths]: contains `null` for the centerFill element, if present.
      */
-    internal fun update(gap: Int, totalWidth: Int, centerIdx: Int?, incomingWidths: List<Int?>): Unit {
+    internal fun update(gap: Int, totalWidth: Int, centerIdx: Int?, incomingWidths: List<Int?>) {
         if (propsInitialized) {
             check(this.gap == gap)
             check(this.totalWidth == totalWidth)

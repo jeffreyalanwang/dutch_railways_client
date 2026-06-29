@@ -18,16 +18,17 @@ import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorat
 import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.commonChildEntries
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy.Companion.predictiveBackDialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.TimePicker
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.PassServiceDetailScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.AreaDetailScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.PassServiceDetailScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.StationDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.ConfirmDeletePassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditAreaScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditPassServiceScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditStationScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.NewPassServiceScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditActions
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.StationSearchScreen
@@ -55,11 +56,6 @@ interface TripFinderGraphNavArgs: AppNavArgs
  * @see TripFinderViewModel
  * **/
 interface TripFinderGraphMajorNavArgs: TripFinderGraphNavArgs
-/**
- * A page represented by [TripFinderGraphNavArgs] that is not
- * the top-level route (i.e. [TripFinderStartNavArgs])
- */
-interface TripFinderGraphChildNavArgs: TripFinderGraphNavArgs
 
 /**
  * Corresponds to "Edit" tab ([EditScreen]
@@ -72,7 +68,7 @@ interface EditGraphNavArgs: AppNavArgs
  * Generally, these can all be added at once using [EntryProviderScope.commonChildEntries],
  * but can be delegated differently for specific tabs.
  */
-interface CommonChildNavArgs: AppNavArgs, TripFinderGraphChildNavArgs, EditGraphNavArgs
+interface CommonChildNavArgs: AppNavArgs, TripFinderGraphNavArgs, EditGraphNavArgs
 interface PlaceDetailNavArgs: CommonChildNavArgs { val id: Int }
 
 // Tabs' NavKey types (used in both top-level [MainActivity] and nested [NavDisplay] back stacks)
@@ -82,8 +78,8 @@ interface PlaceDetailNavArgs: CommonChildNavArgs { val id: Int }
 
 // Child navigation routes' NavKey types
 
-@Serializable data object JourneyListNavArgs : AppNavArgs, TripFinderGraphChildNavArgs, TripFinderGraphMajorNavArgs
-@Serializable data class JourneyDetailNavArgs(val index: Int) : TripFinderGraphChildNavArgs
+@Serializable data object JourneyListNavArgs : AppNavArgs, TripFinderGraphMajorNavArgs
+@Serializable data class JourneyDetailNavArgs(val index: Int) : TripFinderGraphNavArgs
 @Serializable data class EditStationNavArgs(val id: Int) : EditGraphNavArgs
 @Serializable data class EditAreaNavArgs(val id: Int) : EditGraphNavArgs
 @Serializable data class NewPassServiceNavArgs(val basedOnId: Int? = null) : EditGraphNavArgs
@@ -228,19 +224,19 @@ fun appEntries(
                     }
 
                     entry<NewPassServiceNavArgs> { navArgs ->
-                        val basedOnService = navArgs.basedOnId
-                            ?.let { BackendApi.get_pass_service(it) }
-                        TODO()
-//                        NewPassServiceScreen(
-//                            basedOnService,
-//                            onNavigate = { newNavArgs -> backstack.add(newNavArgs) }
-//                        )
+                        NewPassServiceScreen(
+                            navArgs.basedOnId
+                                ?.let { BackendApi.get_pass_service(it) },
+                            onNavigate = { newNavArgs -> backstack.add(newNavArgs) },
+                            onNavigateBack = { backstack.removeLast() },
+                        )
                     }
                     entry<EditPassServiceNavArgs> { navArgs ->
-                        TODO()
-//                        EditPassServiceScreen(
-//                            navArgs.id
-//                        )
+                        EditPassServiceScreen(
+                            navArgs.id,
+                            onNavigate = { newNavArgs -> backstack.add(newNavArgs) },
+                            onNavigateBack = { backstack.removeLast() },
+                        )
                     }
                     entry<ConfirmDeletePassServiceNavArgs>(
                         metadata = predictiveBackDialog()
@@ -250,7 +246,7 @@ fun appEntries(
                         ConfirmDeletePassService(
                             service.id,
                             service.title,
-                            onNavigateBack = { backstack.removeAt(backstack.lastIndex) },
+                            onNavigateBack = { backstack.removeLast() },
                             onClearStack = { backstack.clearToInitial() }
                         )
                     }

@@ -17,7 +17,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.removeLast
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AreaDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.JourneyListNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphChildNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphMajorNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderStartNavArgs
@@ -151,7 +150,6 @@ private class DataModelDelegate: TripFinderDataModel {
 }
 
 private typealias GraphNavArgs = TripFinderGraphNavArgs
-private typealias ChildGraphNavArgs = TripFinderGraphChildNavArgs
 private typealias MajorGraphNavArgs = TripFinderGraphMajorNavArgs
 private typealias BackStack = ImmutableList<GraphNavArgs>
 
@@ -162,7 +160,7 @@ interface TripFinderNavModel {
 }
 
 private class NavModelDelegate(
-    stateRequestedRoutes: Flow<Pair<MajorGraphNavArgs, ChildGraphNavArgs?>>,
+    stateRequestedRoutes: Flow<Pair<MajorGraphNavArgs, GraphNavArgs?>>,
     val onPopMajorRoute: (MajorGraphNavArgs) -> Boolean,
 ): TripFinderNavModel {
     // Major nav routes are controlled by the ViewModel and maintain a set linear order.
@@ -189,7 +187,8 @@ private class NavModelDelegate(
         stateRequestedRoutes
         .collect { (newMajor, newMinor) ->
             _backStack.update { value ->
-                value.builder().apply {
+                value.builder()
+                .apply {
                     val newMajorIndex = indexOf(newMajor)
                     val newMinorIndex = newMinor?.let { indexOf(it) }
 

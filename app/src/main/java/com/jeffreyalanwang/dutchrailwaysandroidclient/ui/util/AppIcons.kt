@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName", "FunctionName", "FunctionName", "FunctionName")
+
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util
 
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area

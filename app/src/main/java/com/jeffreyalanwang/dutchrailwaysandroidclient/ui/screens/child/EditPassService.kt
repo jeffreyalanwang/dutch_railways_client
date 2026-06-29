@@ -4,14 +4,11 @@ import android.util.Log
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.calculateEndPadding
-import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -20,7 +17,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndSelectAll
@@ -31,6 +27,8 @@ import androidx.compose.material3.ExposedDropdownMenuAnchorType
 import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarValue
@@ -54,10 +52,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType.Companion.SegmentFrequentTick
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -92,8 +90,10 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.ExpandedSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.DialogResult
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.providesWindowInsets
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
+import com.jeffreyalanwang.dutchrailwaysandroidclient.update
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.atDate
@@ -102,7 +102,7 @@ import java.time.ZonedDateTime
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
-@Preview(widthDp = 500, heightDp = 1000)
+@Preview
 @Composable
 private fun EditPassServiceScreenPreview(serviceId: Int = 119) {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -116,9 +116,10 @@ private fun EditPassServiceScreenPreview(serviceId: Int = 119) {
 
     CompositionLocalProvider(LocalResultEventBus provides remember { ResultEventBus() }) {
         EditPassServiceScreenBase(
+            screenTitle = "Edit train service",
             basedOnService = BackendApi.get_pass_service(serviceId),
             onNavigate = { notify("Navigate to: $it") },
-            onFinished = { notify("Finished: $it") },
+            onFinished = { a, b, c, d -> notify("Finished: $a $b $c $d") },
             onCancelled = { notify("Cancelled") },
         )
     }
@@ -137,95 +138,56 @@ fun NewPassServiceScreen(
     basedOnService: PassService? = null,
     onNavigateBack: () -> Unit,
     onNavigate: (CommonChildNavArgs) -> Unit,
-) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("New train service") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            painterResource(R.drawable.ic_back),
-                            contentDescription = "Back"
-                        )
-                    }
-                },
+) = EditPassServiceScreenBase(
+    screenTitle = "New train service",
+    basedOnService = basedOnService?.let { BackendApi.get_pass_service(it.id) },
+    onNavigate = onNavigate,
+    onFinished = { title, trainset, amenities, stops ->
+        val id =
+            BackendApi.add_pass_service(
+                title,
+                trainset = trainset,
+                amenities = amenities,
+                stops = stops,
             )
-        }
-    ) { innerPadding ->
-        EditPassServiceScreenBase(
-            basedOnService = basedOnService,
-            onNavigate = onNavigate,
-            onFinished = {
-                BackendApi.add_pass_service(
-                    title = it.title,
-                    trainset = it.trainset,
-                    amenities = it.amenities,
-                    stops = it.getStops(),
-                )
-                onNavigateBack()
-                onNavigate(
-                    PassServiceDetailNavArgs(it.id)
-                )
-            },
-            onCancelled = onNavigateBack,
-            modifier = Modifier.padding(innerPadding)
-        )
-    }
-}
+            .id
+        onNavigateBack()
+        onNavigate( PassServiceDetailNavArgs(id) ) // TODO you might need instead to refresh the previous page
+    },
+    onCancelled = onNavigateBack,
+    modifier = Modifier.padding(vertical = 20.dp)
+)
 
 @Composable
 fun EditPassServiceScreen(
     id: Int,
     onNavigateBack: () -> Unit,
     onNavigate: (CommonChildNavArgs) -> Unit,
-) {
-    Scaffold(
-        topBar = {
-            TopAppBar(
-                title = { Text("Edit train service") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            painterResource(R.drawable.ic_back),
-                            contentDescription = "Back"
-                        )
-                    }
-                },
+) = EditPassServiceScreenBase(
+        screenTitle = "Edit train service",
+        basedOnService = BackendApi.get_pass_service(id),
+        onNavigate = onNavigate,
+        onFinished = { title, trainset, amenities, stops ->
+            BackendApi.update_pass_service(
+                id,
+                trainset = trainset,
+                amenities = amenities,
+                stops = stops,
             )
+            onNavigateBack()
+            onNavigate( PassServiceDetailNavArgs(id) ) // TODO you might need instead to refresh the previos page
         },
-    ) { innerPadding ->
-
-        Box(Modifier.verticalScroll(rememberScrollState())) {
-            Card(Modifier.padding(innerPadding + PaddingValues(10.dp))) {
-                EditPassServiceScreenBase(
-                    basedOnService = BackendApi.get_pass_service(id),
-                    onNavigate = onNavigate,
-                    onFinished = {
-                        BackendApi.update_pass_service(
-                            it.id,
-                            trainset = it.trainset,
-                            amenities = it.amenities,
-                            stops = it.getStops(),
-                        )
-                        onNavigateBack()
-                        onNavigate( PassServiceDetailNavArgs(it.id) )
-                    },
-                    onCancelled = onNavigateBack,
-                    modifier = Modifier.padding(vertical = 20.dp)
-                )
-            }
-        }
-
-    }
-}
+        onCancelled = onNavigateBack,
+        modifier = Modifier.padding(vertical = 20.dp)
+    )
 
 @Composable
 private fun EditPassServiceScreenBase(
+    screenTitle: String,
     basedOnService: PassService?,
     modifier: Modifier = Modifier,
     onNavigate: (TimePickerNavArgs<StationTimeField>) -> Unit,
-    onFinished: (PassService) -> Unit,
+    onFinished: (String, Trainset, Set<TrainAmenity>, List<ServiceStop>) -> Unit,
     onCancelled: () -> Unit,
 ) {
     var amenityBadgesBounds by WindowInsets.safeContent.let { remember { mutableStateOf(it) } }
@@ -234,7 +196,7 @@ private fun EditPassServiceScreenBase(
         mutableStateOf( basedOnService?.trainset )
     }
     var amenitiesMultiSelection by rememberSaveable {
-        mutableStateOf(basedOnService?.amenities ?: emptySet<TrainAmenity>())
+        mutableStateOf( basedOnService?.amenities ?: emptySet() )
     }
     val stopsList = rememberSaveable {
         (basedOnService?.getStops() ?: emptyList())
@@ -244,6 +206,23 @@ private fun EditPassServiceScreenBase(
         oldTitle = basedOnService?.title,
         lastStop = stopsList.last(),
     )
+
+    fun onFinished() {
+        val trainsetSelection = trainsetSelection
+        val stopsList = stopsList.toList()
+            .run {
+                update(0) { it.copy(arrival = null) }
+                update(lastIndex) { it.copy(departure = null) }
+            }
+        if (stopsList.isValid() && trainsetSelection != null) {
+            onFinished(
+                title,
+                trainsetSelection,
+                amenitiesMultiSelection,
+                stopsList
+            )
+        }
+    }
 
     // We preserve the time zone currently used for the stop.
     // TODO handle pass services crossing midnight
@@ -263,51 +242,87 @@ private fun EditPassServiceScreenBase(
         }
     }
 
-    Column(modifier
-        .fillMaxWidth()
-        .providesWindowInsets{ amenityBadgesBounds = it }
-    ) {
-        Row(verticalAlignment = Alignment.Bottom) {
-            EditRollingStockIcon(
-                trainsetSelection
-            ) { trainsetSelection = it }
-
-            var areAmenitiesExpanded by remember { mutableStateOf(false) }
-            EditAmenityBadgeSet(
-                amenitiesMultiSelection,
-                containerModifier = Modifier
-                    .offset(x=-25.dp, y=-7.5.dp),
-                isExpanded = areAmenitiesExpanded,
-                onSetExpanded = { areAmenitiesExpanded = it },
-                onModify = { amenitiesMultiSelection = it },
-                windowInsets = amenityBadgesBounds,
+    Scaffold(
+        topBar = {
+            TopAppBar(
+                title = { Text(screenTitle) },
+                navigationIcon = {
+                    IconButton(onClick = onCancelled) {
+                        Icon(
+                            painterResource(R.drawable.ic_back),
+                            contentDescription = "Back"
+                        )
+                    }
+                },
+                actions = {
+                    IconButton(onClick = ::onFinished) {
+                        Icon(
+                            painterResource(R.drawable.ic_done),
+                            contentDescription = "Finish & save"
+                        )
+                    }
+                },
             )
+        },
+        modifier = modifier.fillMaxSize(),
+    ) { innerPadding ->
+
+        Box(Modifier.verticalScroll(rememberScrollState())) {
+            Card(
+                Modifier
+                    .padding(innerPadding + PaddingValues(10.dp))
+                    .fillMaxSize()
+                    .providesWindowInsets { amenityBadgesBounds = it }
+            ) {
+                Row(
+                    Modifier.padding(start = 10.dp, top = 10.dp),
+                    verticalAlignment = Alignment.Bottom
+                ) {
+                    EditRollingStockIcon(
+                        trainsetSelection
+                    ) { trainsetSelection = it }
+
+                    var areAmenitiesExpanded by remember { mutableStateOf(false) }
+                    EditAmenityBadgeSet(
+                        amenitiesMultiSelection,
+                        containerModifier = Modifier
+                            .offset(x= -7.5.dp, y= -10.dp),
+                        isExpanded = areAmenitiesExpanded,
+                        onSetExpanded = { areAmenitiesExpanded = it },
+                        onModify = { amenitiesMultiSelection = it },
+                        windowInsets = amenityBadgesBounds,
+                    )
+                }
+
+                // Name
+                Text(
+                    title,
+                    style=MaterialTheme.typography.displaySmall,
+                    modifier=Modifier.padding(horizontal=10.dp)
+                )
+
+                Spacer(Modifier.height(10.dp))
+
+                // Stops (arrive; depart; station)
+                EditStops(
+                    stopsList,
+                    onEditTime = { stationId, forPoint, title, initial ->
+                        onNavigate(
+                            TimePickerNavArgs(
+                                title = title,
+                                initialTime = initial.toKotlinLocalDateTime().time,
+                                clearable = false,
+                                tag = stationId to forPoint,
+                            )
+                        )
+                    },
+                    Modifier.padding(horizontal = 4.dp)
+                )
+
+                Spacer(Modifier.height(20.dp))
+            }
         }
 
-        // Name
-        Text(
-            title,
-            style=MaterialTheme.typography.displaySmall,
-            modifier=Modifier.padding(horizontal=10.dp)
-        )
-
-        Spacer(Modifier.height(10.dp))
-
-        // Stops (arrive; depart; station)
-        EditStops(
-            stopsList,
-            onEditTime = { stationId, forPoint, title, initial ->
-                onNavigate(
-                    TimePickerNavArgs(
-                        title = title,
-                        initialTime = initial.toKotlinLocalDateTime().time,
-                        clearable = false,
-                        tag = stationId to forPoint,
-                    )
-                )
-            },
-            padding = PaddingValues(horizontal=10.dp)
-        )
     }
 }
 
@@ -327,7 +342,7 @@ private fun EditRollingStockIcon(
                 else R.drawable.ic_dropdown
             ),
             sizeRatio = 1/2f,
-            overlapRatio = 1/2f,
+            overlapRatio = 4/5f,
             modifier = Modifier
                 .size(72.dp + 20.dp)
                 .clip(MaterialTheme.shapes.large) // clip the ripple
@@ -337,6 +352,9 @@ private fun EditRollingStockIcon(
             Icon(
                 painterResource(AppIcons.Trainset(trainsetSelection)),
                 "Trainset: ${trainsetSelection ?: "none selected"}",
+                tint = trainsetSelection
+                    ?.let { LocalContentColor.current }
+                    ?: MaterialTheme.colorScheme.error
             )
         }
         ExposedDropdownMenu(
@@ -365,7 +383,6 @@ private fun EditRollingStockIcon(
 
 typealias StationTimeField = Pair<Int, StopPoint>
 
-
 @Composable
 private fun EditStops(
     stops: SnapshotStateList<ServiceStop>,
@@ -382,7 +399,7 @@ private fun EditStops(
     var selectingStationForIndex by remember { mutableStateOf<Int?>(null) }
 
     // Intermediately, first + last stops are allowed to have times;
-    // however, TODO these will be removed upon save.
+    // however, these will be removed upon save.
 
     val discreteGridControl = remember { DiscreteGridControl() }
 
@@ -412,34 +429,19 @@ private fun EditStops(
 
         // TODO remove arrival or departure field + clear it for the first or last
         // TODO find an ID that does not change no matter how we modify the stop
-        ElevatingReorderableItem(isDragging, stop.stationId) {
+        ElevatingReorderableItem(isDragging, stop.stationId, color = Transparent) {
             DiscreteGridRow(
                 discreteGridControl = discreteGridControl,
                 Modifier
                     .height(IntrinsicSize.Min)
                     .fillMaxWidth()
-                    .padding(
-                        end =
-                            with(LocalLayoutDirection.current) {
-                                padding.calculateEndPadding(this)
-                            }
-                    ),
-                gap = 8.dp,
+                    .padding(padding.horizontalOnly()),
+                gap = 2.dp,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 ReorderDragHandle(
                     hapticFeedback,
-                    Modifier
-                        .padding(
-                            horizontal = 8.dp,
-                            vertical = 12.dp,
-                        )
-                        .sizeIn(
-                            minWidth =
-                                with(LocalLayoutDirection.current) {
-                                    padding.calculateStartPadding(this)
-                                }
-                        ),
+                    Modifier.padding(horizontal = 4.dp),
                 )
 
                 FormField(
@@ -495,11 +497,26 @@ private fun EditStops(
                         }
                     }
                     ?: Spacer(Modifier)
+
+                IconButton(
+                    { stops.removeAt(i) },
+                    Modifier.size(
+                        IconButtonDefaults.smallContainerSize(
+                            IconButtonDefaults.IconButtonWidthOption.Narrow
+                        )
+                    )
+                ) {
+                    Icon(
+                        painterResource(R.drawable.ic_trash),
+                        contentDescription = "Delete stop",
+                    )
+                }
             }
         }
 
     }
 
+    // Popup station search
     val textFieldState = rememberTextFieldState()
     val searchState = rememberSearchBarState(SearchBarValue.Expanded)
     selectingStationForIndex
@@ -599,6 +616,9 @@ private fun generateStopTimes(
     }
     throw IllegalArgumentException()
 }
+
+private fun List<ServiceStop>.isValid()
+    = indices.all { checkStopTimeValidity(it, this) }
 
 private fun checkStopTimeValidity(index: Int, stops: List<ServiceStop>): Boolean {
     val stop = stops[index]

@@ -2,6 +2,7 @@
 
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 import android.content.res.Resources
+import android.util.Log
 import com.google.android.gms.maps.model.LatLng
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import kotlinx.collections.immutable.persistentListOf
@@ -50,6 +51,7 @@ object BackendApi {
     )
 
     fun <T: Place> autocomplete_place(cls: KClass<T>, query: String): List<T> { //TODO this should not be loading entire stations. just the data we need
+        Log.d("BackendApi", "autocomplete_place: cls=$cls, query=$query")
         val candidates = ArrayList<Pair<Place, Double>>()
 
         if (cls.java.isAssignableFrom(Station::class.java)) {
@@ -67,6 +69,7 @@ object BackendApi {
     }
 
     fun autocomplete_pass_service(query: String): List<PassService> {
+        Log.d("BackendApi", "autocomplete_pass_service: query=$query")
         return dummyPassServices
             .sortedByDescending {
                 maxOf(
@@ -79,6 +82,7 @@ object BackendApi {
     }
 
     fun get_pass_service(id: Int): PassService {
+        Log.d("BackendApi", "get_pass_service: id=$id")
         dummyPassServices.forEach {
             if (it.id == id) return it
         }
@@ -86,6 +90,7 @@ object BackendApi {
     }
 
     fun get_area_info(id: Int): Area {
+        Log.d("BackendApi", "get_area_info: id=$id")
         dummyAreas.forEach {
             if (it.id == id) return it
         }
@@ -93,6 +98,7 @@ object BackendApi {
     }
 
     fun get_station_info(id: Int): Station {
+        Log.d("BackendApi", "get_station_info: id=$id")
         dummyStations.forEach {
             if (it.id == id) return it
         }
@@ -100,6 +106,7 @@ object BackendApi {
     }
 
     fun get_place_info(id: Int): Place {
+        Log.d("BackendApi", "get_place_info: id=$id")
         dummyStations.forEach {
             if (it.id == id) return it
         }
@@ -115,7 +122,8 @@ object BackendApi {
         destination: Place,
         departTime: Instant? = null,
         arriveTime: Instant? = null,
-    ) = sequence<Journey> {
+    ) = sequence {
+        Log.d("BackendApi", "get_journeys: origin=$origin, destination=$destination, departTime=$departTime, arriveTime=$arriveTime")
         // as a dummy fixture, we only have the one pass service.
         // we simply check if it fits the requested parameters
 
@@ -125,7 +133,7 @@ object BackendApi {
         for (service in dummyPassServices) {
             val (departureStop, arrivalStop) = dummyServiceStops
                 .filter { it.passServiceId == service.id }
-                .let {
+                .let { it ->
                     it.firstOrNull {
                         it.stationId == origin.id
                     } to it.firstOrNull {
@@ -155,6 +163,9 @@ object BackendApi {
             is Area -> stations_in_area(it)
             else -> emptyList()
         }.map { Pair(0u, it) }
+        .also {
+            Log.d("BackendApi", "find_best_station: it=$it, result=$it")
+        }
 
     internal fun stations_in_area(it: Area)
         = when(it) {
@@ -165,31 +176,50 @@ object BackendApi {
             Area(287, "'s-Gravenhage") -> listOf(dummyStations[2])
             Area(145, "Amsterdam") -> listOf(dummyStations[0])
             else -> emptyList()
+        }.also {
+            Log.d("BackendApi", "stations_in_area: it=$it, resultCount=${it.size}")
         }
 
-    fun get_nl_area() = get_area_info(1)
+    fun get_nl_area(): Area {
+        Log.d("BackendApi", "get_nl_area")
+        return get_area_info(1)
+    }
 
     // Must sort by arrival time before return
 
-    fun get_stops_of_service(service_id: Int): List<ServiceStop>
-        = dummyServiceStops
+    fun get_stops_of_service(service_id: Int): List<ServiceStop> {
+        Log.d("BackendApi", "get_stops_of_service: service_id=$service_id")
+        return dummyServiceStops
             .filter { it.passServiceId == service_id }
             .sortedBy { it.arrival }
-    fun get_stops_of_service(service: PassService) = get_stops_of_service(service.id)
+    }
 
-    fun get_stops_at_station(station_id: Int): List<ServiceStop>
-        = dummyServiceStops
+    fun get_stops_of_service(service: PassService): List<ServiceStop> {
+        Log.d("BackendApi", "get_stops_of_service: service=$service")
+        return get_stops_of_service(service.id)
+    }
+
+    fun get_stops_at_station(station_id: Int): List<ServiceStop> {
+        Log.d("BackendApi", "get_stops_at_station: station_id=$station_id")
+        return dummyServiceStops
             .filter { it.stationId == station_id }
             .sortedBy { it.arrival }
-    fun get_stops_at_station(station: Station) = get_stops_at_station(station.id)
+    }
 
-    fun get_stops(service_id: Int, station_id: Int): ServiceStop
-        = dummyServiceStops
+    fun get_stops_at_station(station: Station): List<ServiceStop> {
+        Log.d("BackendApi", "get_stops_at_station: station=$station")
+        return get_stops_at_station(station.id)
+    }
+
+    fun get_stops(service_id: Int, station_id: Int): ServiceStop {
+        Log.d("BackendApi", "get_stops: service_id=$service_id, station_id=$station_id")
+        return dummyServiceStops
             .filter { it.passServiceId == service_id }
-            .filter { it.stationId == station_id }
-            .first()
+            .first { it.stationId == station_id }
+    }
 
     fun edit_station(id: Int, name: String? = null, address: String? = null, geom: LatLng? = null) {
+        Log.d("BackendApi", "SAVING: edit_station: id=$id, name=$name, address=$address, geom=$geom")
         val index = dummyStations.indexOfFirst { it.id == id }
         require(index > 0)
 
@@ -203,6 +233,7 @@ object BackendApi {
     }
 
     fun edit_area(id: Int, name: String? = null) {
+        Log.d("BackendApi", "SAVING: edit_area: id=$id, name=$name")
         val index = dummyAreas.indexOfFirst { it.id == id }
         require(index > 0)
         val old = dummyAreas[index]
@@ -212,16 +243,19 @@ object BackendApi {
         )
     }
 
-    fun add_pass_service(title: String, trainset: Trainset, amenities: Set<TrainAmenity>, stops: List<ServiceStop>)
-        = PassService(
+    fun add_pass_service(title: String, trainset: Trainset, amenities: Set<TrainAmenity>, stops: List<ServiceStop>): PassService {
+        Log.d("BackendApi", "SAVING: add_pass_service: title=$title, trainset=$trainset, amenities=$amenities, stopCount=${stops.size}")
+        return PassService(
             id = (dummyPassServices.maxOfOrNull { it.id } ?: -1) + 1,
             title,
             trainset,
             amenities,
             stops
         ).also { dummyPassServices.add(it) }
+    }
 
     fun delete_pass_service(id: Int) {
+        Log.d("BackendApi", "SAVING: delete_pass_service: id=$id")
         dummyServiceStops.removeAll { it.passServiceId == id }
         dummyPassServices.removeAll { it.id == id }
     }
@@ -232,6 +266,7 @@ object BackendApi {
         amenities: Set<TrainAmenity>? = null,
         stops: List<ServiceStop>? = null,
     ) {
+        Log.d("BackendApi", "SAVING: update_pass_service: serviceId=$serviceId, trainset=$trainset, amenities=$amenities, stopCount=${stops?.size ?: "null"}")
         val serviceIndex = dummyPassServices.indexOfFirst { it.id == serviceId }
         val oldService = dummyPassServices[serviceIndex]
         val oldStops = dummyServiceStops.filter { it.passServiceId == serviceId }
@@ -266,6 +301,7 @@ object BackendApi {
      * @param stops: List of stops for one [PassService]. Does not need to be sorted.
      */
     fun check_stops_consistency(stops: List<ServiceStop>) {
+        Log.d("BackendApi", "check_stops_consistency: stopCount=${stops.size}")
         require(stops.map { it.passServiceId }.toSet().size == 1 )
         require(stops.map { it.stationId }.toSet().size == stops.size )
         require(

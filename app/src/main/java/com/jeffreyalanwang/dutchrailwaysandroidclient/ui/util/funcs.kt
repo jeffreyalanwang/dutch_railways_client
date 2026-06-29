@@ -27,6 +27,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.LookaheadScope
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.layout
@@ -79,6 +80,8 @@ fun DpOffset.toPx()
 context(density: Density)
 fun IntSize.toDp()
     = with(density) { DpSize(x.toDp(), y.toDp()) }
+
+val Color.Companion.Gold get() = Color(239, 191, 4)
 
 fun Modifier.providesWindowInsets(block: (WindowInsets) -> Unit)
     = onGloballyPositioned {
@@ -281,8 +284,8 @@ fun IntRect.movedInto(
     yOverflow: Int = 0,
 ) = if (this in bounds) this
     else this.translatedTo(
-        left = xRange.movedInto(bounds.xRange, overflowStart = -100).start,//xOverflow).first,
-        top = yRange.movedInto(bounds.yRange, overflowStart = -100).start,//yOverflow).first,
+        left = xRange.movedInto(bounds.xRange, overflowStart = -100).first,//xOverflow).first,
+        top = yRange.movedInto(bounds.yRange, overflowStart = -100).first,//yOverflow).first,
     )
 
 /**

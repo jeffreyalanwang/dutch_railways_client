@@ -167,7 +167,7 @@ class PredictiveBackDialogSceneStrategy<T : Any> : SceneStrategy<T> {
          *
          * @param dialogProperties properties that should be passed to the containing [PredictiveBackDialog].
          */
-        public fun predictiveBackDialog(
+        fun predictiveBackDialog(
             dialogProperties: DialogProperties = DialogProperties()
         ): Map<String, Any> = mapOf(PB_DIALOG_KEY to dialogProperties)
 

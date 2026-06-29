@@ -1,3 +1,5 @@
+@file:Suppress("FunctionName")
+
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util
 
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
@@ -9,13 +11,12 @@ import java.time.temporal.TemporalAccessor
 import kotlin.time.Duration
 
 object AppStringFormats {
-    fun Time(time: TemporalAccessor)
-        = DateTimeFormatter
+    fun Time(time: TemporalAccessor): String =
+        DateTimeFormatter
             .ofLocalizedTime(FormatStyle.SHORT)
             .format(time)
 
-    fun Time(time: LocalTime)
-        = Time(time.toJavaLocalTime())
+    fun Time(time: LocalTime): String = Time(time.toJavaLocalTime())
 
 
     fun TripDuration(duration: Duration): String {

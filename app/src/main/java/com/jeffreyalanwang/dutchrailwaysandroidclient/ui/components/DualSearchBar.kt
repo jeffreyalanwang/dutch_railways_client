@@ -525,7 +525,7 @@ class DualSearchBarState private constructor(
                     }
             ) },
             restore = {
-                val expanded = SearchBarId.entries.get(it["expanded"] as Int)
+                val expanded = SearchBarId.entries[it["expanded"] as Int]
                 val textFields = (it["textFields"] as List<*>)
                     .map{ savedTextFieldState ->
                         with (TextFieldState.Saver) { restore(savedTextFieldState!!)!! }

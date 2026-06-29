@@ -81,7 +81,7 @@ private fun get_journeys_min_arrival_time(
     origin: Int,
     destination: Int,
     edges: List<Pair<ServiceStop, ServiceStop>>
-) = sequence<Journey> {
+) = sequence {
     var _edges = edges
 
     // minimize final arrival time.
@@ -170,11 +170,9 @@ private fun trace_edges(
     }
 
     val flattened = buf
-        .groupByContinuous { it.first.passServiceId }
-        .map { (key, values) ->
+        .groupByContinuous { it.first.passServiceId }.flatMap { (key, values) ->
             listOf(values.first().first, values.last().second)
         }
-        .flatten()
 
     return Journey(flattened.toImmutableList())
 }

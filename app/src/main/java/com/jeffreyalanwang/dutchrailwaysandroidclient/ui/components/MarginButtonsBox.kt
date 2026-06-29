@@ -37,7 +37,7 @@ fun MarginButtonsBox(
         verticalAlignment = verticalAlignment,
         horizontalArrangement = Arrangement.Center,
     ) {
-        if (left ?: right == null) {
+        if ((left ?: right) == null) {
             Box(content = content)
         } else {
             var minMarginWidth by remember { mutableIntStateOf(0) } // in px; used to adjust when button only exists on one side

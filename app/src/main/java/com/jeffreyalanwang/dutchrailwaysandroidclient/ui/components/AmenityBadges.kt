@@ -25,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateMapOf
@@ -47,14 +46,11 @@ import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.positionInWindow
-import androidx.compose.ui.node.ModifierNodeElement
-import androidx.compose.ui.node.ParentDataModifierNode
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontStyle.Companion.Italic
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -67,19 +63,20 @@ import androidx.compose.ui.window.Popup
 import androidx.compose.ui.window.PopupProperties
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
-import com.jeffreyalanwang.dutchrailwaysandroidclient.associateWithIndexed
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letIf
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letWith
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ExpandableBadgeSetUtilScope.Target
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.Gold
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.animateIntOffsetAsState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.asRectInWindow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.copy
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.id
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.movedInto
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.shift
 import com.jeffreyalanwang.dutchrailwaysandroidclient.zipOnKeys
 
-@Preview(widthDp = 300, heightDp = 200)
+@Preview(widthDp = 300, heightDp = 500)
 @Composable
 private fun AmenityBadgePreview() {
     var amenities by remember { mutableStateOf(TrainAmenity.entries.toSet()) }
@@ -183,6 +180,17 @@ fun AmenityBadgeSet(
     bgColor,
 )
 
+private sealed interface PreparingForModification {
+    data class Delete(val amenity: TrainAmenity): PreparingForModification
+    data object Add: PreparingForModification
+}
+private sealed interface BadgeInfo {
+    data class Display(val amenity: TrainAmenity): BadgeInfo
+    data class Delete(val amenity: TrainAmenity): BadgeInfo
+    data object BeginAdd: BadgeInfo
+    data class Add(val amenity: TrainAmenity): BadgeInfo
+}
+
 @SuppressLint("ModifierParameter")
 @Composable
 private fun AmenityBadgeSetBase(
@@ -202,22 +210,18 @@ private fun AmenityBadgeSetBase(
         "No amenities",
         color = color,
         fontStyle = Italic,
-        modifier = contentModifier.padding(vertical = 5.dp),
+        modifier = contentModifier.padding(vertical = 5.dp)
+                .clickable(null, null) { onSetExpanded(!isExpanded) },
     )
 
     val isModifiable = (onModify != null)
-    var confirmDeleteOf by
+    /** Single source of truth for next operation allowed by this composable. */
+    var preparingForModification by
         remember(
             isExpanded, // Reset to null when collapsed
             isModifiable,
             amenities.size
-        ) { mutableStateOf<Int?>(null) }
-
-    /** Flips the [confirmDeleteOf] state between null and not null. */
-    fun toggleConfirmDelete(index: Int) {
-        confirmDeleteOf = if (confirmDeleteOf == null) index
-                          else null
-    }
+        ) { mutableStateOf<PreparingForModification?>(null) }
 
     val gap = (-1 * (1 - badgeContentProportion) * collapsedBadgeSize / 2)
 
@@ -232,57 +236,120 @@ private fun AmenityBadgeSetBase(
         collapsedGap = gap,
         expandedGap = -gap,
         badgesToLabels =
-            amenities.associateWithIndexed { i, it ->
-                val isConfirmingDelete = (confirmDeleteOf == i)
+            amenities.toList()
+            .map {
+                if (
+                    (preparingForModification as? PreparingForModification.Delete)
+                    ?.amenity == it
+                )   BadgeInfo.Delete(it)
+                else BadgeInfo.Display(it)
+            }
+            .plus(
+                when (preparingForModification) {
+                    null if isModifiable
+                            && TrainAmenity.entries.size != amenities.size ->
+                        listOf(BadgeInfo.BeginAdd)
+                    is PreparingForModification.Add ->
+                        (TrainAmenity.entries.toSet() - amenities)
+                        .map { BadgeInfo.Add(it) }
+                    else ->
+                        emptyList()
+                }
+            )
+            .associateWith { badge: BadgeInfo ->
 
-                val badge = @Composable {
-                    if (!isConfirmingDelete) AmenityBadge(
-                        it,
-                        modifier = Modifier
-                            .letIf<Modifier>(isExpanded && isModifiable) { m ->
-                                m.clickable { toggleConfirmDelete(i) }
-                            },
-                        color = color,
-                        bgColor = bgColor
-                    )
-                    else DeleteBadge(
-                        Modifier
-                            // [DeleteBadge] can always assume
-                            // [isExpanded == true && isModifiable == true]
-                            .clickable {
-                                onModify!!(amenities.minus(it))
-                            }
-                    )
+                val badgeComposable = @Composable {
+                    when (badge) {
+                        is BadgeInfo.Display ->
+                            AmenityBadge(
+                                badge.amenity,
+                                modifier = Modifier
+                                    .letIf<Modifier>(isExpanded && isModifiable) { m ->
+                                        m.clickable {
+                                            preparingForModification =
+                                                if (preparingForModification == null)
+                                                    PreparingForModification.Delete(
+                                                        badge.amenity
+                                                    )
+                                                else null
+                                        }
+                                    },
+                                color = color,
+                                bgColor = bgColor
+                            )
+                        is BadgeInfo.Delete ->
+                            DeleteBadge(
+                                Modifier
+                                    // [DeleteBadge] can always assume
+                                    // [isExpanded == true && isModifiable == true]
+                                    .clickable {
+                                        onModify!!(amenities - badge.amenity)
+                                    }
+                            )
+                        is BadgeInfo.BeginAdd ->
+                            BeginAddBadge(
+                                Modifier
+                                    .clickable {
+                                        preparingForModification =
+                                            PreparingForModification.Add
+                                    }
+                            )
+                        is BadgeInfo.Add ->
+                            AddBadge(
+                                badge.amenity,
+                                modifier = Modifier
+                                    .clickable {
+                                        onModify!!(amenities - badge.amenity)
+                                    },
+                            )
+                    }
                 }
 
-                val label = @Composable {
+                val labelComposable = @Composable {
                     Text(
-                        if (confirmDeleteOf != i) it.friendlyName
-                        else "Delete ${it.friendlyName}?",
+                        when (badge) {
+                            is BadgeInfo.Display -> badge.amenity.friendlyName
+                            is BadgeInfo.Delete -> "Delete ${badge.amenity.friendlyName}?"
+                            is BadgeInfo.BeginAdd -> "Add..."
+                            is BadgeInfo.Add -> "Add ${badge.amenity.friendlyName}"
+                        },
 
                         style = MaterialTheme.typography.labelLarge,
                         softWrap = false,
                         maxLines = 1,
                         modifier = Modifier
                             // Can always assume [isExpanded == true]
-                            .letIf<Modifier>(isModifiable) { m ->
-                                m.clickable { toggleConfirmDelete(i) }
+                            .let { m ->
+                                when (badge) {
+                                    is BadgeInfo.Display ->
+                                        m.clickable {
+                                            preparingForModification =
+                                                PreparingForModification.Delete(badge.amenity)
+                                        }
+                                    is BadgeInfo.Delete ->
+                                        m.clickable {
+                                            preparingForModification = null
+                                        }
+                                    is BadgeInfo.BeginAdd ->
+                                        m.clickable {
+                                            preparingForModification =
+                                                PreparingForModification.Add
+                                        }
+                                    is BadgeInfo.Add ->
+                                        m.clickable {
+                                            onModify!!(amenities - badge.amenity)
+                                        }
+                                }
                             },
                     )
                 }
 
-                badge to label
+                badgeComposable to labelComposable
             }
     )
 }
 
-/**
- *  Handles visual effects.
- *  @param collapsedBadgeSize
- *  @param expandedBadgeSize
- *      These two parameters describe the size the badge slots will voluntarily
- *      be, not the size to which they should be coerced by this composable.
- */
+/** Handles visual effects. */
 @SuppressLint("ModifierParameter")
 @Composable
 private fun ExpandableBadgeSet(
@@ -295,7 +362,7 @@ private fun ExpandableBadgeSet(
     containerModifier: Modifier = Modifier,
     collapsedGap: Dp = 0.dp,
     expandedGap: Dp = 0.dp,
-    badgesToLabels: Map<TrainAmenity, Pair<@Composable () -> Unit, @Composable () -> Unit>>,
+    badgesToLabels: Map<BadgeInfo, Pair<@Composable () -> Unit, @Composable () -> Unit>>,
 ) = with (ExpandableBadgeSetUtilScope) {
 
     var animatingTo by remember(isExpanded) {
@@ -311,7 +378,7 @@ private fun ExpandableBadgeSet(
     val (motionSpecX, motionSpecY, motionSpecSize) = getMotionSpecs(animatingTo)
 
     /** Coordinates (in Px) of each item. */
-    val destLocations = remember { mutableStateMapOf<TrainAmenity, IntOffset>() }
+    val destLocations = remember { mutableStateMapOf<Any, IntOffset>() }
     val destBadgeSize = (if (!isExpanded) collapsedBadgeSize else expandedBadgeSize)
         .letWith(LocalDensity.current) { it.roundToPx() }
     val destPopupOffset = popupOffsetFromContainer(
@@ -339,9 +406,9 @@ private fun ExpandableBadgeSet(
      * for x & y axes; however, that would require access to several complex
      * internal/private components behind Compose animation API.
      */
-    val animLocations: Map<TrainAmenity, IntOffset> =
-        destLocations.mapValues { (amenity, coords) ->
-            key(amenity) {
+    val animLocations: Map<Any, IntOffset> =
+        destLocations.mapValues { (id, coords) ->
+            key(id) {
                 animateIntOffsetAsState(coords, motionSpecX to motionSpecY)
                     { onAnimComplete() }
             }
@@ -395,9 +462,9 @@ private fun ExpandableBadgeSet(
                 modifier = contentModifier
                     .clickable(null, null) { onSetExpanded(!isExpanded) },
                 content = {
-                    for ((amenity, composables) in badgesToLabels) {
+                    for ((id, composables) in badgesToLabels) {
                         Item(
-                            id = amenity,
+                            id = id,
                             badge = composables.first,
                             label = composables.second,
                             isExpanded = isExpanded,
@@ -411,7 +478,7 @@ private fun ExpandableBadgeSet(
                     width = if (!isExpanded) animBadgeSize else null,
                 )
                 val placeables = measurables.fastMap { it.measure(itemConstraints) }
-                val placeablesWithId = placeables.map { it.amenity to it }
+                val placeablesWithId = placeables.map { it.id!! to it }
 
                 // Calculate destination (i.e. non-animated) position values
                 val template =
@@ -453,14 +520,14 @@ private object ExpandableBadgeSetUtilScope {
      */
     @Composable
     fun Item(
-        id: TrainAmenity,
+        id: Any,
         badge: @Composable () -> Unit,
         label: @Composable () -> Unit,
         isExpanded: Boolean,
         badgeLabelGap: Dp,
-    ) = with(AmenityModifierScope) {
+    ) {
         Row(
-            Modifier.id(amenity = id),
+            Modifier.id(id),
             Arrangement.Start,
             Alignment.CenterVertically,
         ) {
@@ -517,9 +584,6 @@ private object ExpandableBadgeSetUtilScope {
         )
     }
 
-    val Placeable.amenity
-        get() = this.parentData as TrainAmenity
-
     /** @return motionSpecX, motionSpecY, motionSpecSize */
     @Composable
     fun getMotionSpecs(animatingTo: Target)
@@ -561,26 +625,6 @@ private object ExpandableBadgeSetUtilScope {
         return actual.topLeft
     }
 
-    private object AmenityModifierScope {
-        fun Modifier.id(amenity: TrainAmenity) =
-            this then AmenityIdModifierElement(amenity)
-
-        @Immutable
-        data class AmenityIdModifierElement(val amenity: TrainAmenity) :
-            ModifierNodeElement<AmenityIdModifierNode>() {
-            override fun create() = AmenityIdModifierNode(amenity)
-            override fun update(node: AmenityIdModifierNode) {
-                node.amenity = this.amenity
-            }
-        }
-
-        class AmenityIdModifierNode(var amenity: TrainAmenity) :
-            ParentDataModifierNode, Modifier.Node() {
-            override fun Density.modifyParentData(parentData: Any?): Any =
-                amenity
-        }
-    }
-
     enum class LayoutAxis { Row, Column }
     val Row get() = LayoutAxis.Row
     val Column get() = LayoutAxis.Column
@@ -595,11 +639,12 @@ private object ExpandableBadgeSetUtilScope {
      *      - Coordinates of each placeable
      *      - Total size of parent composable
      */
+    @Suppress("FunctionName")
     fun <K> basicLinearLayout(
         layout: LayoutAxis,
         keyedPlaceables: List<Pair<K, Placeable>>,
         gapPx: Int,
-    ): Pair<MutableMap<K, IntOffset>, IntSize> {
+    ): Pair<Map<K, IntOffset>, IntSize> {
         // width-height to axis-crossaxis
         fun xy_to_ac(x: Int, y: Int) = when (layout) {
             LayoutAxis.Row -> arrayOf(x, y)
@@ -636,6 +681,17 @@ private fun AmenityBadge(
     color: Color = LocalContentColor.current,
     bgColor: Color = Transparent,
 ) = Badge(AppIcons.Amenity(amenity), amenity.friendlyName, modifier, color, bgColor)
+
+@Composable
+private fun BeginAddBadge(
+    modifier: Modifier = Modifier,
+) = Badge(R.drawable.ic_add, "Add", modifier, White, Color.Gold, 0f)
+
+@Composable
+private fun AddBadge(
+    amenity: TrainAmenity,
+    modifier: Modifier = Modifier,
+) = Badge(AppIcons.Amenity(amenity), "Add ${amenity.friendlyName}", modifier, White, Color.Gold, 0f)
 
 @Composable
 private fun DeleteBadge(

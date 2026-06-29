@@ -66,17 +66,16 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArg
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PlaceDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TimePickerNavArgs
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphChildNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderGraphNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TripFinderStartNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.AppBarWithDualSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.TimePicker
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.rememberDualSearchBarState
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.AreaDetailWithoutMap
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.JourneyDetailWithoutMap
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.PassServiceDetail
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens.StationDetailWithoutMap
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.AreaDetailWithoutMap
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.JourneyDetailWithoutMap
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.PassServiceDetail
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.StationDetailWithoutMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.JourneyList
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.ExpandedSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
@@ -141,7 +140,7 @@ private fun TripFinderScreenPreview() {
 fun TripFinderScreen(
     navArgs: TripFinderGraphNavArgs,
     viewModel: TripFinderViewModel,
-    onNavigateMinor: (TripFinderGraphChildNavArgs)->Unit,
+    onNavigateMinor: (TripFinderGraphNavArgs)->Unit,
 ) {
     // This composable can only navigate to major routes by triggering changes
     // in [viewModel]. However, it is allowed to navigate to minor routes
@@ -234,7 +233,7 @@ fun TripFinderScreen(
             },
         mapMarkers = when (navArgs) {
                 is TripFinderStartNavArgs
-                    -> emptyList<Place>()
+                    -> emptyList()
                 is PlaceDetailNavArgs
                     -> setOfNotNull(viewModelState.origin, viewModelState.destination, subjectPlace)
                 is JourneyListNavArgs

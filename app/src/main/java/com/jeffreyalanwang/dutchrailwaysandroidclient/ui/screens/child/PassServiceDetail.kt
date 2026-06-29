@@ -1,4 +1,4 @@
-package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.detailScreens
+package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
