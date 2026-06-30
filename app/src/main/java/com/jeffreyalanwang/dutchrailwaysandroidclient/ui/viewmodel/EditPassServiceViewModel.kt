@@ -78,7 +78,7 @@ data class TentativeStop(
 }
 
 interface EditPassServiceStopsModel {
-    val stopsList: List<TentativeStop>
+    val stops: List<TentativeStop>
     val stationValidity: List<Boolean>
     val arrivalTimeValidity: List<Boolean>
     val departureTimeValidity: List<Boolean>
@@ -100,16 +100,17 @@ interface EditPassServiceStopsModel {
  */
 private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceStopsModel {
 
-    override val stopsList: SnapshotStateList<TentativeStop> =
+    val _stops: SnapshotStateList<TentativeStop> =
         ( basedOnStops ?: emptyList() )
             .map { TentativeStop(it) }
             .toMutableStateList()
+    override val stops get() = _stops.toList()
 
     override val stationValidity: List<Boolean>
         by derivedStateOf {
-            stopsList.map {
+            _stops.map {
                 it.stationId != null &&
-                stopsList
+                _stops
                     .count { other -> other.stationId == it.stationId }
                     .equals(1)
             }
@@ -117,7 +118,7 @@ private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceSt
 
     private val _timeValidity
         by derivedStateOf {
-            val stopTimeValidity = stopsList
+            val stopTimeValidity = _stops
                 .map { it.arrival to it.departure }
                 .runFlattened {
                     val singleCriteria = this.run {
@@ -152,21 +153,21 @@ private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceSt
         by derivedStateOf { _timeValidity.second }
 
     override fun updateStation(index: Int, newStation: Station) {
-        stopsList.replaceAt(index) { stop ->
+        _stops.replaceAt(index) { stop ->
             stop.copy(stationId = newStation.id)
         }
     }
 
     override fun updateStopTime(stopId: Int, forPoint: StopPoint, time: LocalTime, shiftFollowing: Boolean) {
-        val (stopIndex, oldStop) = stopsList.withIndex().find { it.value.id == stopId } ?: return
+        val (stopIndex, oldStop) = _stops.withIndex().find { it.value.id == stopId } ?: return
 
         // Convert to a ZonedDateTime
-        val tz = stopsList
+        val tz = _stops
             .firstNotNullOfOrNull { it.zoneId }
             ?.toKotlinTimeZone()
             ?: TimeZone.currentSystemDefault()
 
-        val date = stopsList
+        val date = _stops
             .firstNotNullOfOrNull {
                 (it.arrival ?: it.departure)
                     ?.toKotlinLocalDateTime()
@@ -182,7 +183,7 @@ private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceSt
             StopPoint.Arrival -> oldStop.copy(arrival = zonedDateTime)
             StopPoint.Departure -> oldStop.copy(departure = zonedDateTime)
         }
-        stopsList[stopIndex] = newStop
+        _stops[stopIndex] = newStop
 
         if (shiftFollowing) {
             val (oldTime, newTime) =
@@ -195,12 +196,12 @@ private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceSt
 
             // Shift this stop's depart time, if we just changed arrival
             if (forPoint == StopPoint.Arrival) {
-                stopsList[stopIndex] = stopsList[stopIndex].run {
+                _stops[stopIndex] = _stops[stopIndex].run {
                     copy(departure = departure?.plus(delta))
                 }
             }
             // Shift all following stops' times
-            stopsList.subList(stopIndex + 1, stopsList.size)
+            _stops.subList(stopIndex + 1, _stops.size)
                 .replaceAll { stop ->
                     stop.copy(
                         arrival = stop.arrival?.let { it + delta },
@@ -211,17 +212,17 @@ private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceSt
     }
 
     override fun addStop() {
-        stopsList.add(
+        _stops.add(
             TentativeStop()
         )
     }
 
     override fun removeStop(index: Int) {
-        stopsList.removeAt(index)
+        _stops.removeAt(index)
     }
 
     override fun reorderStops(iFrom: Int, iTo: Int) {
-        stopsList.run {
+        _stops.run {
             val item = removeAt(iFrom)
             add(iTo, item)
         }
@@ -237,7 +238,7 @@ private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceSt
             return null
         }
 
-        val finalStops = stopsList
+        val finalStops = _stops
             .updateFirst { it.copy(arrival = null) }
             .updateLast { it.copy(departure = null) }
             .map {
@@ -259,9 +260,9 @@ private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceSt
 
         val oldTimes = this.arrival to this.departure
 
-        val thisIndex = stopsList.indexOfFirst { it.id == this.id }
-        val prevDepart = stopsList.take(thisIndex).lastNotNullOfOrNull { it.departure }
-        val nextArrive = stopsList.drop(thisIndex + 1).firstNotNullOfOrNull { it.arrival }
+        val thisIndex = _stops.indexOfFirst { it.id == this.id }
+        val prevDepart = _stops.take(thisIndex).lastNotNullOfOrNull { it.departure }
+        val nextArrive = _stops.drop(thisIndex + 1).firstNotNullOfOrNull { it.arrival }
         val bounds = prevDepart to nextArrive
 
         val times =
@@ -272,7 +273,7 @@ private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceSt
             .map { suggested ->
                 suggested.toZonedDateTime(
                     this.zoneId
-                        ?: stopsList.firstNotNullOfOrNull { it.zoneId }
+                        ?: _stops.firstNotNullOfOrNull { it.zoneId }
                         ?: TimeZone.currentSystemDefault().toJavaZoneId()
                 )
             }
@@ -379,7 +380,7 @@ class EditPassServiceViewModel private constructor(
         }
         ?: "Train"
     val title by derivedStateOf {
-            val destStationSuffix = stopsList
+            val destStationSuffix = stops
                 .lastNotNullOfOrNull { it.getStation() }
                 ?.run { " to $name" }
 

@@ -112,7 +112,7 @@ private fun EditPassServiceScreenPreview(serviceId: Int = 119) {
                 joinToString( "\t\n",
                     "Finished: $title ($trainsetSelection)",
                         "$amenitiesMultiSelection",
-                        "$stopsList",
+                        "$stops",
                 )
             )
         } },
@@ -325,7 +325,7 @@ private fun EditStops(
     padding: PaddingValues = PaddingValues.Zero,
     hapticFeedback: HapticFeedback? = LocalHapticFeedback.current,
 ) {
-    val stops = viewModel.stopsList
+    val stops = viewModel.stops
     var selectingStationForIndex by remember { mutableStateOf<Int?>(null) }
     var selectingTimeForIndex by remember { mutableStateOf<Pair<Int, StopPoint>?>(null) }
 
@@ -361,13 +361,12 @@ private fun EditStops(
                         isError = !viewModel.stationValidity[i],
                         modifier = Modifier.fill()
                     ) {
-                        stop.getStation()?.let {
-                            Text(
-                                it.name,
-                                softWrap = false,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
+
+                        Text(
+                            stop.getStation()?.name ?: "",
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
+                        )
                     }
 
                     if (i == 0 && stop.arrival == null) Spacer(Modifier) else {
@@ -380,9 +379,11 @@ private fun EditStops(
                             },
                             modifier = Modifier.alpha(if (enabled) 1f else .5f)
                         ) {
-                            stop.arrival?.let {
-                                Text(AppStringFormats.Time(it))
-                            }
+                            Text(
+                                stop.arrival
+                                    ?.let { AppStringFormats.Time(it) }
+                                    ?: ""
+                            )
                         }
                     }
 
@@ -396,9 +397,11 @@ private fun EditStops(
                             },
                             modifier = Modifier.alpha(if (enabled) 1f else .5f)
                         ) {
-                            stop.departure?.let {
-                                Text(AppStringFormats.Time(it))
-                            }
+                            Text(
+                                stop.departure
+                                    ?.let { AppStringFormats.Time(it) }
+                                    ?: ""
+                            )
                         }
                     }
 
