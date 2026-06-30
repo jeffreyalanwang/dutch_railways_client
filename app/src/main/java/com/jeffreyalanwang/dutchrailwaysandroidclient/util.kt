@@ -448,6 +448,12 @@ fun <T, U: Comparable<U>> timesSorted(
     }
 }
 
+fun <T> MutableList<T>.replaceSubList(start: Int, endExclusive: Int = size, block: (T)->T) {
+    for (i in start until endExclusive) {
+        this[i] = block(this[i])
+    }
+}
+
 fun <T> MutableList<T>.replaceAt(index: Int, block: (T)->T) {
     this[index] = block(this[index])
 }

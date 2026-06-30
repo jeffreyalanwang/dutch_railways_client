@@ -18,6 +18,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.minus
 import com.jeffreyalanwang.dutchrailwaysandroidclient.plus
 import com.jeffreyalanwang.dutchrailwaysandroidclient.propagateNull
 import com.jeffreyalanwang.dutchrailwaysandroidclient.replaceAt
+import com.jeffreyalanwang.dutchrailwaysandroidclient.replaceSubList
 import com.jeffreyalanwang.dutchrailwaysandroidclient.runFlattened
 import com.jeffreyalanwang.dutchrailwaysandroidclient.runningFoldMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.runningFoldMapReversed
@@ -84,7 +85,7 @@ interface EditPassServiceStopsModel {
     val departureTimeValidity: List<Boolean>
 
     fun updateStation(index: Int, newStation: Station)
-    fun updateStopTime(stopId: Int, forPoint: StopPoint, time: LocalTime, shiftFollowing: Boolean = false)
+    fun updateStopTime(index: Int, forPoint: StopPoint, time: LocalTime, shiftFollowing: Boolean = false)
     fun TentativeStop.suggestedTime(point: StopPoint): ZonedDateTime
 
     fun addStop()
@@ -158,8 +159,8 @@ private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceSt
         }
     }
 
-    override fun updateStopTime(stopId: Int, forPoint: StopPoint, time: LocalTime, shiftFollowing: Boolean) {
-        val (stopIndex, oldStop) = _stops.withIndex().find { it.value.id == stopId } ?: return
+    override fun updateStopTime(index: Int, forPoint: StopPoint, time: LocalTime, shiftFollowing: Boolean) {
+        val oldStop = _stops[index]
 
         // Convert to a ZonedDateTime
         val tz = _stops
@@ -183,7 +184,7 @@ private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceSt
             StopPoint.Arrival -> oldStop.copy(arrival = zonedDateTime)
             StopPoint.Departure -> oldStop.copy(departure = zonedDateTime)
         }
-        _stops[stopIndex] = newStop
+        _stops[index] = newStop
 
         if (shiftFollowing) {
             val (oldTime, newTime) =
@@ -196,18 +197,18 @@ private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceSt
 
             // Shift this stop's depart time, if we just changed arrival
             if (forPoint == StopPoint.Arrival) {
-                _stops[stopIndex] = _stops[stopIndex].run {
+                _stops[index] = _stops[index].run {
                     copy(departure = departure?.plus(delta))
                 }
             }
             // Shift all following stops' times
-            _stops.subList(stopIndex + 1, _stops.size)
-                .replaceAll { stop ->
+            _stops.replaceSubList(index + 1) { stop ->
                     stop.copy(
                         arrival = stop.arrival?.let { it + delta },
                         departure = stop.departure?.let { it + delta },
                     )
                 }
+
         }
     }
 

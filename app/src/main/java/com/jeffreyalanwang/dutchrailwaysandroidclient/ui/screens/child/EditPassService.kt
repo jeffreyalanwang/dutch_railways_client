@@ -477,7 +477,7 @@ private fun EditStops(
                     StopPoint.Arrival -> stop.arrival
                     StopPoint.Departure -> stop.departure
                 }
-        var shiftFollowing by remember { mutableStateOf(true) }
+        var shiftFollowing by remember { mutableStateOf(hadPreviousValue) }
 
         PredictiveBackDialog(onDismissRequest = { selectingTimeForIndex = null }) {
             TimePickerWithExtras(
@@ -490,7 +490,7 @@ private fun EditStops(
                 title =
                     "Edit ${
                         when (forPoint) {
-                            StopPoint.Arrival -> "arrival"
+                            StopPoint.Arrival ->   "arrival"
                             StopPoint.Departure -> "departure"
                         }
                     } time for ${
@@ -502,7 +502,8 @@ private fun EditStops(
                     Checkbox(shiftFollowing, { shiftFollowing = it })
                     Text(
                         "Shift following times",
-                        Modifier.clickable { shiftFollowing = !shiftFollowing })
+                        Modifier.clickable { shiftFollowing = !shiftFollowing }
+                    )
                 }
             }
         }
