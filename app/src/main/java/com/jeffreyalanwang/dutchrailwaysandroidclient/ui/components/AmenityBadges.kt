@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentSize
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
@@ -81,7 +80,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.zipOnKeys
 private fun AmenityBadgePreview() {
     var amenities by remember { mutableStateOf(TrainAmenity.entries.toSet()) }
     var isExpanded by remember { mutableStateOf(true) }
-    Card(Modifier.size(300.dp, 200.dp)) {
+    Box(Modifier.size(300.dp, 200.dp)) {
         Box(
             Modifier
                 .fillMaxSize()
@@ -210,8 +209,9 @@ private fun AmenityBadgeSetBase(
         "No amenities",
         color = color,
         fontStyle = Italic,
-        modifier = contentModifier.padding(vertical = 5.dp)
-                .clickable(null, null) { onSetExpanded(!isExpanded) },
+        modifier = contentModifier
+            .padding(vertical = 5.dp)
+            .clickable(null, null) { onSetExpanded(!isExpanded) },
     )
 
     val isModifiable = (onModify != null)
@@ -445,19 +445,7 @@ private fun ExpandableBadgeSet(
             }
             .wrapContentSize(Alignment.TopStart, unbounded = true)
     ) {
-        // [Popup()] allows us to display above all other elements on the screen,
-        // and also allows us to listen for clicks outside the element.
-        Popup(
-            alignment = Alignment.TopStart,
-            offset = animPopupOffset,
-            properties = PopupProperties(
-                focusable = isExpanded, // seems required to use [onDismissRequest],
-                                        // but blocks any other click listeners on the screen
-                dismissOnClickOutside = true,
-                clippingEnabled = false,
-            ),
-            onDismissRequest = { if (isExpanded) onSetExpanded(false) },
-        ) {
+        val content = @Composable {
             Layout(
                 modifier = contentModifier
                     .clickable(null, null) { onSetExpanded(!isExpanded) },
@@ -477,7 +465,8 @@ private fun ExpandableBadgeSet(
                     height = animBadgeSize,
                     width = if (!isExpanded) animBadgeSize else null,
                 )
-                val placeables = measurables.fastMap { it.measure(itemConstraints) }
+                val placeables =
+                    measurables.fastMap { it.measure(itemConstraints) }
                 val placeablesWithId = placeables.map { it.id!! to it }
 
                 // Calculate destination (i.e. non-animated) position values
@@ -486,8 +475,8 @@ private fun ExpandableBadgeSet(
                         layout = if (!isExpanded) Row else Column,
                         keyedPlaceables = placeablesWithId,
                         gapPx = if (!isExpanded)
-                                    collapsedGap.roundToPx()
-                                else expandedGap.roundToPx()
+                            collapsedGap.roundToPx()
+                        else expandedGap.roundToPx()
                     )
 
                 // Animate to those positions
@@ -502,6 +491,26 @@ private fun ExpandableBadgeSet(
                             placeable.placeRelative(offset)
                         }
                 }
+            }
+        }
+
+        if ( animPopupOffset == IntOffset.Zero ) {
+            content()
+        } else {
+            // [Popup()] allows us to display above all other elements on the screen,
+            // and also allows us to listen for clicks outside the element.
+            Popup(
+                alignment = Alignment.TopStart,
+                offset = animPopupOffset,
+                properties = PopupProperties(
+                    focusable = isExpanded, // seems required to use [onDismissRequest],
+                    // but blocks any other click listeners on the screen
+                    dismissOnClickOutside = true,
+                    clippingEnabled = false,
+                ),
+                onDismissRequest = { if (isExpanded) onSetExpanded(false) },
+            ) {
+                content()
             }
         }
     }
