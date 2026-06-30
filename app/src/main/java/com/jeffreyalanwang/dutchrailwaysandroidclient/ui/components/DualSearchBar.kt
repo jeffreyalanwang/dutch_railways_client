@@ -5,16 +5,15 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components
 import android.annotation.SuppressLint
 import androidx.compose.animation.core.AnimationSpec
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
-import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.layout.windowInsetsPadding
@@ -242,16 +241,11 @@ fun AppBarWithDualSearch(
     ) { modifier, tonalElevation, shadowElevation ->
 
         MarginButtonsBox(
-            modifier = modifier.height(IntrinsicSize.Min),
-            verticalAlignment = Alignment.CenterVertically,
+            modifier = modifier,
             left = leadingIcon?.let {
                 {
-                    Box(
-                        Modifier
-                            .fillMaxHeight(.5f)
-                            .align(Alignment.TopCenter),
-                    ) {
-                        Box(Modifier.align(Alignment.Center)) {
+                    Column(Modifier.fillMaxHeight(), Arrangement.Top) {
+                        Box(Modifier.fillMaxHeight(.5f), Alignment.Center) {
                             it()
                         }
                     }
@@ -259,12 +253,8 @@ fun AppBarWithDualSearch(
             },
             right = actionIcon?.let {
                 {
-                    Box(
-                        Modifier
-                            .fillMaxHeight(.5f)
-                            .align(Alignment.BottomCenter),
-                    ) {
-                        Box(Modifier.align(Alignment.Center)) {
+                    Column(Modifier.fillMaxHeight(), Arrangement.Bottom) {
+                        Box(Modifier.fillMaxHeight(.5f), Alignment.Center) {
                             it()
                         }
                     }

@@ -1,21 +1,12 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components
 
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.onLayoutRectChanged
-import androidx.compose.ui.platform.LocalDensity
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.fill
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.unit.Constraints
+import androidx.compose.ui.unit.constrainHeight
+import com.jeffreyalanwang.dutchrailwaysandroidclient.map
+import com.jeffreyalanwang.dutchrailwaysandroidclient.plusInsert
 import kotlin.math.max
 
 /**
@@ -26,44 +17,61 @@ import kotlin.math.max
  */
 @Composable
 fun MarginButtonsBox(
-    left: @Composable (BoxScope.() -> Unit)?,
-    right: @Composable (BoxScope.() -> Unit)?,
+    left: @Composable (() -> Unit)?,
+    right: @Composable (() -> Unit)?,
     modifier: Modifier = Modifier,
-    verticalAlignment: Alignment.Vertical = Alignment.Top,
-    content: @Composable BoxScope.() -> Unit,
-) {
-    Row(
-        modifier,
-        verticalAlignment = verticalAlignment,
-        horizontalArrangement = Arrangement.Center,
-    ) {
-        if ((left ?: right) == null) {
-            Box(content = content)
-        } else {
-            var minMarginWidth by remember { mutableIntStateOf(0) } // in px; used to adjust when button only exists on one side
+    content: @Composable () -> Unit,
+) = Layout(
+        content = { left?.invoke(); content(); right?.invoke() },
+        modifier = modifier,
+    ) { measurables, constraints ->
+        val (leftM, contentM, rightM) = measurables
+            .let {
+                left?.let { _ -> it }
+                    ?: it.plusInsert(0, null)
+            }
+            .let {
+                right?.let { _ -> it }
+                    ?: it.plus(null)
+            }
+            .run { Triple(this[0], this[1]!!, this[2]) }
 
-            Box(
-                Modifier
-                    .onLayoutRectChanged { rect ->
-                        minMarginWidth = max(minMarginWidth, rect.width / 2)
-                    }
-                    .fillMaxHeight()
-                    .widthIn(min = with(LocalDensity.current) { minMarginWidth.toDp() }),
-                content = left ?: {}
+        // Use [content] to determine box's height
+        val height = contentM
+            .maxIntrinsicHeight(constraints.maxWidth)
+            .let { constraints.constrainHeight(it) }
+
+        val (leftP, rightP) = (leftM to rightM).map {
+            it?.measure( Constraints(maxHeight = height) )
+        }
+
+        val (leftW, rightW) =
+            if (leftP != null && rightP != null) {
+                leftP.width to rightP.width
+
+            // Provide visual balance via padding if only one side has content
+            } else if (leftP != null) {
+                leftP.width.let { it to (it/2) }
+            } else if (rightP != null) {
+                rightP.width.let { (it/2) to it }
+
+            } else {
+                0 to 0
+            }
+
+        val contentP = contentM.measure(
+            Constraints(
+                maxWidth = max(0, constraints.maxWidth - leftW - rightW),
+                maxHeight = height,
             )
-            Box(
-                modifier = Modifier.fill(),
-                content = content,
-            )
-            Box(
-                Modifier
-                    .onLayoutRectChanged { rect ->
-                        minMarginWidth = max(minMarginWidth, rect.width / 2)
-                    }
-                    .fillMaxHeight()
-                    .widthIn(min = with(LocalDensity.current) { minMarginWidth.toDp() }),
-                content = right ?: {}
-            )
+        )
+
+        layout(
+            width = leftW + contentP.width + rightW,
+            height = height
+        ) {
+            leftP?.place(0, 0)
+            contentP.place(leftW, 0)
+            rightP?.place(leftW + contentP.width, 0)
         }
     }
-}
