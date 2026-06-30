@@ -350,6 +350,7 @@ private fun EditStops(
                         .fillMaxWidth(),
                     gap = 2.dp,
                     verticalAlignment = Alignment.CenterVertically,
+                    fillCellWidth = true,
                 ) {
                     ReorderDragHandle(
                         hapticFeedback,

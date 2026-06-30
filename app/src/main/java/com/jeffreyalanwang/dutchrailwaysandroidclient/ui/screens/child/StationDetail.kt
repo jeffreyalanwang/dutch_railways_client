@@ -212,8 +212,8 @@ private fun StationTimetable(
             Modifier
                 .fillMaxWidth()
                 .padding(padding.horizontalOnly()),
-            gap,
-            Alignment.CenterVertically,
+            gap = gap,
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Spacer(Modifier.width(24.dp))
             Text(
@@ -269,34 +269,32 @@ private fun StationRow(
             .height(IntrinsicSize.Min),
         gap = gap,
         verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            icon, // TODO be more efficient with getting trainset (don't get all properties of the service)
-            contentDescription = null, // Explained by "Train" column
-            modifier = Modifier
-                .fillMaxHeight()
-                .width(24.dp)
-        )
-        Text(
-            title,
-            modifier = Modifier
-//                .wrapContentHeight()
-                .cellAlign(Alignment.Start)
-                .fill()
-        )
-        Text(
-            if (arriveTime == null) EM_DASH else AppStringFormats.Time(arriveTime),
-            softWrap = false,
-            modifier = Modifier
-//                .wrapContentHeight()
-                .cellAlign(Alignment.CenterHorizontally)
-        )
-        Text(
-            if (departTime == null) EM_DASH else AppStringFormats.Time(departTime),
-            softWrap = false,
-            modifier = Modifier
-//                .wrapContentHeight()
-                .cellAlign(Alignment.CenterHorizontally)
-        )
-    }
+        content = {
+            Icon(
+                icon, // TODO be more efficient with getting trainset (don't get all properties of the service)
+                contentDescription = null, // Explained by "Train" column
+                modifier = Modifier
+                    .fillMaxHeight()
+                    .width(24.dp)
+            )
+            Text(
+                title,
+                modifier = Modifier
+                    .cellAlign(Alignment.Start)
+                    .fill()
+            )
+            Text(
+                if (arriveTime == null) EM_DASH else AppStringFormats.Time(arriveTime),
+                softWrap = false,
+                modifier = Modifier
+                    .cellAlign(Alignment.CenterHorizontally)
+            )
+            Text(
+                if (departTime == null) EM_DASH else AppStringFormats.Time(departTime),
+                softWrap = false,
+                modifier = Modifier
+                    .cellAlign(Alignment.CenterHorizontally)
+            )
+        },
+    )
 }

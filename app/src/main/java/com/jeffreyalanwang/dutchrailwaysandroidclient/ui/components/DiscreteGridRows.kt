@@ -1,5 +1,8 @@
+@file:SuppressLint("ModifierNodeInspectableProperties")
+
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components
 
+import android.annotation.SuppressLint
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.Stable
@@ -11,11 +14,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Measurable
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.ParentDataModifierNode
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.cellAlign
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.fill
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.copy
 import kotlin.math.max
 import kotlin.math.roundToInt
 
@@ -35,22 +43,20 @@ class DiscreteGridControl {
      * Null for element at [centerIdx].
      * In px.
      */
-    private val widths = mutableStateListOf<Int?>()
+    internal val widths = mutableStateListOf<Int?>()
 
     /**
      * Index of the one element that grows
-     *  (i.e. is marked with [Fill] modifier).
+     *  (i.e. is marked with [Modifier.fill]).
      * Null indicates that there is no such composable.
      */
     private var centerIdx by mutableStateOf<Int?>(null)
 
-    private var _totalWidth by mutableIntStateOf(0)
     /**
      * In px.
      */
-    var totalWidth: Int
-        get() = _totalWidth
-        private set(value) { _totalWidth = value }
+    var totalWidth by mutableIntStateOf(0)
+        private set
 
     private var elementCount by mutableIntStateOf(0)
 
@@ -69,19 +75,21 @@ class DiscreteGridControl {
         return totalWidth - (othersWidth + gapsWidth)
     }
 
-    private fun placeHorizontalAligned( // TODO-TEST does this work on update
+    private fun placeHorizontalAligned(
         width: Int,
         alignment: Alignment.Horizontal,
         left: Int, // pos at left edge of available space
         right: Int,
     ) = when(alignment) {
-        Alignment.Start -> left
-        Alignment.End   -> right - width
-        Alignment.CenterHorizontally -> (
+            Alignment.Start ->
+                left
+            Alignment.End   ->
+                right - width
+            Alignment.CenterHorizontally ->
                 left + (right - left - width) / 2
-                )
-        else -> throw IllegalArgumentException() // doesn't exist anyway
-    }
+            else ->
+                throw IllegalArgumentException() // doesn't exist anyway
+        }
 
     /**
      * Number of px within the parent
@@ -91,7 +99,7 @@ class DiscreteGridControl {
      *  to update().
      * [itemWidths] here should be passed the real width,
      *  even of the center fill item. It might not be as wide
-     *  as in [this.widths] (the maximum across the column).
+     *  as in [widths] (the maximum across the column).
      */
     internal fun positions(alignments: List<Alignment.Horizontal>, itemWidths: List<Int>): List<Int> {
         val out = MutableList(elementCount) { 0 }
@@ -172,44 +180,6 @@ class DiscreteGridControl {
     }
 }
 
-private data class SubchildParentData(
-    var fill: Boolean = false,
-    var cellAlign: Alignment.Horizontal = Alignment.Start
-)
-
-private data object FillModifierElement : ModifierNodeElement<FillModifierNode>() {
-    override fun create() = FillModifierNode()
-    override fun update(node: FillModifierNode) {}
-}
-
-private class FillModifierNode : ParentDataModifierNode, Modifier.Node() {
-    override fun Density.modifyParentData(parentData: Any?): Any {
-        return ((parentData as? SubchildParentData) ?: SubchildParentData()).also {
-            it.fill = true
-        }
-    }
-}
-
-@Immutable
-private data class CellAlignModifierElement(
-    val alignment: Alignment.Horizontal
-) : ModifierNodeElement<CellAlignModifierNode>() {
-    override fun create() = CellAlignModifierNode(alignment)
-    override fun update(node: CellAlignModifierNode) { //TODO-TEST what if this gets modified?
-        node.alignment = this.alignment
-    }
-}
-
-private class CellAlignModifierNode(
-    var alignment: Alignment.Horizontal
-) : ParentDataModifierNode, Modifier.Node() {
-    override fun Density.modifyParentData(parentData: Any?): Any {
-        return ((parentData as? SubchildParentData) ?: SubchildParentData()).also {
-            it.cellAlign = alignment
-        }
-    }
-}
-
 @Immutable
 object DiscreteGridRowScope {
     /**
@@ -223,7 +193,7 @@ object DiscreteGridRowScope {
      */
     @Stable
     fun Modifier.fill(): Modifier
-            = this then FillModifierElement
+        = this then FillModifierElement
 
     /**
      * Alignment of an item within its "grid cell"
@@ -233,6 +203,50 @@ object DiscreteGridRowScope {
     @Stable
     fun Modifier.cellAlign(alignment: Alignment.Horizontal): Modifier
             = this then CellAlignModifierElement(alignment)
+
+    internal val Measurable.fill get() = parentData.orDefaultParentData().fill
+    internal val Measurable.cellAlign get() = parentData.orDefaultParentData().cellAlign
+
+    private data class SubchildParentData(
+        var fill: Boolean = false,
+        var cellAlign: Alignment.Horizontal = Alignment.Start
+    )
+
+    private fun Any?.orDefaultParentData()
+        = this as? SubchildParentData ?: SubchildParentData()
+
+    private data object FillModifierElement : ModifierNodeElement<FillModifierNode>() {
+        override fun create() = FillModifierNode()
+        override fun update(node: FillModifierNode) {}
+    }
+
+    private class FillModifierNode : ParentDataModifierNode, Modifier.Node() {
+        override fun Density.modifyParentData(parentData: Any?): Any {
+            return ((parentData as? SubchildParentData) ?: SubchildParentData()).also {
+                it.fill = true
+            }
+        }
+    }
+
+    @Immutable
+    private data class CellAlignModifierElement(
+        val alignment: Alignment.Horizontal
+    ) : ModifierNodeElement<CellAlignModifierNode>() {
+        override fun create() = CellAlignModifierNode(alignment)
+        override fun update(node: CellAlignModifierNode) {
+            node.alignment = this.alignment
+        }
+    }
+
+    private class CellAlignModifierNode(
+        var alignment: Alignment.Horizontal
+    ) : ParentDataModifierNode, Modifier.Node() {
+        override fun Density.modifyParentData(parentData: Any?): Any {
+            return ((parentData as? SubchildParentData) ?: SubchildParentData()).also {
+                it.cellAlign = alignment
+            }
+        }
+    }
 }
 
 /**
@@ -247,41 +261,33 @@ fun DiscreteGridRow(
     modifier: Modifier = Modifier,
     gap: Dp = 0.dp,
     verticalAlignment: Alignment.Vertical = Alignment.Top,
-    content: @Composable DiscreteGridRowScope.()->Unit,
-) {
-    Layout(
+    fillCellWidth: Boolean = false,
+    content: @Composable DiscreteGridRowScope.() -> Unit,
+) = Layout(
         content = { DiscreteGridRowScope.content() },
         modifier = modifier,
     ) { measurables, constraints ->
-        if (measurables.isEmpty()) {
-            return@Layout layout(0, 0) {}
-        }
 
         // Identify center fill item
         val centerIdx: Int? = measurables
-            .indexOfFirst { (it.parentData as? SubchildParentData)?.fill == true }
-            .takeIf { it != -1 }
+            .indexOfFirst { it.fill }
+            .takeIf { it >= 0 }
 
         // Determine preferredHeight (max of intrinsics of all children)
-        val rigidsMaxTotalW = constraints.maxWidth - (
-                centerIdx
-                    ?.let { i -> measurables[i] }
-                    ?.minIntrinsicWidth(constraints.maxHeight)
-                    ?: 0
-                )
-        val rigidsMaxH = max(
-            measurables.maxOf { it.minIntrinsicHeight(rigidsMaxTotalW) },
-            constraints.minHeight
+        val rigidsHeight = constraints.constrainHeight(
+            measurables.maxOf { it.minIntrinsicHeight(constraints.maxHeight) }
         )
 
         // Measure non-center (rigid) items
         val rigidPlaceables = measurables.mapIndexed { i, measurable ->
             if (i == centerIdx) null
             else measurable.measure(
-                constraints.copy(
-                    minWidth = 0,
-                    maxWidth = measurable.maxIntrinsicWidth(rigidsMaxH),
-                    minHeight =  0,
+                constraints.copyMaxDimensions().copy(
+                    width = max(
+                        measurable.maxIntrinsicWidth(rigidsHeight),
+                        discreteGridControl.widths.getOrElse(i) { 0 }!!
+                            .let { if (fillCellWidth) it else 0 }
+                    )
                 )
             )
         }
@@ -299,25 +305,25 @@ fun DiscreteGridRow(
 
         // Measure fill item
         val fillPlaceable = centerIdx?.let { i ->
+            val spaceWidth = discreteGridControl.centerFillWidth()
+
             measurables[i].measure(
-                constraints.copy(
-                    minWidth = 0,
-                    maxWidth = discreteGridControl.centerFillWidth(),
-                    minHeight = 0,
+                constraints.copyMaxDimensions().copy(
+                    minWidth = if (fillCellWidth) spaceWidth else 0,
+                    maxWidth = spaceWidth,
                 )
             )
         }
 
         // Get position values
         val alignments: List<Alignment.Horizontal> = measurables
-            .map {
-                (it.parentData as? SubchildParentData)?.cellAlign
-                    ?: Alignment.Start
-            }
-        val widths = rigidPlaceables.map { (it ?: fillPlaceable)!!.width }
+            .map { it.cellAlign }
+        val widths = rigidPlaceables
+            .map { (it ?: fillPlaceable)!! }
+            .map { it.width }
         val positions = discreteGridControl.positions(alignments, widths)
 
-        val containerHeight = max(rigidsMaxH, fillPlaceable?.height ?: 0)
+        val containerHeight = max(rigidsHeight, fillPlaceable?.height ?: 0)
         layout(
             width = discreteGridControl.totalWidth,
             height = containerHeight
@@ -333,7 +339,6 @@ fun DiscreteGridRow(
             }
         }
     }
-}
 
 private fun getYPos(
     verticalAlignment: Alignment.Vertical,

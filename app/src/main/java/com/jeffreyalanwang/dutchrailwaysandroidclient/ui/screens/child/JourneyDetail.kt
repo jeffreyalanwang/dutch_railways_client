@@ -313,7 +313,7 @@ private fun ColumnScope.Leg(
         Column(Modifier.weight(1f)) { // TODO text color by time
             Spacer(Modifier.height(itemPadding))
             Text(serviceName, fontWeight = FontWeight.Bold)
-            DiscreteGridRow(discreteGridControl, gap = 10.dp) {
+            DiscreteGridRow(discreteGridControl, gap = 10.dp, content = {
                 Text(
                     "Departure: ${AppStringFormats.Time(fromTime)}",
                     Modifier.alpha(.5f),
@@ -322,7 +322,7 @@ private fun ColumnScope.Leg(
                     "Arrival: ${AppStringFormats.Time(toTime)}",
                     Modifier.alpha(.5f)
                 )
-            }
+            })
             Spacer(Modifier.height(itemPadding))
         }
     }

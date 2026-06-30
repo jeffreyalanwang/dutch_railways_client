@@ -251,7 +251,7 @@ private fun Stop(
         Column(Modifier.weight(1f)) { // TODO text color by time
             if (!isFirstStop) Spacer(Modifier.height(itemPadding))
             Text(stationName, fontWeight = FontWeight.Bold)
-            DiscreteGridRow(discreteGridControl, gap = 10.dp) {
+            DiscreteGridRow(discreteGridControl, gap = 10.dp, content = {
                 if (isFirstStop) Spacer(Modifier) else Text(
                     "Arrival: ${AppStringFormats.Time(arriveTime)}",
                     Modifier.alpha(.5f),
@@ -260,7 +260,7 @@ private fun Stop(
                     "Departure: ${AppStringFormats.Time(departTime)}",
                     Modifier.alpha(.5f)
                 )
-            }
+            })
             if (!isLastStop) Spacer(Modifier.height(itemPadding))
         }
     }
