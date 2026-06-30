@@ -6,6 +6,7 @@ import kotlinx.collections.immutable.PersistentList
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toJavaLocalDateTime
+import kotlinx.datetime.toJavaZoneId
 import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.datetime.toLocalDateTime
 import java.time.ZoneId
@@ -150,6 +151,11 @@ fun <T> Iterable<Sequence<T>>.flattenRoundRobin()
         }
         i %= sources.size
     }
+}
+
+fun <T> Collection<T?>.propagateNull(): List<T>? {
+    val notNull = this.filterNotNull()
+    return if (notNull.size == this.size) notNull else null
 }
 
 fun IntRange.Companion.from(start: Int, size: Int)
@@ -442,11 +448,11 @@ fun <T, U: Comparable<U>> timesSorted(
     }
 }
 
-fun <T> MutableList<T>.applyAt(index: Int, block: (T)->T) {
+fun <T> MutableList<T>.replaceAt(index: Int, block: (T)->T) {
     this[index] = block(this[index])
 }
 
-fun <K, V> MutableMap<K, V>.applyAt(key: K, block: (V?)->V)
+fun <K, V> MutableMap<K, V>.replaceAt(key: K, block: (V?)->V)
         = set(key, block(get(key)))
 
 fun <T> PersistentList<T>.removeLast()
@@ -454,6 +460,12 @@ fun <T> PersistentList<T>.removeLast()
 
 fun <T> List<T>.update(index: Int, block: (T) -> T)
     = mapIndexed { i, item -> if (i == index) block(item) else item }
+
+fun <T> List<T>.updateFirst(block: (T) -> T)
+    = update(0, block)
+
+fun <T> List<T>.updateLast(block: (T) -> T)
+    = update(lastIndex, block)
 
 fun <T> List<T>.update(index: Int, value: T): List<T>
     = update(index) { value }
@@ -469,6 +481,22 @@ fun <T> List<T>.dropAt(index: Int): List<T> {
         this.subList(index, this.size)
             .drop(1)
 }
+
+fun joinToString(separator: String, vararg strings: String)
+    = strings.joinToString(separator)
+
+inline fun <T, A, R> Iterable<T>.runningFoldMap(initial: A, block: (A, T) -> Pair<A, R>): List<R> {
+    var acc = initial
+    return this.map {
+        val (a, r) = block(acc, it)
+
+        acc = a
+        return@map r
+    }
+}
+
+inline fun <T, A, R> Iterable<T>.runningFoldMapReversed(initial: A, crossinline block: (A, T) -> Pair<A, R>)
+    = runReversed { runningFoldMap(initial, block) }
 
 infix fun <T, U> Array<out T>.zipIndexed(other: Iterable<U>): List<Triple<Int, T, U>>
     = this.toList().zipIndexed(other)
@@ -507,8 +535,22 @@ fun <T, U> List<Pair<T, U>>.withFlatIndex()
         .withIndex()
         .map { (index, pair) -> Triple(index, pair.first, pair.second) }
 
+inline fun <T, R : Any> Iterable<T>.lastNotNullOfOrNull(transform: (T) -> R?): R? {
+    var result: R? = null
+    for (element in this) {
+        result = transform(element) ?: result
+    }
+    return result
+}
+
+/** Run [block] on flattened list, then un-flatten before returning. */
+fun <T, R> Iterable<Pair<T, T>>.runFlattened(block: List<T>.() -> List<R>): List<Pair<R, R>>
+    = this.flatMap { it.toList() }
+        .block()
+        .chunked(2) { it[0] to it[1] }
+
 /** Run [block] on reversed list, then un-reverse before returning. */
-fun <T, U> List<T>.runReversed(block: List<T>.() -> List<U>)
+fun <T, R> Iterable<T>.runReversed(block: List<T>.() -> List<R>)
     = this.reversed().block().reversed()
 
 inline fun <T, U, R> T.letWith(receiver: U, block: U.(T) -> R): R
@@ -526,11 +568,17 @@ inline fun <T> T.letIf(condition: Boolean, then: (T)->T): T
 
 fun List<ServiceStop>.lastStationName() = this.last().getStation().name
 
+fun ZonedDateTime.toKotlinLocalTime() = toKotlinLocalDateTime().time
+fun ZonedDateTime.toKotlinLocalDate() = toKotlinLocalDateTime().date
+
 operator fun ZonedDateTime.plus(duration: Duration): ZonedDateTime
     = this + duration.toJavaDuration()
 
 fun LocalDateTime.toZonedDateTime(zone: ZoneId): ZonedDateTime
     = this.toJavaLocalDateTime().atZone(zone)
+
+fun LocalDateTime.toZonedDateTime(zone: TimeZone): ZonedDateTime
+    = this.toZonedDateTime(zone.toJavaZoneId())
 
 context(tz: TimeZone)
 fun Instant.toLocalTime()
@@ -547,7 +595,6 @@ fun Instant.toZonedDateTime(zone: ZoneId): ZonedDateTime
 
 operator fun ZonedDateTime.minus(other: ZonedDateTime)
     = this.toKotlinInstant().minus(other.toKotlinInstant())
-
 
 operator fun ZonedDateTime.compareTo(other: Instant)
     = this.toKotlinInstant().compareTo(other)

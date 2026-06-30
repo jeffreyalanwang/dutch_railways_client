@@ -74,9 +74,9 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.TimePicker
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.rememberDualSearchBarState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.AreaDetailWithoutMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.JourneyDetailWithoutMap
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.JourneyList
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.PassServiceDetail
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.StationDetailWithoutMap
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.JourneyList
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.ExpandedSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.DialogResult
@@ -332,6 +332,7 @@ private fun TripFinderScreen(
                     title = title,
                     initialTime = initialInstant?.asLocalTimeInSystemLocale(),
                     clearable = true,
+                    enableKeyboard = false,
                 )
             )
         },

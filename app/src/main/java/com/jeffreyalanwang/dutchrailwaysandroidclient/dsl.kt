@@ -5,6 +5,7 @@ import androidx.compose.runtime.Immutable
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
+import kotlinx.datetime.toKotlinTimeZone
 import kotlinx.parcelize.IgnoredOnParcel
 import kotlinx.parcelize.Parcelize
 import java.time.ZonedDateTime
@@ -136,6 +137,9 @@ class Station(
     }
 }
 
+/**
+ * At least one of [arrival] or [departure] will always be non-null.
+ */
 @Parcelize
 @Immutable
 data class ServiceStop(
@@ -146,6 +150,10 @@ data class ServiceStop(
 ) : Parcelable {
     @IgnoredOnParcel private var passService: PassService? = null
     @IgnoredOnParcel private var station: Station? = null
+    @IgnoredOnParcel val zoneId
+        get() = (arrival ?: departure)?.zone
+    @IgnoredOnParcel val timeZone
+        get() = zoneId?.toKotlinTimeZone()
 
     constructor(arrival: ZonedDateTime, departure: ZonedDateTime, passService: PassService, station: Station)
             : this(arrival, departure, passServiceId=passService.id, stationId=station.id) {

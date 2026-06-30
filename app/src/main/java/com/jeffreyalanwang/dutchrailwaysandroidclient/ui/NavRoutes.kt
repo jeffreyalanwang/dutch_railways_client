@@ -9,6 +9,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.rememberViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.EntryProviderScope
 import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
@@ -22,13 +23,13 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBa
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy.Companion.predictiveBackDialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.TimePicker
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.AreaDetailScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.PassServiceDetailScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.StationDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.ConfirmDeletePassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditAreaScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditPassServiceScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditStationScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.NewPassServiceScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.PassServiceDetailScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.StationDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditActions
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.StationSearchScreen
@@ -195,7 +196,7 @@ fun appEntries(
                 },
                 entryDecorators = listOf(
                     rememberSaveableStateHolderNavEntryDecorator(),
-                    rememberResultEventBusNavEntryDecorator(),
+                    rememberViewModelStoreNavEntryDecorator(), // ensure separate ViewModelStore for each edit screen
                 ),
                 entryProvider = entryProvider {
                     entry<EditStartNavArgs> { navArgs ->

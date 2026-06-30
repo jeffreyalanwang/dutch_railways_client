@@ -26,7 +26,7 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
-import com.jeffreyalanwang.dutchrailwaysandroidclient.applyAt
+import com.jeffreyalanwang.dutchrailwaysandroidclient.replaceAt
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.theme.DutchRailwaysAndroidClientTheme
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.bottomOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.rememberNavBackStack
@@ -71,7 +71,7 @@ fun DutchRailwaysAndroidClientApp() {
                         if (!isSelected) {
                             topBackStack.add(appTab.navKey)
                         } else {
-                            resetKeys.applyAt(appTab.navKey) { it!! + 1 }
+                            resetKeys.replaceAt(appTab.navKey) { it!! + 1 }
                         }
                     },
                 )

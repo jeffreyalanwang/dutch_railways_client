@@ -10,9 +10,6 @@
     * add passServices
       * create new
       * duplicate + add time-offset
-    * "delete" passServices
-      * delete only the stops that have not yet occurred.
-      * if all stops are deleted, delete the entire passService 
     * edit stops
       * modify a stop's arrive or depart time (even if it was in the past)
         and offer to push the depart + all prochains times up/down by the same time delta

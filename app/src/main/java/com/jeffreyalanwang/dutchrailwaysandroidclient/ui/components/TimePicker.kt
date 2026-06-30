@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
@@ -25,16 +26,22 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.Layout
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.util.fastSumBy
 import androidx.compose.ui.window.Dialog
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
+import com.jeffreyalanwang.dutchrailwaysandroidclient.dropAt
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letWith
 import com.jeffreyalanwang.dutchrailwaysandroidclient.toLocalTime
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.TimePickerNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.DialogResult
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.id
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
 import kotlin.time.Clock
@@ -81,7 +88,7 @@ fun TimePicker(
 @Composable
 private fun ClearableTimePickerDialogPreview() {
     var time by remember { mutableStateOf<LocalTime?>(null) }
-    var openDialog by remember { mutableStateOf(false) }
+    var openDialog by remember { mutableStateOf(true) }
 
     Column(
         verticalArrangement = Arrangement.Center,
@@ -133,7 +140,7 @@ fun ClearableTimePicker(
     modifier: Modifier = Modifier,
     title: String? = null,
     enableKeyboard: Boolean = true,
-) = TimePickerBase(
+) = TimePickerWithExtras(
         initialTime = initialTime,
         onConfirm = onConfirm,
         onDismiss = onDismiss,
@@ -154,7 +161,7 @@ fun NonClearableTimePicker(
     modifier: Modifier = Modifier,
     title: String? = null,
     enableKeyboard: Boolean = true,
-) = TimePickerBase(
+) = TimePickerWithExtras(
         initialTime = initialTime,
         onConfirm = { onConfirm(it!!) },
         onDismiss = onDismiss,
@@ -165,9 +172,9 @@ fun NonClearableTimePicker(
     )
 
 @Composable
-private fun TimePickerBase(
+fun TimePickerWithExtras(
     initialTime: LocalTime?,
-    onConfirm: (LocalTime?) -> Unit,
+    onConfirm: (LocalTime) -> Unit,
     onDismiss: () -> Unit,
     modifier: Modifier = Modifier,
     title: String? = null,
@@ -204,7 +211,7 @@ private fun TimePickerBase(
                 TimeInput(timePickerState)
             }
 
-            Row {
+            BottomRowLayout(Modifier.fillMaxWidth()) {
                 if (enableKeyboard) {
                     IconButton(
                         onClick = { isUsingDial = !isUsingDial }
@@ -218,9 +225,10 @@ private fun TimePickerBase(
                         )
                     }
                 }
-                bottomRowExtras()
 
-                Spacer(Modifier.weight(1f))
+                Extras(bottomRowExtras)
+
+                Spacer(Modifier.fill())
 
                 TextButton(onClick = onDismiss) {
                     Text("Cancel")
@@ -235,3 +243,69 @@ private fun TimePickerBase(
         }
     }
 }
+
+@Composable
+private fun Modifier.fill() = id(1)
+
+@Composable
+private fun Extras(content: @Composable RowScope.() -> Unit)
+    = Row(
+        Modifier.id(0),
+        Arrangement.Start,
+        Alignment.CenterVertically,
+        content = content
+    )
+
+@Composable
+private fun BottomRowLayout(
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) = Layout(content, modifier) { measurables, constraints ->
+        val placeables = measurables.map { it.measure(constraints.copyMaxDimensions()) }
+
+        val extrasRowIndex = placeables.indexOfFirst { it.id == 0 }
+        val (row1: Placeable?, row2: List<Placeable>) =
+            if (placeables.fastSumBy { it.width } > constraints.maxWidth) {
+                // wrap Extras up a row
+                placeables[extrasRowIndex] to placeables.dropAt(extrasRowIndex)
+            } else {
+                null to placeables
+            }
+
+        val fillSpacerIndex = row2.indexOfFirst { it.id == 1 }
+        val containerWidth =
+            constraints.constrainWidth(
+                maxOf(
+                    row1?.width ?: 0,
+                    row2.fastSumBy { it.width },
+                )
+            )
+
+        layout(
+            width = containerWidth,
+            height =
+                ( row1?.height ?: 0 ) +
+                row2.maxOf { it.height },
+        ) {
+
+            var y = 0
+            row1?.let {
+                it.place(0, 0)
+                y += it.height
+            }
+
+            row2.take(fillSpacerIndex + 1) // include fillSpacer
+                .fold(0) { x, placeable ->
+                    placeable.place(x, y)
+                    x + placeable.width
+                }
+
+            row2.drop(fillSpacerIndex + 1)
+                .foldRight(containerWidth) { placeable, x ->
+                    val newX = x - placeable.width
+                    placeable.place(newX, y)
+                    newX
+                }
+
+        }
+    }
