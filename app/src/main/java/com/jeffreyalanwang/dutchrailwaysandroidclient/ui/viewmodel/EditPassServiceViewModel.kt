@@ -1,5 +1,6 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel
 
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -37,26 +38,32 @@ import kotlinx.datetime.atDate
 import kotlinx.datetime.toJavaZoneId
 import kotlinx.datetime.toKotlinTimeZone
 import kotlinx.datetime.todayIn
-import kotlinx.parcelize.IgnoredOnParcel
 import java.time.ZonedDateTime
 import kotlin.time.Clock
 import kotlin.time.Duration.Companion.minutes
 import kotlin.time.Instant
 
-data class TentativeStop(
+/**
+ * Not a dataclass, as tentative stops should
+ * not be equal just because values are equal.
+ * */
+@Immutable
+class TentativeStop(
     val stationId: Int? = null,
     val arrival: ZonedDateTime? = null,
     val departure: ZonedDateTime? = null,
 ) {
-    /** Required because we cannot identify by a nullable [stationId] or mutable [arrival]. */
-    val id = Registrar.getId()
-
     constructor(serviceStop: ServiceStop)
         : this(serviceStop.stationId, serviceStop.arrival, serviceStop.departure)
+    fun copy(
+        stationId: Int? = this.stationId,
+        arrival: ZonedDateTime? = this.arrival,
+        departure: ZonedDateTime? = this.departure,
+    ) = TentativeStop(stationId, arrival, departure)
 
-    @IgnoredOnParcel val zoneId
+    val zoneId
         get() = (arrival ?: departure)?.zone
-    @IgnoredOnParcel val timeZone
+    val timeZone
         get() = zoneId?.toKotlinTimeZone()
 
     fun toServiceStop(passServiceId: Int): ServiceStop? {
@@ -71,11 +78,6 @@ data class TentativeStop(
     }
 
     fun getStation() = stationId?.let { BackendApi.get_station_info(it) }
-
-    private object Registrar {
-        private var nextId = 0
-        fun getId() = nextId++
-    }
 }
 
 interface EditPassServiceStopsModel {
@@ -119,7 +121,7 @@ private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceSt
 
     private val _timeValidity
         by derivedStateOf {
-            val stopTimeValidity = _stops
+            _stops
                 .map { it.arrival to it.departure }
                 .runFlattened {
                     val singleCriteria = this.run {
@@ -145,8 +147,7 @@ private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceSt
 
                     return@runFlattened out
                 }
-
-            stopTimeValidity.map { it.first } to stopTimeValidity.map { it.second }
+                .unzip()
         }
     override val arrivalTimeValidity: List<Boolean>
         by derivedStateOf { _timeValidity.first }
@@ -261,7 +262,7 @@ private class StopsDelegate(basedOnStops: List<ServiceStop>?): EditPassServiceSt
 
         val oldTimes = this.arrival to this.departure
 
-        val thisIndex = _stops.indexOfFirst { it.id == this.id }
+        val thisIndex = _stops.indexOf(this)
         val prevDepart = _stops.take(thisIndex).lastNotNullOfOrNull { it.departure }
         val nextArrive = _stops.drop(thisIndex + 1).firstNotNullOfOrNull { it.arrival }
         val bounds = prevDepart to nextArrive

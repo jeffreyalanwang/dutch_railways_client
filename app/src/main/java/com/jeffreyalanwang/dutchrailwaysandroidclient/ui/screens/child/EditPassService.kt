@@ -1,6 +1,12 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -18,7 +24,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndSelectAll
@@ -52,14 +60,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color.Companion.Transparent
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType.Companion.SegmentFrequentTick
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
@@ -82,7 +91,9 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.TimePickerWi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.ExpandedSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.providesWindowInsets
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.verticalOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.EditPassServiceStopsModel
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.EditPassServiceViewModel
 import kotlinx.coroutines.launch
@@ -226,14 +237,15 @@ private fun EditPassServiceScreenBase(
                 ) {
                     EditRollingStockIcon(
                         viewModel.trainsetSelection,
-                        viewModel.trainsetValid,
+                        !viewModel.trainsetValid,
                     ) { viewModel.trainsetSelection = it }
 
                     var areAmenitiesExpanded by remember { mutableStateOf(false) }
                     EditAmenityBadgeSet(
                         viewModel.amenitiesMultiSelection,
                         containerModifier = Modifier
-                            .offset(x = -7.5.dp, y = -10.dp),
+                            .offset(x = -7.5.dp, y = -10.dp)
+                            .testTag("amenity_badges"),
                         isExpanded = areAmenitiesExpanded,
                         onSetExpanded = { areAmenitiesExpanded = it },
                         onModify = { viewModel.amenitiesMultiSelection = it },
@@ -245,7 +257,9 @@ private fun EditPassServiceScreenBase(
                 Text(
                     viewModel.title,
                     style = MaterialTheme.typography.displaySmall,
-                    modifier = Modifier.padding(horizontal = 10.dp)
+                    modifier = Modifier
+                        .padding(horizontal = 10.dp)
+                        .testTag("screen_title_text")
                 )
 
                 Spacer(Modifier.height(10.dp))
@@ -270,49 +284,68 @@ private fun EditRollingStockIcon(
     onSelectTrainset: (Trainset) -> Unit,
 ) {
     var isDropdownOpen by remember { mutableStateOf(false) }
-    ExposedDropdownMenuBox(
-        expanded = isDropdownOpen,
-        onExpandedChange = { isDropdownOpen = it },
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        IconWithBadge(
-            badge = painterResource(
-                if (isDropdownOpen) R.drawable.ic_dropdown_up
-                else R.drawable.ic_dropdown
-            ),
-            sizeRatio = 1 / 2f,
-            overlapRatio = 4 / 5f,
-            modifier = Modifier
-                .size(72.dp + 20.dp)
-                .clip(MaterialTheme.shapes.large) // clip the ripple
-                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
-                .clickable {} // Just to get the styling; click handled by .menuAnchor()
-        ) {
-            Icon(
-                painterResource(AppIcons.Trainset(trainsetSelection)),
-                "Trainset: ${trainsetSelection ?: "none selected"}",
-                tint = if (!isError) LocalContentColor.current
-                       else MaterialTheme.colorScheme.error
-            )
+        AnimatedContent(
+            if (isDropdownOpen) trainsetSelection else null,
+            Modifier
+                .sizeIn(maxHeight = 0.dp)
+                .wrapContentHeight(unbounded = true)
+                .padding(bottom = 4.dp),
+            transitionSpec = {
+                fadeIn() + slideInVertically { it / 2 } togetherWith
+                        fadeOut() + slideOutVertically { it / 2 }
+            },
+        ) { trainset ->
+            trainset?.run { Text(name) }
         }
-        ExposedDropdownMenu(
+        ExposedDropdownMenuBox(
             expanded = isDropdownOpen,
-            onDismissRequest = { isDropdownOpen = false },
-            matchAnchorWidth = false,
+            onExpandedChange = { isDropdownOpen = it },
         ) {
-            for (option in Trainset.entries) {
-                DropdownMenuItem(
-                    leadingIcon = {
-                        Icon(
-                            painterResource(AppIcons.Trainset(option)),
-                            contentDescription = null,
-                        )
-                    },
-                    text = { Text(option.name) },
-                    onClick = {
-                        onSelectTrainset(option)
-                        isDropdownOpen = false
-                    }
+            IconWithBadge(
+                badge = painterResource(
+                    if (isDropdownOpen) R.drawable.ic_dropdown_up
+                    else R.drawable.ic_dropdown
+                ),
+                sizeRatio = 1 / 2f,
+                overlapRatio = 4 / 5f,
+                modifier = Modifier
+                    .size(72.dp + 20.dp)
+                    .clip(MaterialTheme.shapes.large) // clip the ripple
+                    .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                    .clickable {} // Just to get the styling; click handled by .menuAnchor()
+                    .testTag("trainset_selector")
+            ) {
+                Icon(
+                    painterResource(AppIcons.Trainset(trainsetSelection)),
+                    "Trainset: ${trainsetSelection ?: "none selected"}",
+                    tint = if (isError)
+                                MaterialTheme.colorScheme.error
+                           else LocalContentColor.current
                 )
+            }
+            ExposedDropdownMenu(
+                expanded = isDropdownOpen,
+                onDismissRequest = { isDropdownOpen = false },
+                matchAnchorWidth = false,
+            ) {
+                for (option in Trainset.entries) {
+                    DropdownMenuItem(
+                        leadingIcon = {
+                            Icon(
+                                painterResource(AppIcons.Trainset(option)),
+                                contentDescription = null,
+                            )
+                        },
+                        text = { Text(option.name) },
+                        onClick = {
+                            onSelectTrainset(option)
+                            isDropdownOpen = false
+                        }
+                    )
+                }
             }
         }
     }
@@ -325,23 +358,26 @@ private fun EditStops(
     padding: PaddingValues = PaddingValues.Zero,
     hapticFeedback: HapticFeedback? = LocalHapticFeedback.current,
 ) {
+    val hPadding = padding.horizontalOnly()
+    val vPadding = padding.verticalOnly()
     val stops = viewModel.stops
+
     var selectingStationForIndex by remember { mutableStateOf<Int?>(null) }
     var selectingTimeForIndex by remember { mutableStateOf<Pair<Int, StopPoint>?>(null) }
 
     val discreteGridControl = remember { DiscreteGridControl() }
 
-    Column(modifier.padding(padding)) {
+    Column(modifier.padding(vPadding)) {
         ReorderableColumn(
             list = stops,
             onSettle = { iFrom, iTo -> viewModel.reorderStops(iFrom, iTo) },
-            onMove = { hapticFeedback?.performHapticFeedback(SegmentFrequentTick) }
+            onMove = { hapticFeedback?.performHapticFeedback(SegmentFrequentTick) },
+            modifier = Modifier.zIndex(1f),
         ) { i, stop, isDragging ->
-
             ElevatingReorderableItem(
                 isDragging,
-                stop.id,
-                color = Transparent
+                contentPadding = hPadding,
+                shape = MaterialTheme.shapes.small,
             ) {
                 DiscreteGridRow(
                     discreteGridControl = discreteGridControl,
@@ -354,13 +390,17 @@ private fun EditStops(
                 ) {
                     ReorderDragHandle(
                         hapticFeedback,
-                        Modifier.padding(horizontal = 4.dp),
+                        Modifier
+                            .padding(horizontal = 4.dp)
+                            .testTag("drag_handle_$i"),
                     )
 
                     FormField(
                         onClick = { selectingStationForIndex = i },
                         isError = !viewModel.stationValidity[i],
-                        modifier = Modifier.fill()
+                        modifier = Modifier
+                            .fill()
+                            .testTag("stop_station_$i")
                     ) {
 
                         Text(
@@ -378,7 +418,9 @@ private fun EditStops(
                             onClick = {
                                 selectingTimeForIndex = i to StopPoint.Arrival
                             },
-                            modifier = Modifier.alpha(if (enabled) 1f else .5f)
+                            modifier = Modifier
+                                .alpha(if (enabled) 1f else .5f)
+                                .testTag("stop_arrival_$i")
                         ) {
                             Text(
                                 stop.arrival
@@ -396,7 +438,9 @@ private fun EditStops(
                             onClick = {
                                 selectingTimeForIndex = i to StopPoint.Departure
                             },
-                            modifier = Modifier.alpha(if (enabled) 1f else .5f)
+                            modifier = Modifier
+                                .alpha(if (enabled) 1f else .5f)
+                                .testTag("stop_departure_$i")
                         ) {
                             Text(
                                 stop.departure

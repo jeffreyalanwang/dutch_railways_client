@@ -15,14 +15,17 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.Measurable
+import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.node.ModifierNodeElement
 import androidx.compose.ui.node.ParentDataModifierNode
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.dp
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.cellAlign
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRowScope.fill
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ModifierUtils.CellAlignModifierElement
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ModifierUtils.FillModifierElement
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ModifierUtils.cellAlign
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ModifierUtils.isFill
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.copy
 import kotlin.math.max
 import kotlin.math.roundToInt
@@ -180,75 +183,6 @@ class DiscreteGridControl {
     }
 }
 
-@Immutable
-object DiscreteGridRowScope {
-    /**
-     * Apply to zero or one items in the row.
-     * This item will take the remaining space after others
-     *  have been sized.
-     * Items before it (or all items, if this modifier is never used)
-     *  will be positioned based on the widths of those before them.
-     * Items after it will be positioned based on
-     *  the widths of those after them.
-     */
-    @Stable
-    fun Modifier.fill(): Modifier
-        = this then FillModifierElement
-
-    /**
-     * Alignment of an item within its "grid cell"
-     *  (i.e. the horizontal space available to it
-     *  and its cousins in that column).
-     */
-    @Stable
-    fun Modifier.cellAlign(alignment: Alignment.Horizontal): Modifier
-            = this then CellAlignModifierElement(alignment)
-
-    internal val Measurable.fill get() = parentData.orDefaultParentData().fill
-    internal val Measurable.cellAlign get() = parentData.orDefaultParentData().cellAlign
-
-    private data class SubchildParentData(
-        var fill: Boolean = false,
-        var cellAlign: Alignment.Horizontal = Alignment.Start
-    )
-
-    private fun Any?.orDefaultParentData()
-        = this as? SubchildParentData ?: SubchildParentData()
-
-    private data object FillModifierElement : ModifierNodeElement<FillModifierNode>() {
-        override fun create() = FillModifierNode()
-        override fun update(node: FillModifierNode) {}
-    }
-
-    private class FillModifierNode : ParentDataModifierNode, Modifier.Node() {
-        override fun Density.modifyParentData(parentData: Any?): Any {
-            return ((parentData as? SubchildParentData) ?: SubchildParentData()).also {
-                it.fill = true
-            }
-        }
-    }
-
-    @Immutable
-    private data class CellAlignModifierElement(
-        val alignment: Alignment.Horizontal
-    ) : ModifierNodeElement<CellAlignModifierNode>() {
-        override fun create() = CellAlignModifierNode(alignment)
-        override fun update(node: CellAlignModifierNode) {
-            node.alignment = this.alignment
-        }
-    }
-
-    private class CellAlignModifierNode(
-        var alignment: Alignment.Horizontal
-    ) : ParentDataModifierNode, Modifier.Node() {
-        override fun Density.modifyParentData(parentData: Any?): Any {
-            return ((parentData as? SubchildParentData) ?: SubchildParentData()).also {
-                it.cellAlign = alignment
-            }
-        }
-    }
-}
-
 /**
  * Holds a component whose children align with their cousins.
  * Cannot be used with lazy containers.
@@ -270,7 +204,7 @@ fun DiscreteGridRow(
 
         // Identify center fill item
         val centerIdx: Int? = measurables
-            .indexOfFirst { it.fill }
+            .indexOfFirst { it.isFill }
             .takeIf { it >= 0 }
 
         // Determine preferredHeight (max of intrinsics of all children)
@@ -316,12 +250,11 @@ fun DiscreteGridRow(
         }
 
         // Get position values
-        val alignments: List<Alignment.Horizontal> = measurables
-            .map { it.cellAlign }
-        val widths = rigidPlaceables
-            .map { (it ?: fillPlaceable)!! }
-            .map { it.width }
-        val positions = discreteGridControl.positions(alignments, widths)
+        val placeables = rigidPlaceables.map { (it ?: fillPlaceable)!! }
+        val positions = discreteGridControl.positions(
+            alignments = placeables.map { it.cellAlign },
+            itemWidths = placeables.map { it.width },
+        )
 
         val containerHeight = max(rigidsHeight, fillPlaceable?.height ?: 0)
         layout(
@@ -334,13 +267,90 @@ fun DiscreteGridRow(
                 } else {
                     rigidPlaceables[i]!!
                 }
-                val yPos = getYPos(verticalAlignment, placeable.height, containerHeight)
+                val yPos = alignedYPos(verticalAlignment, placeable.height, containerHeight)
                 placeable.place(pos, yPos)
             }
         }
     }
 
-private fun getYPos(
+object DiscreteGridRowScope {
+    /**
+     * Apply to zero or one items in the row.
+     * This item will take the remaining space after others
+     *  have been sized.
+     * Items before it (or all items, if this modifier is never used)
+     *  will be positioned based on the widths of those before them.
+     * Items after it will be positioned based on
+     *  the widths of those after them.
+     */
+    @Stable
+    fun Modifier.fill(): Modifier = this then FillModifierElement
+
+    /**
+     * Alignment of an item within its "grid cell"
+     *  (i.e. the horizontal space available to it
+     *  and its cousins in that column).
+     */
+    @Stable
+    fun Modifier.cellAlign(alignment: Alignment.Horizontal): Modifier =
+        this then CellAlignModifierElement(alignment)
+}
+
+private object ModifierUtils {
+
+    private data class SubchildParentData(
+        var fill: Boolean = false,
+        var cellAlign: Alignment.Horizontal = Alignment.Start
+    )
+
+    val Measurable.isFill get() = parentData.orDefaultParentData().fill
+    val Measurable.cellAlign get() = parentData.orDefaultParentData().cellAlign
+    val Placeable.fill get() = parentData.orDefaultParentData().fill
+    val Placeable.cellAlign get() = parentData.orDefaultParentData().cellAlign
+
+    private fun Any?.orDefaultParentData() =
+        this as? SubchildParentData ?: SubchildParentData()
+
+    @Immutable
+    data object FillModifierElement :
+        ModifierNodeElement<FillModifierNode>() {
+        override fun create() = FillModifierNode()
+        override fun update(node: FillModifierNode) {}
+    }
+
+    class FillModifierNode : ParentDataModifierNode, Modifier.Node() {
+        override fun Density.modifyParentData(parentData: Any?): Any {
+            return ((parentData as? SubchildParentData)
+                ?: SubchildParentData()).also {
+                it.fill = true
+            }
+        }
+    }
+
+    @Immutable
+    data class CellAlignModifierElement(
+        val alignment: Alignment.Horizontal
+    ) : ModifierNodeElement<CellAlignModifierNode>() {
+        override fun create() = CellAlignModifierNode(alignment)
+        override fun update(node: CellAlignModifierNode) {
+            node.alignment = this.alignment
+        }
+    }
+
+    class CellAlignModifierNode(
+        var alignment: Alignment.Horizontal
+    ) : ParentDataModifierNode, Modifier.Node() {
+        override fun Density.modifyParentData(parentData: Any?): Any {
+            return ((parentData as? SubchildParentData)
+                ?: SubchildParentData()).also {
+                it.cellAlign = alignment
+            }
+        }
+    }
+
+}
+
+private fun alignedYPos(
     verticalAlignment: Alignment.Vertical,
     itemHeight: Int,
     containerHeight: Int

@@ -26,40 +26,7 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="EditPassServiceScreenPreview">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-06-23T02:01:47.796670888Z">
-          <Target type="DEFAULT_BOOT">
-            <handle>
-              <DeviceId pluginId="Default" identifier="serial=192.168.240.112:5555;connection=1c9e3f16" />
-            </handle>
-          </Target>
-        </DropdownSelection>
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="PassServiceDetailPreview">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-06-28T22:24:54.189245864Z">
-          <Target type="DEFAULT_BOOT">
-            <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Pixel_7_GApps.avd" />
-            </handle>
-          </Target>
-        </DropdownSelection>
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="AmenityBadgePreview">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-06-28T22:46:20.208720427Z">
-          <Target type="DEFAULT_BOOT">
-            <handle>
-              <DeviceId pluginId="Default" identifier="serial=192.168.240.112:5555;connection=23dd17af" />
-            </handle>
-          </Target>
-        </DropdownSelection>
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="DualSearchBarPreview">
+      <SelectionState runConfigName="androidTests">
         <option name="selectionMode" value="DROPDOWN" />
         <DropdownSelection timestamp="2026-05-22T17:27:16.762599939Z">
           <Target type="BOOT_WITH_SNAPSHOT">
@@ -71,7 +38,55 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="androidTests">
+      <SelectionState runConfigName="ReorderableIntegrationTest">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-05-22T17:27:16.762599939Z">
+          <Target type="BOOT_WITH_SNAPSHOT">
+            <handle>
+              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7.avd" />
+            </handle>
+            <Snapshot name="snap_2026-05-10_15-50-01" path="$USER_HOME$/.android/avd/Virtual_Pixel_7.avd/snapshots/snap_2026-05-10_15-50-01" />
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="ElevatingReorderableItemIntegrationTest">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-05-22T17:27:16.762599939Z">
+          <Target type="BOOT_WITH_SNAPSHOT">
+            <handle>
+              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7.avd" />
+            </handle>
+            <Snapshot name="snap_2026-05-10_15-50-01" path="$USER_HOME$/.android/avd/Virtual_Pixel_7.avd/snapshots/snap_2026-05-10_15-50-01" />
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="testMove()">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-05-22T17:27:16.762599939Z">
+          <Target type="BOOT_WITH_SNAPSHOT">
+            <handle>
+              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7.avd" />
+            </handle>
+            <Snapshot name="snap_2026-05-10_15-50-01" path="$USER_HOME$/.android/avd/Virtual_Pixel_7.avd/snapshots/snap_2026-05-10_15-50-01" />
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="EditPassServiceUiTest">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-05-22T17:27:16.762599939Z">
+          <Target type="BOOT_WITH_SNAPSHOT">
+            <handle>
+              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7.avd" />
+            </handle>
+            <Snapshot name="snap_2026-05-10_15-50-01" path="$USER_HOME$/.android/avd/Virtual_Pixel_7.avd/snapshots/snap_2026-05-10_15-50-01" />
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="EditPassServiceScreenPreview">
         <option name="selectionMode" value="DROPDOWN" />
         <DropdownSelection timestamp="2026-05-22T17:27:16.762599939Z">
           <Target type="BOOT_WITH_SNAPSHOT">
