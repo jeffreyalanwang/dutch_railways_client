@@ -51,7 +51,7 @@ class EditPassServiceUiTest {
     }
 
     @Test
-    fun testNewPassService_AddStopsAndSelectStation() {
+    fun `creating a new pass service should allow adding stops and selecting stations`() {
         val station1 = Station(1, "Amsterdam Centraal", "Address 1", mockk())
         val station2 = Station(2, "Rotterdam Centraal", "Address 2", mockk())
         
@@ -112,7 +112,7 @@ class EditPassServiceUiTest {
     }
 
     @Test
-    fun testEditPassService_InitialState() {
+    fun `editing an existing pass service should display correctly pre-filled data`() {
         val station = Station(1, "Den Haag Centraal", "Address", mockk())
         val stop = ServiceStop(null, ZonedDateTime.now(ams), 119, 1)
         val service = PassService(119, "Intercity to Den Haag Centraal", Trainset.VIRM, emptySet(), listOf(stop))
@@ -135,7 +135,7 @@ class EditPassServiceUiTest {
     }
 
     @Test
-    fun testEditPassService_ReorderStops() {
+    fun `reordering stops in edit mode should update their position in the list`() {
         val ams = ZoneId.of("Europe/Amsterdam")
         val station1 = Station(1, "Station 1", "Address 1", mockk())
         val station2 = Station(2, "Station 2", "Address 2", mockk())

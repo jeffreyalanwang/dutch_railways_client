@@ -1,1 +1,0 @@
-./gradlew :app:testDebugUnitTest --tests "com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.EditPassServiceViewModelTest"

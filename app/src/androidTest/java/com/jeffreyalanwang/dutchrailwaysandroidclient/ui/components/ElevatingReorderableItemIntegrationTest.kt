@@ -13,7 +13,7 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.performTouchInput
-import androidx.compose.ui.test.runComposeUiTest
+import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -71,22 +71,22 @@ class ElevatingReorderableItemIntegrationTest {
     }
 
     @Test
-    fun testMove() = runComposeUiTest {
-        var moveCalled = false
+    fun `dragging an item should trigger the onMove callback`() = runComposeUiTest {
+            var moveCalled = false
 
         setContent {
-            ReorderableListForTest(
-                items = items,
-                onMove = {
-                    moveCalled = true
-                },
-            )
-        }
+                ReorderableListForTest(
+                    items = items,
+                    onMove = {
+                        moveCalled = true
+                    },
+                )
+            }
 
         val handle = onNodeWithTag("handle_${"Item 0"}")
         val targetRow = onNodeWithTag("row_${"Item 1"}")
-        val start = handle.fetchSemanticsNode().positionInRoot
-        val end = targetRow.fetchSemanticsNode().positionInRoot
+            val start = handle.fetchSemanticsNode().positionInRoot
+            val end = targetRow.fetchSemanticsNode().positionInRoot
 
         with (handle) {
 
@@ -99,11 +99,11 @@ class ElevatingReorderableItemIntegrationTest {
             }
             assertTrue("onMove should have been called at least once", moveCalled)
 
+            }
         }
-    }
 
     @Test
-    fun testMoveAndSettle() = runComposeUiTest {
+    fun `releasing a dragged item should trigger the onSettle callback`() = runComposeUiTest {
         var moveCalled = false
         var settleCalled = false
 
@@ -150,7 +150,7 @@ class ElevatingReorderableItemIntegrationTest {
     }
 
     @Test
-    fun testModification() = runComposeUiTest {
+    fun `reordering items should update both the underlying list and the UI`() = runComposeUiTest {
         var settleCalled = false
         var fromIndex = -1
         var toIndex = -1

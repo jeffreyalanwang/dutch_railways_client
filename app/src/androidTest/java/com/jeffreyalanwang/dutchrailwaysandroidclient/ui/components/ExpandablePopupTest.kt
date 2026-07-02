@@ -5,16 +5,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.isPopup
+import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.v2.createComposeRule
-import androidx.compose.ui.test.onNodeWithTag
-import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -31,7 +27,7 @@ class ExpandablePopupTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun collapsed_rendersContent() {
+    fun `collapsed popup should render its content directly`() {
         composeTestRule.setContent {
             ExpandablePopup(
                 isExpanded = false,
@@ -49,13 +45,13 @@ class ExpandablePopupTest {
     }
 
     @Test
-    fun expanded_rendersContentInPopup() {
+    fun `expanded popup should render its content within a popup`() {
         composeTestRule.setContent {
             ExpandablePopup(
                 isExpanded = true,
                 onCollapse = {},
                 collapsedDimensions = DpSize(100.dp, 100.dp),
-                uncoercedExpandedOffset = IntOffset(10, 10),
+                uncoercedExpandedOffset = IntOffset(1, 1),
                 windowInsets = WindowInsets(0.dp),
                 animationSpec = tween<Int>(durationMillis = 1) to tween<Int>(durationMillis = 1)
             ) {
@@ -70,7 +66,7 @@ class ExpandablePopupTest {
     }
 
     @Test
-    fun toggleExpansion_callsStartedListener() {
+    fun `toggling expansion should trigger the started listener`() {
         var expanded by mutableStateOf(false)
         var started = false
 
@@ -95,7 +91,7 @@ class ExpandablePopupTest {
     }
 
     @Test
-    fun toggleExpansion_callsFinishedListener() {
+    fun `toggling expansion should trigger the finished listener`() {
         var expanded by mutableStateOf(false)
         var finished = false
 
@@ -120,15 +116,37 @@ class ExpandablePopupTest {
     }
 
     @Test
-    fun dismissPopup_callsOnCollapse() {
+    fun `pressing back should trigger the onCollapse callback`() {
         var collapseCalled = false
         composeTestRule.setContent {
-            Box(Modifier.fillMaxSize().testTag("background")) {
+            ExpandablePopup(
+                isExpanded = true,
+                onCollapse = { collapseCalled = true },
+                collapsedDimensions = DpSize(10.dp, 10.dp),
+                uncoercedExpandedOffset = IntOffset(1, 1),
+                windowInsets = WindowInsets(0.dp),
+                animationSpec = tween<Int>(durationMillis = 1) to tween<Int>(durationMillis = 1)
+            ) {
+                Box(Modifier.size(10.dp))
+            }
+        }
+
+        composeTestRule.waitForIdle()
+        androidx.test.espresso.Espresso.pressBack()
+        composeTestRule.waitForIdle()
+        assertTrue("onCollapse should be called when back is pressed", collapseCalled)
+    }
+
+    @Test
+    fun `clicking outside the popup should trigger the onCollapse callback`() {
+        var collapseCalled = false
+        composeTestRule.setContent {
+            Box(Modifier.fillMaxSize()) {
                 ExpandablePopup(
                     isExpanded = true,
                     onCollapse = { collapseCalled = true },
                     collapsedDimensions = DpSize(10.dp, 10.dp),
-                    uncoercedExpandedOffset = IntOffset(0, 0),
+                    uncoercedExpandedOffset = IntOffset(1, 1),
                     windowInsets = WindowInsets(0.dp),
                     animationSpec = tween<Int>(durationMillis = 1) to tween<Int>(durationMillis = 1)
                 ) {
@@ -139,11 +157,10 @@ class ExpandablePopupTest {
 
         composeTestRule.waitForIdle()
         
-        // Popup uses a separate window. In tests, we can find it with isPopup().
-        // To click outside, we can click a node that is NOT the popup.
-        
-        // We'll perform click on the background node.
-        composeTestRule.onNodeWithTag("background").performClick()
+        // We try to click outside by clicking on the root of the main window.
+        composeTestRule.onAllNodes(isRoot()).onFirst().performTouchInput {
+            click(bottomRight)
+        }
 
         composeTestRule.waitForIdle()
         assertTrue("onCollapse should be called when clicking outside", collapseCalled)

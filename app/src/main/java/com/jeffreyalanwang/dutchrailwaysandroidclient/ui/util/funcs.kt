@@ -22,6 +22,7 @@ import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSerializable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
@@ -377,8 +378,9 @@ fun animateIntOffsetAsState(
 /** [LaunchedEffect] that ignores its first key. */
 @Composable
 fun OnChangeEffect(key: Any?, block: suspend CoroutineScope.() -> Unit) {
+    val currentKey by rememberUpdatedState(key)
     LaunchedEffect(Unit) {
-        snapshotFlow { key }
+        snapshotFlow { currentKey }
             .drop(1)
             .collect { block() }
     }

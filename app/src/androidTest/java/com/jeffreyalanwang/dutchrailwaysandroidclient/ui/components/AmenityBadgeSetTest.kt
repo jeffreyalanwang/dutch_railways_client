@@ -25,7 +25,7 @@ class AmenityBadgeSetTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun amenityBadgeSet_empty_displaysNoAmenitiesText() {
+    fun `empty set should display no amenities text`() {
         composeTestRule.setContent {
             AmenityBadgeSet(
                 amenities = emptySet(),
@@ -38,7 +38,7 @@ class AmenityBadgeSetTest {
     }
 
     @Test
-    fun amenityBadgeSet_empty_clickTogglesExpansion() {
+    fun `clicking no amenities text should toggle expansion`() {
         var expanded by mutableStateOf(false)
         composeTestRule.setContent {
             AmenityBadgeSet(
@@ -53,7 +53,7 @@ class AmenityBadgeSetTest {
     }
 
     @Test
-    fun amenityBadgeSet_withAmenities_displaysBadges() {
+    fun `set with amenities should display correct badges`() {
         val amenities = setOf(TrainAmenity.WIFI, TrainAmenity.TOILET)
         composeTestRule.setContent {
             AmenityBadgeSet(
@@ -69,7 +69,7 @@ class AmenityBadgeSetTest {
     }
 
     @Test
-    fun amenityBadgeSet_clickTogglesExpansion() {
+    fun `clicking a badge should toggle expansion when read-only`() {
         var expanded by mutableStateOf(false)
         val amenities = setOf(TrainAmenity.WIFI)
         composeTestRule.setContent {
@@ -93,7 +93,7 @@ class AmenityBadgeSetTest {
     }
 
     @Test
-    fun editAmenityBadgeSet_displaysAddButton() {
+    fun `editable set should display add button when expanded`() {
         composeTestRule.setContent {
             EditAmenityBadgeSet(
                 amenities = setOf(TrainAmenity.WIFI),
@@ -108,7 +108,7 @@ class AmenityBadgeSetTest {
     }
 
     @Test
-    fun editAmenityBadgeSet_clickingBadgeEntersDeleteMode() {
+    fun `clicking a badge in edit mode should enter delete mode`() {
         composeTestRule.setContent {
             EditAmenityBadgeSet(
                 amenities = setOf(TrainAmenity.WIFI),
@@ -132,7 +132,7 @@ class AmenityBadgeSetTest {
     }
 
     @Test
-    fun editAmenityBadgeSet_deleteAmenity_triggersOnModify() {
+    fun `confirming deletion should trigger onModify callback`() {
         val initialAmenities = setOf(TrainAmenity.WIFI)
         var resultAmenities: Set<TrainAmenity>? = null
         
@@ -156,7 +156,7 @@ class AmenityBadgeSetTest {
     }
 
     @Test
-    fun editAmenityBadgeSet_addAmenity_showsOptionsAndTriggersOnModify() {
+    fun `adding an amenity should show options and trigger onModify`() {
         val initialAmenities = setOf(TrainAmenity.WIFI)
         var resultAmenities: Set<TrainAmenity>? = null
         
@@ -185,7 +185,7 @@ class AmenityBadgeSetTest {
     }
 
     @Test
-    fun editAmenityBadgeSet_collapsed_beginAddClickHasNoEffect() {
+    fun `clicking add badge while collapsed should have no effect`() {
         var expanded by mutableStateOf(false)
         val initialAmenities = setOf(TrainAmenity.WIFI)
         

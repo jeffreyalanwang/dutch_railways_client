@@ -38,7 +38,7 @@ class ExpandableBadgeSetTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun expandableBadgeSet_collapsed_rendersItemsInRow() {
+    fun `collapsed badge set should render items in a row`() {
         val badgesToLabels: Map<Any, Pair<@Composable () -> Unit, @Composable () -> Unit>> = mapOf(
             Badge.Amenity(TrainAmenity.WIFI) to Pair(
                 @Composable { Box(Modifier.size(20.dp).testTag("badge_0")) },
@@ -68,7 +68,7 @@ class ExpandableBadgeSetTest {
     }
 
     @Test
-    fun expandableBadgeSet_expanded_rendersItemsInColumn() {
+    fun `expanded badge set should render items in a column`() {
         val badgesToLabels: Map<Any, Pair<@Composable () -> Unit, @Composable () -> Unit>> = mapOf(
             Badge.Amenity(TrainAmenity.WIFI) to Pair(
                 @Composable { Box(Modifier.size(20.dp).testTag("badge_0")) },
@@ -100,7 +100,7 @@ class ExpandableBadgeSetTest {
     }
 
     @Test
-    fun testBasicLinearLayout_Row() {
+    fun `basicLinearLayout utility should correctly position items in a row`() {
         val util = ExpandableBadgeSetUtilScope
         val mockPlaceable1 = MockPlaceable(50, 50)
         val mockPlaceable2 = MockPlaceable(60, 40)
@@ -115,7 +115,7 @@ class ExpandableBadgeSetTest {
     }
 
     @Test
-    fun testBasicLinearLayout_Column() {
+    fun `basicLinearLayout utility should correctly position items in a column`() {
         val util = ExpandableBadgeSetUtilScope
         val mockPlaceable1 = MockPlaceable(50, 50)
         val mockPlaceable2 = MockPlaceable(60, 40)
@@ -130,7 +130,7 @@ class ExpandableBadgeSetTest {
     }
 
     @Test
-    fun testAnimation_Progression() {
+    fun `badge size should animate correctly during expansion`() {
         val badgesToLabels: Map<Any, Pair<@Composable () -> Unit, @Composable () -> Unit>> = mapOf(
             Badge.Amenity(TrainAmenity.WIFI) to Pair(
                 // Use aspectRatio and fillMaxSize so it takes the height provided by the parent
