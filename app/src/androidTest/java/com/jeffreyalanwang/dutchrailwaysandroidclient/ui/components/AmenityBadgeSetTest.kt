@@ -1,9 +1,13 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components
 
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Card
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -11,8 +15,11 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
+import androidx.test.uiautomator.UiDevice
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -81,12 +88,6 @@ class AmenityBadgeSetTest {
             )
         }
         
-        // Clicking the container (which usually handles expansion)
-        // In the code, clicking the badge in non-modifiable mode doesn't have a specific listener on the badge itself 
-        // that prevents expansion, but the container or contentModifier might.
-        // Actually, looking at AmenityBadgeSetBase:
-        // ExpandableBadgeSet's content Layout has modifier = contentModifier.clickable { onSetExpanded(!isExpanded) }
-        
         // Find the badge and click it
         composeTestRule.onNodeWithContentDescription(TrainAmenity.WIFI.friendlyName).performClick()
         assertTrue("Expected isExpanded to be true after clicking badge", expanded)
@@ -105,6 +106,32 @@ class AmenityBadgeSetTest {
         }
         // "Add..." label is present in modifiable mode when expanded
         composeTestRule.onNodeWithText("Add...").assertIsDisplayed()
+    }
+
+    @Test
+    fun `clicking outside the badge set should collapse`() {
+        var expanded by mutableStateOf(true)
+        val amenities = setOf(TrainAmenity.WIFI)
+        composeTestRule.setContent {
+            Card(
+                modifier = Modifier.size(300.dp, 1000.dp)
+                    .testTag("card")
+            ) {
+                AmenityBadgeSet(
+                    amenities = amenities,
+                    isExpanded = expanded,
+                    onSetExpanded = { expanded = it },
+                    windowInsets = WindowInsets(0.dp)
+                )
+            }
+        }
+
+        assertTrue(expanded)
+        UiDevice.getInstance(getInstrumentation())
+            .run {
+                click(300, 300)
+            }
+        assertFalse("Expected isExpanded to be false after clicking away", expanded)
     }
 
     @Test

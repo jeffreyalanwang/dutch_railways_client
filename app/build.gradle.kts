@@ -82,6 +82,7 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.androidx.uiautomator)
     implementation(libs.kotlinx.collections.immutable)
     implementation(libs.androidx.appcompat)
     implementation(libs.maps.compose)

@@ -33,6 +33,7 @@ material3Version = "1.4.0"
 uiVersion = "1.11.3"
 foundationLayoutVersion = "1.11.3"
 uiUnit = "1.11.3"
+uiautomator = "2.3.0"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -78,6 +79,7 @@ androidx-compose-material3 = { group = "androidx.compose.material3", name = "mat
 ui = { group = "androidx.compose.ui", name = "ui", version.ref = "uiVersion" }
 androidx-foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "foundationLayoutVersion" }
 androidx-compose-ui-unit = { group = "androidx.compose.ui", name = "ui-unit", version.ref = "uiUnit" }
+androidx-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomator", version.ref = "uiautomator" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

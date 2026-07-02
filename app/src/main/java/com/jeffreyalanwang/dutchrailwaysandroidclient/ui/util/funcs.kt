@@ -1,5 +1,6 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util
 
+import android.R.attr.layoutDirection
 import android.R.attr.x
 import android.R.attr.y
 import android.util.DisplayMetrics

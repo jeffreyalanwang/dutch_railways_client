@@ -1,20 +1,30 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components
 
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color.Companion.Green
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.test.*
-import androidx.compose.ui.test.junit4.v2.createComposeRule
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.isPopup
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
+import androidx.test.uiautomator.UiDevice
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.theme.PurpleGrey40
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -37,7 +47,9 @@ class ExpandablePopupTest {
                 windowInsets = WindowInsets(0.dp),
                 animationSpec = tween<Int>() to tween<Int>()
             ) {
-                Box(Modifier.size(50.dp).testTag("content"))
+                Box(Modifier
+                    .size(50.dp)
+                    .testTag("content"))
             }
         }
 
@@ -55,7 +67,9 @@ class ExpandablePopupTest {
                 windowInsets = WindowInsets(0.dp),
                 animationSpec = tween<Int>(durationMillis = 1) to tween<Int>(durationMillis = 1)
             ) {
-                Box(Modifier.size(50.dp).testTag("content"))
+                Box(Modifier
+                    .size(50.dp)
+                    .testTag("content"))
             }
         }
 
@@ -132,37 +146,50 @@ class ExpandablePopupTest {
         }
 
         composeTestRule.waitForIdle()
-        androidx.test.espresso.Espresso.pressBack()
+        Espresso.pressBack()
         composeTestRule.waitForIdle()
         assertTrue("onCollapse should be called when back is pressed", collapseCalled)
     }
 
     @Test
     fun `clicking outside the popup should trigger the onCollapse callback`() {
+        var isExpanded by mutableStateOf(true)
         var collapseCalled = false
         composeTestRule.setContent {
-            Box(Modifier.fillMaxSize()) {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .testTag("box")
+            ) {
                 ExpandablePopup(
-                    isExpanded = true,
-                    onCollapse = { collapseCalled = true },
-                    collapsedDimensions = DpSize(10.dp, 10.dp),
+                    isExpanded = isExpanded,
+                    onCollapse = { isExpanded = false; collapseCalled = true },
+                    collapsedDimensions = DpSize(200.dp, 200.dp),
                     uncoercedExpandedOffset = IntOffset(1, 1),
                     windowInsets = WindowInsets(0.dp),
                     animationSpec = tween<Int>(durationMillis = 1) to tween<Int>(durationMillis = 1)
                 ) {
-                    Box(Modifier.size(10.dp).testTag("popup_content"))
+                    Box(Modifier
+                        .background(if (isExpanded) Green else PurpleGrey40)
+                        .size(200.dp)
+                        .testTag("popup_content"))
                 }
             }
         }
 
         composeTestRule.waitForIdle()
-        
-        // We try to click outside by clicking on the root of the main window.
-        composeTestRule.onAllNodes(isRoot()).onFirst().performTouchInput {
-            click(bottomRight)
-        }
+
+        // The [Popup]'s collapse behavior seems to be triggered using an
+        // Android API which is beyond the scope of Compose.
+        // So, we manually click somewhere on the screen outside the popup.
+        UiDevice.getInstance(getInstrumentation())
+            .run {
+                click(300, 300)
+            }
 
         composeTestRule.waitForIdle()
+
+        assertFalse("Popup should have been collapsed", isExpanded)
         assertTrue("onCollapse should be called when clicking outside", collapseCalled)
     }
 }
