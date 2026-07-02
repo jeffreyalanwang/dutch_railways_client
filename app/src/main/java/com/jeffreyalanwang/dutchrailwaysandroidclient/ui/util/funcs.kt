@@ -24,6 +24,8 @@ import androidx.compose.runtime.mutableStateSetOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSerializable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
@@ -58,8 +60,10 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.from
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getBounds
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AppNavArgs
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.stateIn
 import kotlin.math.max
 
@@ -278,14 +282,38 @@ fun IntRect.translatedTo(left: Int, top: Int)
  * If [this] is too large to fit in [bounds] along a dimension,
  *     move its top-left to [xOverflow] or [yOverflow].
  */
+context(layoutDirection: LayoutDirection)
+fun IntRect.movedInto(
+    bounds: IntRect,
+    overflowX: Alignment.Horizontal,
+    overflowY: Alignment.Vertical,
+) = translatedTo(
+    left =
+        xRange
+        .movedInto(
+            bounds.xRange,
+            overflowStart =
+                bounds.left +
+                overflowX.align(this.width, bounds.width, layoutDirection),
+        )
+        .first,
+    top =
+        yRange
+        .movedInto(
+            bounds.yRange,
+            overflowY.align(this.height, bounds.height),
+        )
+        .first
+)
+
 fun IntRect.movedInto(
     bounds: IntRect,
     xOverflow: Int = 0,
     yOverflow: Int = 0,
 ) = if (this in bounds) this
     else this.translatedTo(
-        left = xRange.movedInto(bounds.xRange, overflowStart = -100).first,//xOverflow).first,
-        top = yRange.movedInto(bounds.yRange, overflowStart = -100).first,//yOverflow).first,
+        left = xRange.movedInto(bounds.xRange, overflowStart = xOverflow).first,
+        top = yRange.movedInto(bounds.yRange, overflowStart = yOverflow).first,
     )
 
 /**
@@ -344,4 +372,14 @@ fun animateIntOffsetAsState(
         ?: {}
 
     return outState
+}
+
+/** [LaunchedEffect] that ignores its first key. */
+@Composable
+fun OnChangeEffect(key: Any?, block: suspend CoroutineScope.() -> Unit) {
+    LaunchedEffect(Unit) {
+        snapshotFlow { key }
+            .drop(1)
+            .collect { block() }
+    }
 }

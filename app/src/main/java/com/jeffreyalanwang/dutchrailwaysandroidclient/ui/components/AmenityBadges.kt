@@ -81,6 +81,21 @@ private fun AmenityBadgePreview() {
     }
 }
 
+/**
+ * An editable set of amenity badges that can expand to show labels and allow adding or removing amenities.
+ *
+ * @param amenities The set of currently selected amenities.
+ * @param onModify Callback invoked when the set of amenities is modified (added or removed).
+ * @param isExpanded Whether the badge set is currently in its expanded state.
+ * @param onSetExpanded Callback to toggle the expansion state.
+ * @param windowInsets The insets used for positioning the expanded popup.
+ * @param contentModifier Modifier applied to the inner layout.
+ * @param containerModifier Modifier applied to the outer placeholder container.
+ * @param collapsedBadgeSize The size of the badges when collapsed.
+ * @param expandedBadgeSize The size of the badges when expanded.
+ * @param color The primary color for the badge icons and borders.
+ * @param bgColor The background color of the badges.
+ */
 @SuppressLint("ModifierParameter")
 @Composable
 fun EditAmenityBadgeSet(
@@ -94,7 +109,6 @@ fun EditAmenityBadgeSet(
     collapsedBadgeSize: Dp = 15.dp,
     expandedBadgeSize: Dp = 30.dp,
     color: Color = LocalContentColor.current,
-    bgColor: Color = MaterialTheme.colorScheme.background,
 ) = AmenityBadgeSetBase(
     amenities,
     isExpanded,
@@ -106,9 +120,22 @@ fun EditAmenityBadgeSet(
     collapsedBadgeSize = collapsedBadgeSize,
     expandedBadgeSize = expandedBadgeSize,
     color,
-    bgColor,
 )
 
+/**
+ * A read-only set of amenity badges that can expand to show labels.
+ *
+ * @param amenities The set of amenities to display.
+ * @param isExpanded Whether the badge set is currently in its expanded state.
+ * @param onSetExpanded Callback to toggle the expansion state.
+ * @param windowInsets The insets used for positioning the expanded popup.
+ * @param contentModifier Modifier applied to the inner layout.
+ * @param containerModifier Modifier applied to the outer placeholder container.
+ * @param collapsedBadgeSize The size of the badges when collapsed.
+ * @param expandedBadgeSize The size of the badges when expanded.
+ * @param color The primary color for the badge icons and borders.
+ * @param bgColor The background color of the badges.
+ */
 @SuppressLint("ModifierParameter")
 @Composable
 fun AmenityBadgeSet(
@@ -121,7 +148,6 @@ fun AmenityBadgeSet(
     collapsedBadgeSize: Dp = 15.dp,
     expandedBadgeSize: Dp = 30.dp,
     color: Color = LocalContentColor.current,
-    bgColor: Color = MaterialTheme.colorScheme.background,
 ) = AmenityBadgeSetBase(
     amenities,
     isExpanded,
@@ -133,9 +159,12 @@ fun AmenityBadgeSet(
     collapsedBadgeSize = collapsedBadgeSize,
     expandedBadgeSize = expandedBadgeSize,
     color,
-    bgColor,
 )
 
+/**
+ * Whether the UI state should allow the user to delete or add an amenity.
+ * This combined type illustrates that only one should be allowed at a time.
+ */
 private sealed interface PreparingForModification {
     data class Delete(val amenity: TrainAmenity): PreparingForModification
     data object Add: PreparingForModification
@@ -154,7 +183,6 @@ private fun AmenityBadgeSetBase(
     collapsedBadgeSize: Dp = 15.dp,
     expandedBadgeSize: Dp = 30.dp,
     color: Color = LocalContentColor.current,
-    bgColor: Color = MaterialTheme.colorScheme.background,
 ) {
     if (amenities.isEmpty()) return Text(
         "No amenities",
@@ -186,7 +214,7 @@ private fun AmenityBadgeSetBase(
         containerModifier = containerModifier,
         collapsedGap = gap,
         expandedGap = -gap,
-        badgesToLabels =
+        keyedBadgesToLabels =
             amenities.toList()
             .map {
                 if (
@@ -268,24 +296,28 @@ private fun AmenityBadgeSetBase(
                 }
 
                 badgeComposable to labelComposable
+
             }
+            .mapKeys { it.key }
     )
 }
+
 
 sealed interface Badge {
     @Composable fun BadgeComposable(onClick: (() -> Unit)?, modifier: Modifier = Modifier)
     val label: String
 
+    /** Generic badge for an amenity. */
     data class Amenity(val amenity: TrainAmenity): Badge {
         @Composable
         override fun BadgeComposable(onClick: (() -> Unit)?, modifier: Modifier)
-            = Badge(
-                AppIcons.Amenity(amenity),
-                amenity.friendlyName,
-                onClick
-                    ?.let { modifier.clickable { it() } }
-                    ?: modifier,
-            )
+                = Badge(
+            AppIcons.Amenity(amenity),
+            amenity.friendlyName,
+            onClick
+                ?.let { modifier.clickable { it() } }
+                ?: modifier,
+        )
 
         override val label = amenity.friendlyName
     }
@@ -293,53 +325,54 @@ sealed interface Badge {
     data class Delete(val amenity: TrainAmenity): Badge {
         @Composable
         override fun BadgeComposable(onClick: (() -> Unit)?, modifier: Modifier)
-            = Badge(
-                R.drawable.ic_close,
-                "Delete",
-                onClick
-                    ?.let { modifier.clickable { it() } }
-                    ?: modifier,
-                White,
-                Red,
-                0f
-            )
+                = Badge(
+            R.drawable.ic_close,
+            "Delete",
+            onClick
+                ?.let { modifier.clickable { it() } }
+                ?: modifier,
+            White,
+            Red,
+            0f
+        )
 
         override val label = "Delete ${amenity.friendlyName}?"
     }
 
+    /** A badge that reveals not-present amenities to add. */
     data object BeginAdd: Badge {
         @Composable
         override fun BadgeComposable(onClick: (() -> Unit)?, modifier: Modifier)
-            = Badge(
-                R.drawable.ic_add,
-                "Add",
-                onClick
-                    ?.let { modifier.clickable { it() } }
-                    ?: modifier,
-                White,
-                Color.Gold,
-                0f
-            )
+                = Badge(
+            R.drawable.ic_add,
+            "Add",
+            onClick
+                ?.let { modifier.clickable { it() } }
+                ?: modifier,
+            White,
+            Color.Gold,
+            0f
+        )
 
         override val label = "Add..."
     }
 
+    /** A badge that, when clicked, adds a specific amenity to the set. */
     data class Add(val amenity: TrainAmenity): Badge {
         @Composable
         override fun BadgeComposable(onClick: (() -> Unit)?, modifier: Modifier)
-            = Badge(
-                AppIcons.Amenity(amenity),
-                "Add ${amenity.friendlyName}",
-                onClick
-                    ?.let { modifier.clickable { it() } }
-                    ?: modifier,
-                White,
-                Color.Gold,
-                0f
-            )
+                = Badge(
+            AppIcons.Amenity(amenity),
+            "Add ${amenity.friendlyName}",
+            onClick
+                ?.let { modifier.clickable { it() } }
+                ?: modifier,
+            White,
+            Color.Gold,
+            0f
+        )
 
         override val label = "Add ${amenity.friendlyName}"
     }
 
 }
-

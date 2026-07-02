@@ -20,7 +20,6 @@ import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
-import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.width
@@ -40,7 +39,7 @@ class ExpandableBadgeSetTest {
 
     @Test
     fun expandableBadgeSet_collapsed_rendersItemsInRow() {
-        val badgesToLabels: Map<Badge, Pair<@Composable () -> Unit, @Composable () -> Unit>> = mapOf(
+        val badgesToLabels: Map<Any, Pair<@Composable () -> Unit, @Composable () -> Unit>> = mapOf(
             Badge.Amenity(TrainAmenity.WIFI) to Pair(
                 @Composable { Box(Modifier.size(20.dp).testTag("badge_0")) },
                 @Composable { Text("Label 0", Modifier.testTag("label_0")) }
@@ -58,7 +57,7 @@ class ExpandableBadgeSetTest {
                 collapsedBadgeSize = 20.dp,
                 expandedBadgeSize = 40.dp,
                 windowInsets = WindowInsets(0.dp),
-                badgesToLabels = badgesToLabels
+                keyedBadgesToLabels = badgesToLabels
             )
         }
 
@@ -70,7 +69,7 @@ class ExpandableBadgeSetTest {
 
     @Test
     fun expandableBadgeSet_expanded_rendersItemsInColumn() {
-        val badgesToLabels: Map<Badge, Pair<@Composable () -> Unit, @Composable () -> Unit>> = mapOf(
+        val badgesToLabels: Map<Any, Pair<@Composable () -> Unit, @Composable () -> Unit>> = mapOf(
             Badge.Amenity(TrainAmenity.WIFI) to Pair(
                 @Composable { Box(Modifier.size(20.dp).testTag("badge_0")) },
                 @Composable { Text("Label 0", Modifier.testTag("label_0")) }
@@ -88,7 +87,7 @@ class ExpandableBadgeSetTest {
                 collapsedBadgeSize = 20.dp,
                 expandedBadgeSize = 40.dp,
                 windowInsets = WindowInsets(0.dp),
-                badgesToLabels = badgesToLabels
+                keyedBadgesToLabels = badgesToLabels
             )
         }
 
@@ -101,30 +100,6 @@ class ExpandableBadgeSetTest {
     }
 
     @Test
-    fun testPopupOffsetFromContainer() {
-        val util = ExpandableBadgeSetUtilScope
-        
-        val boundsInWindow = IntRect(0, 0, 1000, 1000)
-        val containerInWindow = IntOffset(100, 100)
-        val popupSize = IntSize(200, 300)
-        val desiredOffset = IntOffset(10, 10)
-        
-        assertEquals(IntOffset.Zero, util.popupOffsetFromContainer(false, boundsInWindow, containerInWindow, popupSize, desiredOffset))
-        
-        val offset = util.popupOffsetFromContainer(true, boundsInWindow, containerInWindow, popupSize, desiredOffset)
-        assertEquals(desiredOffset, offset)
-        
-        val overflowOffset = util.popupOffsetFromContainer(
-            isExpanded = true,
-            boundsInWindow = IntRect(0, 0, 1000, 1000),
-            containerInWindow = IntOffset(100, 100),
-            popupSize = IntSize(200, 300),
-            desiredOffset = IntOffset(850, 10)
-        )
-        assertEquals(700, overflowOffset.x)
-    }
-
-    @Test
     fun testBasicLinearLayout_Row() {
         val util = ExpandableBadgeSetUtilScope
         val mockPlaceable1 = MockPlaceable(50, 50)
@@ -132,7 +107,7 @@ class ExpandableBadgeSetTest {
         val keyedPlaceables = listOf("1" to mockPlaceable1, "2" to mockPlaceable2)
         val gap = 10
 
-        val (positions, size) = util.basicLinearLayout(util.Row, keyedPlaceables, gap)
+        val (positions, size) = util.basicLinearLayout(LayoutAxis.Row, keyedPlaceables, gap)
 
         assertEquals(IntSize(120, 50), size)
         assertEquals(IntOffset(0, 0), positions["1"])
@@ -147,7 +122,7 @@ class ExpandableBadgeSetTest {
         val keyedPlaceables = listOf("1" to mockPlaceable1, "2" to mockPlaceable2)
         val gap = 10
 
-        val (positions, size) = util.basicLinearLayout(util.Column, keyedPlaceables, gap)
+        val (positions, size) = util.basicLinearLayout(LayoutAxis.Column, keyedPlaceables, gap)
 
         assertEquals(IntSize(60, 100), size)
         assertEquals(IntOffset(0, 0), positions["1"])
@@ -156,7 +131,7 @@ class ExpandableBadgeSetTest {
 
     @Test
     fun testAnimation_Progression() {
-        val badgesToLabels: Map<Badge, Pair<@Composable () -> Unit, @Composable () -> Unit>> = mapOf(
+        val badgesToLabels: Map<Any, Pair<@Composable () -> Unit, @Composable () -> Unit>> = mapOf(
             Badge.Amenity(TrainAmenity.WIFI) to Pair(
                 // Use aspectRatio and fillMaxSize so it takes the height provided by the parent
                 @Composable { Box(Modifier.aspectRatio(1f).fillMaxSize().testTag("badge_0")) },
@@ -173,7 +148,7 @@ class ExpandableBadgeSetTest {
                 collapsedBadgeSize = 20.dp,
                 expandedBadgeSize = 40.dp,
                 windowInsets = WindowInsets(0.dp),
-                badgesToLabels = badgesToLabels
+                keyedBadgesToLabels = badgesToLabels
             )
         }
 
