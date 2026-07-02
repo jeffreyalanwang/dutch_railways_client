@@ -105,13 +105,13 @@ class EditPassServiceViewModelTest {
         viewModel.addStop() // index 0
         viewModel.addStop() // index 1
         
-        val id0 = viewModel.stops[0].id
-        val id1 = viewModel.stops[1].id
+        val stop0 = viewModel.stops[0]
+        val stop1 = viewModel.stops[1]
         
         viewModel.reorderStops(0, 1)
         
-        assertEquals(id1, viewModel.stops[0].id)
-        assertEquals(id0, viewModel.stops[1].id)
+        assertEquals(stop1, viewModel.stops[0])
+        assertEquals(stop0, viewModel.stops[1])
     }
 
     @Test
