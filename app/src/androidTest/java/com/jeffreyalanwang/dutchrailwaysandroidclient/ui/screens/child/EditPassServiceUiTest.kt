@@ -115,7 +115,7 @@ class EditPassServiceUiTest {
     fun `editing an existing pass service should display correctly pre-filled data`() {
         val station = Station(1, "Den Haag Centraal", "Address", mockk())
         val stop = ServiceStop(null, ZonedDateTime.now(ams), 119, 1)
-        val service = PassService(119, "Intercity to Den Haag Centraal", Trainset.VIRM, emptySet(), listOf(stop))
+        val service = PassService(119, "Intercity to Den Haag Centraal", Trainset.VIRM, emptySet())
         
         every { BackendApi.get_pass_service(119) } returns service
         every { BackendApi.get_stops_of_service(any<PassService>()) } returns listOf(stop)
@@ -141,7 +141,7 @@ class EditPassServiceUiTest {
         val station2 = Station(2, "Station 2", "Address 2", mockk())
         val stop1 = ServiceStop(null, ZonedDateTime.now(ams), 119, 1)
         val stop2 = ServiceStop(ZonedDateTime.now(ams).plusMinutes(10), null, 119, 2)
-        val service = PassService(119, "Test Service", Trainset.VIRM, emptySet(), listOf(stop1, stop2))
+        val service = PassService(119, "Test Service", Trainset.VIRM, emptySet())
 
         every { BackendApi.get_pass_service(119) } returns service
         every { BackendApi.get_stops_of_service(any<PassService>()) } returns listOf(stop1, stop2)

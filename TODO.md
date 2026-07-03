@@ -6,6 +6,9 @@
       * edit location point
     * edit areas
       * edit name
+    -> latlng or address: search placeholder token + expandedsearchbar
+    -> transitionable between edit station screen + fullscreen GoogleMap (with movableContentOf?)
+  * organize ...ui.screens.child
   * enforce a "lock" button to enable user/admin mode (needs to be able to modify backend requests later)
 * [Apollo](https://www.apollographql.com/docs/kotlin)
   * [Schema](https://www.apollographql.com/docs/apollo-server/schema/schema) with nullable fields 

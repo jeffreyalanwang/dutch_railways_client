@@ -29,6 +29,19 @@
             </AndroidTestResultsTableState>
           </value>
         </entry>
+        <entry key="-1538015536">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Tests" value="360" />
+                  <entry key="Waydroid WayDroid x86_64 Device" value="120" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
         <entry key="-1107748584">
           <value>
             <AndroidTestResultsTableState>
@@ -37,6 +50,19 @@
                   <entry key="Duration" value="98" />
                   <entry key="Tests" value="368" />
                   <entry key="Waydroid WayDroid x86_64 Device" value="127" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
+        <entry key="-546963786">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Tests" value="360" />
+                  <entry key="Waydroid WayDroid x86_64 Device" value="120" />
                 </map>
               </option>
             </AndroidTestResultsTableState>
@@ -148,6 +174,33 @@
           </value>
         </entry>
         <entry key="1525189282">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Tests" value="360" />
+                  <entry key="Waydroid WayDroid x86_64 Device" value="120" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
+        <entry key="1533826400">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Pixel_7_GApps" value="120" />
+                  <entry key="Tests" value="360" />
+                  <entry key="Waydroid WayDroid x86_64 Device" value="120" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
+        <entry key="1677757120">
           <value>
             <AndroidTestResultsTableState>
               <option name="preferredColumnWidths">

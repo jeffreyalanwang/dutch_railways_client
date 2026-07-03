@@ -157,7 +157,7 @@ fun NewPassServiceScreen(
         screenTitle = "New train service",
         onFinished = { id ->
             onNavigateBack()
-            onNavigate(PassServiceDetailNavArgs(id)) // TODO you might need instead to refresh the previous page
+            onNavigate(PassServiceDetailNavArgs(id))
         },
         onCancelled = onNavigateBack,
         modifier = Modifier.padding(vertical = 20.dp)
@@ -182,7 +182,8 @@ fun EditPassServiceScreen(
         screenTitle = "Edit train service",
         onFinished = { id ->
             onNavigateBack()
-            onNavigate(PassServiceDetailNavArgs(id)) // TODO you might need instead to refresh the previos page
+            onNavigateBack()
+            onNavigate(PassServiceDetailNavArgs(id))
         },
         onCancelled = onNavigateBack,
         modifier = Modifier.padding(vertical = 20.dp)
@@ -376,6 +377,7 @@ private fun EditStops(
         ) { i, stop, isDragging ->
             ElevatingReorderableItem(
                 isDragging,
+                modifier = Modifier.testTag("edit_stop_row_$i"),
                 contentPadding = hPadding,
                 shape = MaterialTheme.shapes.small,
             ) {
@@ -402,7 +404,6 @@ private fun EditStops(
                             .fill()
                             .testTag("stop_station_$i")
                     ) {
-
                         Text(
                             stop.getStation()?.name ?: "",
                             softWrap = false,

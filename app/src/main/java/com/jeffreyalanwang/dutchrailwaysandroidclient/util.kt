@@ -572,7 +572,7 @@ inline fun <T, R> T.letIf(
 inline fun <T> T.letIf(condition: Boolean, then: (T)->T): T
     = this.letIf({ condition }, { this }, then)
 
-fun List<ServiceStop>.lastStationName() = this.last().getStation().name
+fun List<ServiceStop>.lastStationName() = this.lastOrNull()?.getStation()?.name
 
 fun ZonedDateTime.toKotlinLocalTime() = toKotlinLocalDateTime().time
 fun ZonedDateTime.toKotlinLocalDate() = toKotlinLocalDateTime().date

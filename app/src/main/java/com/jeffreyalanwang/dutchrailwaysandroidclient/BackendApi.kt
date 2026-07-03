@@ -245,13 +245,19 @@ object BackendApi {
 
     fun add_pass_service(title: String, trainset: Trainset, amenities: Set<TrainAmenity>, stops: List<ServiceStop>): PassService {
         Log.d("BackendApi", "SAVING: add_pass_service: title=$title, trainset=$trainset, amenities=$amenities, stopCount=${stops.size}")
-        return PassService(
-            id = (dummyPassServices.maxOfOrNull { it.id } ?: -1) + 1,
+
+        val id = (dummyPassServices.maxOfOrNull { it.id } ?: -1) + 1
+        val newService = PassService(
+            id,
             title,
             trainset,
             amenities,
-            stops
-        ).also { dummyPassServices.add(it) }
+        )
+        val stops = stops
+            .map { it.copy(passServiceId = id) }
+
+        dummyServiceStops.addAll(stops)
+        return newService.also { dummyPassServices.add(it) }
     }
 
     fun delete_pass_service(id: Int) {
@@ -273,7 +279,7 @@ object BackendApi {
 
         val newTitle = oldService.title.let { oldTitle ->
             oldTitle
-            .removeSuffix(oldStops.lastStationName())
+            .removeSuffix(oldStops.lastStationName() ?: "")
             .let {
                 if (it == oldTitle) null
                 else if (stops == null) null
@@ -284,7 +290,8 @@ object BackendApi {
         if (stops != null) {
             check_stops_consistency(stops)
             dummyServiceStops.removeAll { it.passServiceId == serviceId }
-            dummyServiceStops.addAll(stops)
+            stops.map { it.copy(passServiceId = serviceId) }
+                .let { dummyServiceStops.addAll(it) }
         }
 
         if (trainset != null || amenities != null || newTitle != null) {

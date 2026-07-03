@@ -55,7 +55,7 @@ class EditPassServiceViewModelTest {
         val station = Station(1, "Test Station", "Address", mockk())
         val stop = ServiceStop(null, ZonedDateTime.now(ams), 100, 1)
         
-        val service = PassService(100, "Intercity to Somewhere", Trainset.VIRM, setOf(TrainAmenity.WIFI), listOf(stop))
+        val service = PassService(100, "Intercity to Somewhere", Trainset.VIRM, setOf(TrainAmenity.WIFI))
         
         every { BackendApi.get_stops_of_service(any<PassService>()) } returns listOf(stop)
         every { BackendApi.get_station_info(1) } returns station
@@ -117,7 +117,7 @@ class EditPassServiceViewModelTest {
     @Test
     fun `updateStopTime updates arrival time`() {
         val stop = ServiceStop(ZonedDateTime.now(ams), ZonedDateTime.now(ams), 100, 1)
-        val service = PassService(100, "Train", Trainset.VIRM, emptySet(), listOf(stop))
+        val service = PassService(100, "Train", Trainset.VIRM, emptySet())
         
         every { BackendApi.get_stops_of_service(any<PassService>()) } returns listOf(stop)
         
@@ -169,7 +169,7 @@ class EditPassServiceViewModelTest {
     fun `suggestedTime returns existing time if available`() {
         val now = ZonedDateTime.now(ams)
         val stop = ServiceStop(now, now.plusMinutes(5), 100, 1)
-        val service = PassService(100, "Train", Trainset.VIRM, emptySet(), listOf(stop))
+        val service = PassService(100, "Train", Trainset.VIRM, emptySet())
         every { BackendApi.get_stops_of_service(any<PassService>()) } returns listOf(stop)
         
         val viewModel = EditPassServiceViewModel(service, 100)
@@ -207,5 +207,44 @@ class EditPassServiceViewModelTest {
         assertEquals(200, result)
         
         verify { BackendApi.add_pass_service(any(), Trainset.VIRM, any(), any()) }
+    }
+
+    @Test
+    fun `saveChanges calls update_pass_service when destPassServiceId is existing`() {
+
+        val station = Station(1, "S1", "A1", mockk())
+        val station2 = Station(2, "S2", "A2", mockk())
+
+        every { BackendApi.get_station_info(1) } returns station
+        every { BackendApi.get_station_info(2) } returns station2
+
+        every { BackendApi.add_pass_service(any(), any(), any(), any()) } answers { callOriginal() }
+        val service = BackendApi.add_pass_service("Intercity to Somewhere", Trainset.VIRM, setOf(TrainAmenity.WIFI), emptyList())
+        val id = service.id
+        every { BackendApi.get_pass_service(id) } answers { callOriginal() }
+        every { BackendApi.get_stops_of_service(id) } answers { callOriginal() }
+        every { BackendApi.update_pass_service(any(), any(), any(), any()) } answers { callOriginal() }
+
+        val viewModel = EditPassServiceViewModel(service, id)
+        viewModel.trainsetSelection = Trainset.SLT
+
+        viewModel.addStop()
+        viewModel.updateStation(0, station)
+        viewModel.updateStopTime(0, StopPoint.Departure, LocalTime(10, 0))
+
+        viewModel.addStop()
+        viewModel.updateStation(1, station2)
+        viewModel.updateStopTime(1, StopPoint.Arrival, LocalTime(11, 0))
+
+        // Mock BackendApi.add_pass_service
+        val result = viewModel.saveChanges()
+        assertEquals(id, result)
+        verify { BackendApi.update_pass_service(id, Trainset.SLT, any(), match { it.size == 2 }) }
+
+        // Check for desired results in BackendApi
+        val savedStops = BackendApi.get_stops_of_service(id)
+        assertEquals(2, savedStops.size)
+        assertEquals(1, savedStops[0].stationId)
+        assertEquals(2, savedStops[1].stationId)
     }
 }

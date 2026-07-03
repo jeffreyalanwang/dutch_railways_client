@@ -127,14 +127,8 @@ class Station(
     name: String,
     val address: String,
     val geom: LatLng,
-    private var stops: List<ServiceStop>? = null,
 ) : Place(id, name), Parcelable {
-    fun getStops(): List<ServiceStop> {
-        if (stops == null) {
-            stops = BackendApi.get_stops_at_station(this)
-        }
-        return stops!!
-    }
+    fun getStops() = BackendApi.get_stops_at_station(this)
 }
 
 /**
@@ -189,12 +183,6 @@ data class PassService(
     val title: String,
     val trainset: Trainset,
     val amenities: Set<TrainAmenity>,
-    private var stops: List<ServiceStop>? = null,
 ) : Parcelable {
-    fun getStops(): List<ServiceStop> {
-        if (stops == null) {
-            stops = BackendApi.get_stops_of_service(this)
-        }
-        return stops!!
-    }
+    fun getStops() = BackendApi.get_stops_of_service(this)
 }
