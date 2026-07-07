@@ -179,7 +179,7 @@ class ExpandablePopupTest {
         // So, we manually click somewhere on the screen outside the popup.
         UiDevice.getInstance(getInstrumentation())
             .run {
-                click(300, 300)
+                click(600, 600)
             }
 
         waitForIdle()
