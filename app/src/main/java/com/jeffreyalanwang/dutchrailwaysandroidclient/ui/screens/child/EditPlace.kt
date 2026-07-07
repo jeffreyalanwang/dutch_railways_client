@@ -1,5 +1,8 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,7 +15,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
@@ -164,60 +166,62 @@ fun EditStationScreen(
                 .padding(all = 10.dp),
         )
         HorizontalDivider(thickness = Dp.Hairline)
-        EditableMarkerMap(
-            location = location.first,
-            markerTitle = location.second,
-            onLocationSelected = null,
-            onMapClick = { isLocationPickerExpanded = true },
-            contentDescription = "Station on map (click to edit)",
-            contentPadding = PaddingValues(horizontal = 10.dp),
-            modifier = Modifier
+        Box(
+            Modifier
                 .onGloballyPositioned {
                     collapsedLocationPickerBounds =
                         it.boundsInRoot().roundToIntRect()
                 }
-                .heightIn(200.dp, 400.dp),
+                .fillMaxWidth()
+                .height(400.dp),
         )
         HorizontalDivider(thickness = Dp.Hairline)
 
         Spacer(Modifier.height(20.dp))
     }
 
-    ExpandingHeroBox(
-        isVisible = isLocationPickerExpanded,
-        onDismissRequest = { isLocationPickerExpanded = false },
+    ExpandingLocationSelector(
+        isExpanded = isLocationPickerExpanded,
+        onSetExpanded = { isLocationPickerExpanded = it },
         collapsedBounds = { collapsedLocationPickerBounds },
-    ) {
-        ExpandedLocationSelector(
-            stationName = station.name,
-            initialLocation = location,
-            onNewSelection = { location = it },
-            horizontalContentPadding = 10.dp,
-            onDismissRequest = { isLocationPickerExpanded = false },
-        )
-    }
+        stationName = station.name,
+        initialLocation = location,
+        onNewSelection = { location = it },
+        horizontalContentPadding = 10.dp,
+    )
 }
 
 @Composable
-private fun ExpandedLocationSelector(
+private fun ExpandingLocationSelector(
+    isExpanded: Boolean,
     stationName: String,
     initialLocation: StationLocation,
     onNewSelection: (StationLocation) -> Unit,
-    onDismissRequest: () -> Unit,
-    modifier: Modifier = Modifier,
+    onSetExpanded: (Boolean) -> Unit,
+    collapsedBounds: () -> IntRect,
     horizontalContentPadding: Dp = 0.dp,
-) = Box(modifier) {
+) = ExpandingHeroBox(
+    isExpanded = isExpanded,
+    onDismissRequest = { onSetExpanded(false) },
+    collapsedBounds = { collapsedBounds() },
+) {
 
     val scope = rememberCoroutineScope()
     val density = LocalDensity.current
     var appBarHeight by remember { mutableStateOf(0.dp) }
 
-    var result by remember { mutableStateOf<LocationResult?>(
-        initialLocation.run { AddressResult(first, second) }
-    ) }
+    var result by remember {
+        mutableStateOf<LocationResult?>(
+            initialLocation.run { AddressResult(first, second) }
+        )
+    }
     val textFieldState = rememberTextFieldState()
     val searchBarState = rememberSearchBarState()
-    val value by rememberUpdatedGeocoderResult(result, searchBarState, textFieldState)
+    val value by rememberUpdatedGeocoderResult(
+        result,
+        searchBarState,
+        textFieldState
+    )
 
     value?.let {
         LaunchedEffect(it) { onNewSelection(it) }
@@ -226,39 +230,50 @@ private fun ExpandedLocationSelector(
     EditableMarkerMap(
         location = value?.first, // use of [value] instead of [result] means no
                                  // pan until the geocoder successfully resolves
-        onLocationSelected = { result = LatLngResult(it) },
+        onLocationSelected =
+            if (isExpanded) { { result = LatLngResult(it) } }
+            else null,
+        onMapClick =
+            if (isExpanded) null
+            else { { onSetExpanded(true) } },
         markerTitle = stationName,
-        contentDescription = "Station on map",
+        contentDescription = "Select station location on map",
         contentPadding =
-            PaddingValues(horizontal = horizontalContentPadding) +
-            ScaffoldDefaults.contentWindowInsets
-                .asPaddingValues()
-                .copy(top = appBarHeight),
+            if (isExpanded) ScaffoldDefaults.contentWindowInsets
+                        .asPaddingValues()
+                        .copy(top = appBarHeight)
+            else PaddingValues(horizontal = horizontalContentPadding),
     )
 
-    AppBarWithSearch(
-        searchBarState,
-        colors = SearchBarDefaults.appBarWithSearchColors(
-            appBarContainerColor = Color.Transparent
-        ),
-        shadowElevation = ON_MAP_SHADOW_ELEVATION,
-        modifier = Modifier
-            .onLayoutRectChanged {
-                appBarHeight = it.height
-                    .letWith(density) { h -> h.toDp() }
-            },
-        inputField = {
-            BaseSearchInputField(
-                LOCATION_SEARCH_PLACEHOLDER,
-                textFieldState,
-                searchBarState,
-                modifier = Modifier.fillMaxWidth(),
-                leadingIcon = {
-                    NavBackButton(onDismissRequest)
+    AnimatedVisibility(
+        isExpanded,
+        enter = MaterialTheme.motionScheme.run { slideInVertically(slowSpatialSpec()) },
+        exit = MaterialTheme.motionScheme.run { slideOutVertically(fastSpatialSpec()) },
+    ) {
+        AppBarWithSearch(
+            searchBarState,
+            colors = SearchBarDefaults.appBarWithSearchColors(
+                appBarContainerColor = Color.Transparent
+            ),
+            shadowElevation = ON_MAP_SHADOW_ELEVATION,
+            modifier = Modifier
+                .onLayoutRectChanged {
+                    appBarHeight = it.height
+                        .letWith(density) { h -> h.toDp() }
                 },
-            )
-        },
-    )
+            inputField = {
+                BaseSearchInputField(
+                    LOCATION_SEARCH_PLACEHOLDER,
+                    textFieldState,
+                    searchBarState,
+                    modifier = Modifier.fillMaxWidth(),
+                    leadingIcon = {
+                        NavBackButton({ onSetExpanded(false) })
+                    },
+                )
+            },
+        )
+    }
 
     ExpandedSearch<LocationResult>(
         textFieldState,
@@ -442,18 +457,18 @@ private fun EditNameField(
     modifier: Modifier = Modifier,
     isError: Boolean = false,
 ) = TextField(
-        state,
-        isError = isError,
-        placeholder = {
-            Text(
-                placeholder,
-                style = MaterialTheme.typography.displaySmall,
-            )
-        },
-        textStyle = MaterialTheme.typography.displaySmall,
-        contentPadding = PaddingValues.Zero,
-        modifier = modifier,
-    )
+    state,
+    isError = isError,
+    placeholder = {
+        Text(
+            placeholder,
+            style = MaterialTheme.typography.displaySmall,
+        )
+    },
+    textStyle = MaterialTheme.typography.displaySmall,
+    contentPadding = PaddingValues.Zero,
+    modifier = modifier,
+)
 
 /**
  * Queries the Geocoder to convert [result] to a [StationLocation]
