@@ -59,8 +59,6 @@ fun ReorderableListForTest(
     }
 }
 
-@OptIn(ExperimentalTestApi::class)
-@RunWith(AndroidJUnit4::class)
 class ElevatingReorderableItemIntegrationTest {
 
     private lateinit var items: SnapshotStateList<String>

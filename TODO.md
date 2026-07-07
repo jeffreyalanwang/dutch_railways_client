@@ -1,15 +1,11 @@
 * C/U/D functionality: in BackendApi and in new tab Composable
-  * edit places
+  * edit places 
     * edit stations
-      * edit name
-      * edit address
-      * * display addresses in order of proximity from camera
+      * incorporate viewmodel
       * edit location point
-    * edit areas
-      * edit name
-    -> latlng or address: search placeholder token + expandedsearchbar
-    -> transitionable between edit station screen + fullscreen GoogleMap (with movableContentOf?)
-    -> test functionality of: // Refresh the previous screen by closing + reopening
+      -> latlng or address: search placeholder token + expandedsearchbar
+      -> transitionable between edit station screen + fullscreen GoogleMap (with movableContentOf?)
+      -> test functionality of: // Refresh the previous screen by closing + reopening
   * organize ...ui.screens.child
   * enforce a "lock" button to enable user/admin mode (needs to be able to modify backend requests later)
 * [Apollo](https://www.apollographql.com/docs/kotlin)

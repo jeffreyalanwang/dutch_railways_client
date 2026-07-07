@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalMaterial3Api::class)
-
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components
 
 import android.annotation.SuppressLint

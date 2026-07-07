@@ -10,6 +10,7 @@ kotlin {
     compilerOptions {
         optIn.add("kotlin.time.ExperimentalTime")
         optIn.add("androidx.compose.material3.ExperimentalMaterial3Api")
+        optIn.add("androidx.compose.ui.test.ExperimentalTestApi")
         freeCompilerArgs.addAll("-P", "plugin:org.jetbrains.kotlin.parcelize:experimentalCodeGeneration=true")
         freeCompilerArgs.add("-XXLanguage:+ContextParameters")
         freeCompilerArgs.add("-XXLanguage:+NestedTypeAliases")
@@ -98,6 +99,7 @@ dependencies {
     implementation(libs.ui.graphics)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
+    testImplementation(libs.kotlinx.coroutines.test)
     androidTestImplementation(libs.mockkandroid)
     androidTestImplementation(libs.androidx.compose.ui.test)
     androidTestImplementation(platform(libs.androidx.compose.bom))

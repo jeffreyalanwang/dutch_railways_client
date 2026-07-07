@@ -14,8 +14,8 @@ import androidx.compose.ui.graphics.Color.Companion.Green
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.isPopup
-import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -26,19 +26,14 @@ import androidx.test.uiautomator.UiDevice
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.theme.PurpleGrey40
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
 class ExpandablePopupTest {
 
-    @get:Rule
-    val composeTestRule = createComposeRule()
-
     @Test
-    fun `collapsed popup should render its content directly`() {
-        composeTestRule.setContent {
+    fun `collapsed popup should render its content directly`() = runComposeUiTest {
+        setContent {
             ExpandablePopup(
                 isExpanded = false,
                 onCollapse = {},
@@ -53,12 +48,12 @@ class ExpandablePopupTest {
             }
         }
 
-        composeTestRule.onNodeWithTag("content").assertIsDisplayed()
+        onNodeWithTag("content").assertIsDisplayed()
     }
 
     @Test
-    fun `expanded popup should render its content within a popup`() {
-        composeTestRule.setContent {
+    fun `expanded popup should render its content within a popup`() = runComposeUiTest {
+        setContent {
             ExpandablePopup(
                 isExpanded = true,
                 onCollapse = {},
@@ -73,18 +68,18 @@ class ExpandablePopupTest {
             }
         }
 
-        composeTestRule.waitForIdle()
+        waitForIdle()
         // isPopup() is a matcher for nodes that are inside a Popup
-        composeTestRule.onNode(isPopup(), useUnmergedTree = true).assertExists()
-        composeTestRule.onNodeWithTag("content", useUnmergedTree = true).assertIsDisplayed()
+        onNode(isPopup(), useUnmergedTree = true).assertExists()
+        onNodeWithTag("content", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test
-    fun `toggling expansion should trigger the started listener`() {
+    fun `toggling expansion should trigger the started listener`() = runComposeUiTest {
         var expanded by mutableStateOf(false)
         var started = false
 
-        composeTestRule.setContent {
+        setContent {
             ExpandablePopup(
                 isExpanded = expanded,
                 onCollapse = {},
@@ -98,18 +93,18 @@ class ExpandablePopupTest {
             }
         }
 
-        composeTestRule.waitForIdle()
+        waitForIdle()
         expanded = true
-        composeTestRule.waitForIdle()
+        waitForIdle()
         assertTrue("Started listener should have been called", started)
     }
 
     @Test
-    fun `toggling expansion should trigger the finished listener`() {
+    fun `toggling expansion should trigger the finished listener`() = runComposeUiTest {
         var expanded by mutableStateOf(false)
         var finished = false
 
-        composeTestRule.setContent {
+        setContent {
             ExpandablePopup(
                 isExpanded = expanded,
                 onCollapse = {},
@@ -123,16 +118,16 @@ class ExpandablePopupTest {
             }
         }
 
-        composeTestRule.waitForIdle()
+        waitForIdle()
         expanded = true
-        composeTestRule.waitForIdle()
+        waitForIdle()
         assertTrue("Finished listener should have been called", finished)
     }
 
     @Test
-    fun `pressing back should trigger the onCollapse callback`() {
+    fun `pressing back should trigger the onCollapse callback`() = runComposeUiTest {
         var collapseCalled = false
-        composeTestRule.setContent {
+        setContent {
             ExpandablePopup(
                 isExpanded = true,
                 onCollapse = { collapseCalled = true },
@@ -145,17 +140,17 @@ class ExpandablePopupTest {
             }
         }
 
-        composeTestRule.waitForIdle()
+        waitForIdle()
         Espresso.pressBack()
-        composeTestRule.waitForIdle()
+        waitForIdle()
         assertTrue("onCollapse should be called when back is pressed", collapseCalled)
     }
 
     @Test
-    fun `clicking outside the popup should trigger the onCollapse callback`() {
+    fun `clicking outside the popup should trigger the onCollapse callback`() = runComposeUiTest {
         var isExpanded by mutableStateOf(true)
         var collapseCalled = false
-        composeTestRule.setContent {
+        setContent {
             Box(
                 Modifier
                     .fillMaxSize()
@@ -177,7 +172,7 @@ class ExpandablePopupTest {
             }
         }
 
-        composeTestRule.waitForIdle()
+        waitForIdle()
 
         // The [Popup]'s collapse behavior seems to be triggered using an
         // Android API which is beyond the scope of Compose.
@@ -187,7 +182,7 @@ class ExpandablePopupTest {
                 click(300, 300)
             }
 
-        composeTestRule.waitForIdle()
+        waitForIdle()
 
         assertFalse("Popup should have been collapsed", isExpanded)
         assertTrue("onCollapse should be called when clicking outside", collapseCalled)

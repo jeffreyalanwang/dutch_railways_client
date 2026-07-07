@@ -791,7 +791,7 @@ fun <T: Comparable<T>> T.compareTo(range: OpenEndRange<T>): Int {
     compareTo(range.start)
         .let { if (it < 0) return it }
     compareTo(range.endExclusive)
-        .let { if (it >= 0) return it }
+        .let { if (it >= 0) return 1 }
     return 0
 }
 

@@ -10,7 +10,6 @@ import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
-import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -22,112 +21,106 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
-import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Trainset
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.MainActivity
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
 class EditPassServiceMutationTest {
 
-    @get:Rule
-    val composeTestRule = createAndroidComposeRule<MainActivity>()
-
     @Test
-    fun `duplicate and mutate a PassService`() {
+    fun `duplicate and mutate a PassService`() = runAndroidComposeUiTest<MainActivity> {
         // 1. Navigate to the Edit tab
-        composeTestRule.onNodeWithText("Edit").performClick()
-        composeTestRule.waitForIdle()
+        onNodeWithText("Edit").performClick()
+        waitForIdle()
 
         // 2. Search for a PassService
-        composeTestRule.onAllNodes(hasSetTextAction()).onFirst().performClick()
-        composeTestRule.waitForIdle()
+        onAllNodes(hasSetTextAction()).onFirst().performClick()
+        waitForIdle()
 
-        composeTestRule.onAllNodes(hasSetTextAction()).onLast().performTextInput("2263")
+        onAllNodes(hasSetTextAction()).onLast().performTextInput("2263")
 
         // 3. Select the search result
-        composeTestRule.waitUntil(20000) {
-            composeTestRule.onAllNodesWithText("2263", substring = true).filter(!hasSetTextAction()).fetchSemanticsNodes().isNotEmpty()
+        waitUntil("Search result to appear", 20000) {
+            onAllNodesWithText("2263", substring = true).filter(!hasSetTextAction()).fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.onAllNodesWithText("2263", substring = true).filterToOne(!hasSetTextAction())
+        onAllNodesWithText("2263", substring = true).filterToOne(!hasSetTextAction())
             .performScrollTo()
             .performClick()
 
         // 4. Click the "Duplicate" icon
-        composeTestRule.waitUntil(20000) {
-            composeTestRule.onAllNodesWithContentDescription("Duplicate").fetchSemanticsNodes().isNotEmpty()
+        waitUntil("Duplicate icon to appear", 20000) {
+            onAllNodesWithContentDescription("Duplicate").fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.onNodeWithContentDescription("Duplicate").performClick()
+        onNodeWithContentDescription("Duplicate").performClick()
 
         // 5. Change trainset to SLT
-        composeTestRule.waitUntil(20000) {
-            composeTestRule.onAllNodesWithTag("trainset_selector").fetchSemanticsNodes().isNotEmpty()
+        waitUntil("Trainset selector to appear", 20000) {
+            onAllNodesWithTag("trainset_selector").fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.onNodeWithTag("trainset_selector").performClick()
-        composeTestRule.onNodeWithText(Trainset.SLT.name).performClick()
+        onNodeWithTag("trainset_selector").performClick()
+        onNodeWithText(Trainset.SLT.name).performClick()
 
         // 6. Save changes
-        composeTestRule.onNodeWithContentDescription("Finish & save").performClick()
+        onNodeWithContentDescription("Finish & save").performClick()
 
         // 7. Assert navigation back to PassServiceDetailScreen with new data
-        composeTestRule.waitUntil(20000) {
-            composeTestRule.onAllNodesWithContentDescription("Train icon").fetchSemanticsNodes().isNotEmpty()
+        waitUntil("Train icon to appear", 20000) {
+            onAllNodesWithContentDescription("Train icon").fetchSemanticsNodes().isNotEmpty()
         }
         
-        composeTestRule.onNodeWithContentDescription("Train icon").performClick()
-        composeTestRule.onNodeWithText(Trainset.SLT.name).assertExists()
+        onNodeWithContentDescription("Train icon").performClick()
+        onNodeWithText(Trainset.SLT.name).assertExists()
     }
 
     @Test
-    fun `modify stops in place`() {
+    fun `modify stops in place`() = runAndroidComposeUiTest<MainActivity> {
         // 1. Navigate to the Edit tab
-        composeTestRule.onNodeWithText("Edit").performClick()
-        composeTestRule.waitForIdle()
+        onNodeWithText("Edit").performClick()
+        waitForIdle()
 
         // 2. Search for a PassService
-        composeTestRule.onAllNodes(hasSetTextAction()).onFirst().performClick()
-        composeTestRule.waitForIdle()
+        onAllNodes(hasSetTextAction()).onFirst().performClick()
+        waitForIdle()
         
-        composeTestRule.onAllNodes(hasSetTextAction()).onLast().performTextInput("2263")
+        onAllNodes(hasSetTextAction()).onLast().performTextInput("2263")
 
         // 3. Select the search result
-        composeTestRule.waitUntil(20000) {
-            composeTestRule.onAllNodesWithText("2263", substring = true).filter(!hasSetTextAction()).fetchSemanticsNodes().isNotEmpty()
+        waitUntil("Search result to appear", 20000) {
+            onAllNodesWithText("2263", substring = true).filter(!hasSetTextAction()).fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.onAllNodesWithText("2263", substring = true).filterToOne(!hasSetTextAction())
+        onAllNodesWithText("2263", substring = true).filterToOne(!hasSetTextAction())
             .performScrollTo()
             .performClick()
 
         // 4. Click the "Edit" icon
-        composeTestRule.waitUntil(20000) {
-            composeTestRule.onAllNodesWithContentDescription("Edit").filter(hasClickAction()).fetchSemanticsNodes().isNotEmpty()
+        waitUntil("Edit icon to appear", 20000) {
+            onAllNodesWithContentDescription("Edit").filter(hasClickAction()).fetchSemanticsNodes().isNotEmpty()
         }
-        composeTestRule.onNode(hasContentDescription("Edit") and hasClickAction()).performClick()
+        onNode(hasContentDescription("Edit") and hasClickAction()).performClick()
 
         // 5. Modify stops
-        composeTestRule.waitUntil(20000) {
-            composeTestRule.onAllNodesWithTag("stop_station_1").fetchSemanticsNodes().isNotEmpty()
+        waitUntil("Stop station selector to appear", 20000) {
+            onAllNodesWithTag("stop_station_1").fetchSemanticsNodes().isNotEmpty()
         }
         // Delete last stop (Rotterdam Centraal)
-        composeTestRule.onAllNodes(hasAnyAncestor(hasTestTag("edit_stop_row_2"))).run {
+        onAllNodes(hasAnyAncestor(hasTestTag("edit_stop_row_2"))).run {
             assertAny(hasText("Rotterdam Centraal"))
             filterToOne(hasContentDescription("Delete stop")).performClick()
             assertCountEquals(0)
         }
         
         // 6. Save changes
-        composeTestRule.onNodeWithContentDescription("Finish & save").performClick()
+        onNodeWithContentDescription("Finish & save").performClick()
 
         // 7. Assert navigation back
-        composeTestRule.waitUntil(20000) {
-            composeTestRule.onAllNodesWithContentDescription("Train icon").fetchSemanticsNodes().isNotEmpty()
+        waitUntil("Train icon to appear", 20000) {
+            onAllNodesWithContentDescription("Train icon").fetchSemanticsNodes().isNotEmpty()
         }
 
-        composeTestRule.onNodeWithText("Amsterdam Centraal").assertExists()
-        composeTestRule.onNodeWithText("Den Haag HS").assertExists()
-        composeTestRule.onNodeWithText("Rotterdam Centraal").assertDoesNotExist()
+        onNodeWithText("Amsterdam Centraal").assertExists()
+        onNodeWithText("Den Haag HS").assertExists()
+        onNodeWithText("Rotterdam Centraal").assertDoesNotExist()
     }
 
 }

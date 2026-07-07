@@ -52,6 +52,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onLayoutRectChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -118,7 +119,7 @@ fun EditStationScreen(
 
     val station = BackendApi.get_station_info(id)
     val nameState = rememberTextFieldState(station.name)
-    val isNameValid by remember { derivedStateOf { nameState.text.isEmpty() } }
+    val isNameValid by remember { derivedStateOf { nameState.text.isNotEmpty() } }
     var location: StationLocation by rememberSaveable { mutableStateOf( station.run { geom to address } ) }
 
     var isLocationPickerExpanded by remember { mutableStateOf(false) }
@@ -151,7 +152,7 @@ fun EditStationScreen(
         )
         EditNameField(
             nameState,
-            isError = isNameValid,
+            isError = !isNameValid,
             placeholder = "Station name",
             modifier = Modifier.padding(horizontal = 10.dp)
         )
@@ -162,6 +163,7 @@ fun EditStationScreen(
             latLng = location.first,
             address = location.second,
             Modifier
+                .testTag("location_selector_caption")
                 .clickable { isLocationPickerExpanded = true }
                 .padding(all = 10.dp),
         )
@@ -257,6 +259,7 @@ private fun ExpandingLocationSelector(
             ),
             shadowElevation = ON_MAP_SHADOW_ELEVATION,
             modifier = Modifier
+                .testTag("location_search_bar")
                 .onLayoutRectChanged {
                     appBarHeight = it.height
                         .letWith(density) { h -> h.toDp() }
@@ -266,7 +269,9 @@ private fun ExpandingLocationSelector(
                     LOCATION_SEARCH_PLACEHOLDER,
                     textFieldState,
                     searchBarState,
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .testTag("location_search_input")
+                        .fillMaxWidth(),
                     leadingIcon = {
                         NavBackButton({ onSetExpanded(false) })
                     },
@@ -402,7 +407,7 @@ fun EditAreaScreen(
 ) {
     val area = BackendApi.get_area_info(id)
     val nameState = rememberTextFieldState(area.name)
-    val isNameValid by remember { derivedStateOf { nameState.text.isEmpty() } }
+    val isNameValid by remember { derivedStateOf { nameState.text.isNotEmpty() } }
 
     CardContentScaffold(
         topBar = {
@@ -431,7 +436,7 @@ fun EditAreaScreen(
         )
         EditNameField(
             nameState,
-            isError = isNameValid,
+            isError = !isNameValid,
             placeholder = "Area name",
             modifier = Modifier.padding(horizontal = 10.dp)
         )

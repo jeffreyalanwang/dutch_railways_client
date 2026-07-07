@@ -16,29 +16,22 @@ import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.test.assertWidthIsEqualTo
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
-import androidx.compose.ui.test.junit4.v2.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
+import androidx.compose.ui.test.v2.runComposeUiTest
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.width
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.jeffreyalanwang.dutchrailwaysandroidclient.TrainAmenity
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
-import org.junit.Rule
 import org.junit.Test
-import org.junit.runner.RunWith
 
-@RunWith(AndroidJUnit4::class)
 class ExpandableBadgeSetTest {
 
-    @get:Rule
-    val composeTestRule = createComposeRule()
-
     @Test
-    fun `collapsed badge set should render items in a row`() {
+    fun `collapsed badge set should render items in a row`() = runComposeUiTest {
         val badgesToLabels: Map<Any, Pair<@Composable () -> Unit, @Composable () -> Unit>> = mapOf(
             Badge.Amenity(TrainAmenity.WIFI) to Pair(
                 @Composable { Box(Modifier.size(20.dp).testTag("badge_0")) },
@@ -50,7 +43,7 @@ class ExpandableBadgeSetTest {
             )
         )
 
-        composeTestRule.setContent {
+        setContent {
             ExpandableBadgeSet(
                 isExpanded = false,
                 onSetExpanded = {},
@@ -61,14 +54,14 @@ class ExpandableBadgeSetTest {
             )
         }
 
-        val badge0X = composeTestRule.onNodeWithTag("badge_0", useUnmergedTree = true).getUnclippedBoundsInRoot().left
-        val badge1X = composeTestRule.onNodeWithTag("badge_1", useUnmergedTree = true).getUnclippedBoundsInRoot().left
+        val badge0X = onNodeWithTag("badge_0", useUnmergedTree = true).getUnclippedBoundsInRoot().left
+        val badge1X = onNodeWithTag("badge_1", useUnmergedTree = true).getUnclippedBoundsInRoot().left
         
         assertTrue("Badge 1 ($badge1X) should be to the right of Badge 0 ($badge0X)", badge1X > badge0X)
     }
 
     @Test
-    fun `expanded badge set should render items in a column`() {
+    fun `expanded badge set should render items in a column`() = runComposeUiTest {
         val badgesToLabels: Map<Any, Pair<@Composable () -> Unit, @Composable () -> Unit>> = mapOf(
             Badge.Amenity(TrainAmenity.WIFI) to Pair(
                 @Composable { Box(Modifier.size(20.dp).testTag("badge_0")) },
@@ -80,7 +73,7 @@ class ExpandableBadgeSetTest {
             )
         )
 
-        composeTestRule.setContent {
+        setContent {
             ExpandableBadgeSet(
                 isExpanded = true,
                 onSetExpanded = {},
@@ -91,10 +84,10 @@ class ExpandableBadgeSetTest {
             )
         }
 
-        composeTestRule.waitForIdle()
+        waitForIdle()
 
-        val badge0Y = composeTestRule.onNodeWithTag("badge_0", useUnmergedTree = true).getUnclippedBoundsInRoot().top
-        val badge1Y = composeTestRule.onNodeWithTag("badge_1", useUnmergedTree = true).getUnclippedBoundsInRoot().top
+        val badge0Y = onNodeWithTag("badge_0", useUnmergedTree = true).getUnclippedBoundsInRoot().top
+        val badge1Y = onNodeWithTag("badge_1", useUnmergedTree = true).getUnclippedBoundsInRoot().top
         
         assertTrue("Badge 1 ($badge1Y) should be below Badge 0 ($badge0Y)", badge1Y > badge0Y)
     }
@@ -130,7 +123,7 @@ class ExpandableBadgeSetTest {
     }
 
     @Test
-    fun `badge size should animate correctly during expansion`() {
+    fun `badge size should animate correctly during expansion`() = runComposeUiTest {
         val badgesToLabels: Map<Any, Pair<@Composable () -> Unit, @Composable () -> Unit>> = mapOf(
             Badge.Amenity(TrainAmenity.WIFI) to Pair(
                 // Use aspectRatio and fillMaxSize so it takes the height provided by the parent
@@ -141,7 +134,7 @@ class ExpandableBadgeSetTest {
 
         var expanded by mutableStateOf(false)
 
-        composeTestRule.setContent {
+        setContent {
             ExpandableBadgeSet(
                 isExpanded = expanded,
                 onSetExpanded = { expanded = it },
@@ -153,28 +146,28 @@ class ExpandableBadgeSetTest {
         }
 
         // Wait for initial layout
-        composeTestRule.waitForIdle()
-        composeTestRule.onNodeWithTag("badge_0", useUnmergedTree = true).assertWidthIsEqualTo(20.dp)
+        waitForIdle()
+        onNodeWithTag("badge_0", useUnmergedTree = true).assertWidthIsEqualTo(20.dp)
 
         // Start animation
-        composeTestRule.mainClock.autoAdvance = false
+        mainClock.autoAdvance = false
         expanded = true
         
         // Recompose and advance few frames
-        composeTestRule.mainClock.advanceTimeByFrame() // First frame
-        composeTestRule.mainClock.advanceTimeBy(100)
+        mainClock.advanceTimeByFrame() // First frame
+        mainClock.advanceTimeBy(100)
         
-        val node = composeTestRule.onNodeWithTag("badge_0", useUnmergedTree = true)
+        val node = onNodeWithTag("badge_0", useUnmergedTree = true)
         val intermediateWidth = node.getUnclippedBoundsInRoot().width
         
         assertTrue("Expected width $intermediateWidth to be greater than 20dp", intermediateWidth > 20.dp)
         assertTrue("Expected width $intermediateWidth to be less than 40dp", intermediateWidth < 40.dp)
 
         // Complete animation
-        composeTestRule.mainClock.autoAdvance = true
-        composeTestRule.waitForIdle()
+        mainClock.autoAdvance = true
+        waitForIdle()
         
-        composeTestRule.onNodeWithTag("badge_0", useUnmergedTree = true).assertWidthIsEqualTo(40.dp)
+        onNodeWithTag("badge_0", useUnmergedTree = true).assertWidthIsEqualTo(40.dp)
     }
 
     private class MockPlaceable(width: Int, height: Int) : Placeable() {

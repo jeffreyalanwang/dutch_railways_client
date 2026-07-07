@@ -1,5 +1,3 @@
-@file:OptIn(ExperimentalTime::class)
-
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel
 
 import androidx.compose.runtime.getValue
