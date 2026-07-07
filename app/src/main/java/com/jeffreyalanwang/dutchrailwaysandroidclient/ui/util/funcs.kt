@@ -1,8 +1,8 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util
 
-import android.R.attr.layoutDirection
 import android.R.attr.x
 import android.R.attr.y
+import android.content.res.Resources
 import android.util.DisplayMetrics
 import androidx.compose.animation.BoundsTransform
 import androidx.compose.animation.animateBounds
@@ -14,14 +14,17 @@ import androidx.compose.animation.core.spring
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.minus
+import androidx.compose.foundation.layout.plus
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.ProduceStateScope
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.mutableStateSetOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSerializable
@@ -61,6 +64,8 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.from
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getBounds
+import com.jeffreyalanwang.dutchrailwaysandroidclient.interpolates
+import com.jeffreyalanwang.dutchrailwaysandroidclient.map
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AppNavArgs
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
@@ -127,6 +132,11 @@ inline fun <reified T> Set<T>.toMutableStateSet()
 fun <K, V> Map<K, V>.toMutableStateMap()
     = mutableStateMapOf(*entries.map { (k, v) -> k to v }.toTypedArray())
 
+fun PaddingValues.copy(
+    top: Dp = this.calculateTopPadding(),
+    bottom: Dp = this.calculateBottomPadding(),
+) = this.horizontalOnly() + PaddingValues(top = top, bottom = bottom)
+
 fun PaddingValues.topOnly()
     = PaddingValues(
         top = this.calculateTopPadding(),
@@ -178,6 +188,15 @@ fun LatLngBounds.paddedBelow(proportion: Float): LatLngBounds {
 fun LatLngBounds.getMapCameraUpdate(padding: Int)
     = CameraUpdateFactory.newLatLngBounds(this, padding)
 
+fun LatLng.boundsForDisplay(): LatLngBounds {
+    val latitudePadding = 1.0 / 60
+    val longitudePadding = 1.0 / 90
+    return LatLngBounds(
+        this.minus(latitudePadding, longitudePadding), // southwest
+        this.plus(latitudePadding, longitudePadding), // northeast
+    )
+}
+
 /**
  * Gets [LatLngBounds] with an area > 0,
  * even when the [Place] is a [Station]
@@ -185,20 +204,7 @@ fun LatLngBounds.getMapCameraUpdate(padding: Int)
  */
 fun Place.boundsForDisplay()
     = when (this) {
-        is Station -> this.geom.let {
-            val latitudePadding = 1/60f
-            val longitudePadding = 1/90f
-            LatLngBounds(
-                LatLng( // southwest
-                    it.latitude - latitudePadding,
-                    it.longitude - longitudePadding,
-                ),
-                LatLng( // northeast
-                    it.latitude + latitudePadding,
-                    it.longitude + longitudePadding,
-                ),
-            )
-        }
+        is Station -> this.geom.boundsForDisplay()
         is Area -> this.getGeom().getBounds()
         else -> throw NotImplementedError()
     }
@@ -219,6 +225,25 @@ fun <T: NavKey> NavBackStack<T>.clearToInitial() {
     while (size > 1) {
         removeAt(size - 1)
     }
+}
+
+/** A version of [produceState] that uses the return value of the callback. */
+@Composable
+fun <T, K> producedStateFrom(
+    initialValue: T,
+    key: K,
+    producer: suspend InlineProduceStateScope<T>.(K) -> T,
+) = produceState(initialValue, key) { value = InlineProduceStateScope(this).producer(key) }.value
+
+/** A version of [produceState] that uses the return value of the callback. */
+@Composable
+fun <T> producedStateFrom(
+    initialValue: T,
+    producer: suspend InlineProduceStateScope<T>.() -> T,
+) = produceState(initialValue) { value = InlineProduceStateScope(this).producer() }.value
+
+class InlineProduceStateScope<T>(val base: ProduceStateScope<T>) {
+    val initialValue by base::value
 }
 
 context(viewModel: ViewModel)
@@ -318,6 +343,17 @@ fun IntRect.movedInto(
         top = yRange.movedInto(bounds.yRange, overflowStart = yOverflow).first,
     )
 
+fun Modifier.size(block: () -> IntSize)
+  = this.layout { measurable, _ ->
+        val size = block()
+        val constraints = Constraints.fixed(size.width, size.height)
+        val placeable = measurable.measure(constraints)
+
+        layout(size.width, size.height){
+            placeable.place(IntOffset.Zero)
+        }
+    }
+
 /**
  * Similar to [Modifier.offset()], but also changes the size it takes up in
  * the parent layout; this way, items further along a row or column are also
@@ -376,6 +412,33 @@ fun animateIntOffsetAsState(
     return outState
 }
 
+@JvmName("interpolatesIntOffset")
+infix fun Float.interpolates(
+    bounds: Triple<IntOffset, IntOffset, IntOffset>,
+) = bounds
+    .run { map { it.x } to map { it.y } }
+    .map { this.interpolates(it) }
+    .run { IntOffset(first, second) }
+
+@JvmName("interpolatesIntSize")
+infix fun Float.interpolates(
+    bounds: Triple<IntSize, IntSize, IntSize>,
+) = bounds
+    .run { map { it.width } to map { it.height } }
+    .map { this.interpolates(it) }
+    .run { IntSize(first, second) }
+
+
+/** [LaunchedEffect] that allows different behavior on its first key. */
+@Composable
+fun InitOrChangeEffect(key: Any?, block: suspend CoroutineScope.(isInitial: Boolean) -> Unit) {
+    var isInitialized by remember { mutableStateOf(false) }
+    LaunchedEffect(key) {
+        block(!isInitialized)
+        isInitialized = true
+    }
+}
+
 /** [LaunchedEffect] that ignores its first key. */
 @Composable
 fun OnChangeEffect(key: Any?, block: suspend CoroutineScope.() -> Unit) {
@@ -386,3 +449,6 @@ fun OnChangeEffect(key: Any?, block: suspend CoroutineScope.() -> Unit) {
             .collect { block() }
     }
 }
+
+val Resources.displaySize: IntSize
+    get() =  displayMetrics.run { IntSize(widthPixels, heightPixels) }

@@ -35,7 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
-import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
@@ -77,7 +77,6 @@ private fun EditScreenPreview() {
 fun EditScreen(onNavigate: (EditGraphNavArgs)->Unit) {
     Scaffold(
         topBar = { TopBar(onNavigate) },
-        modifier = Modifier.fillMaxSize()
     ) { innerPadding ->
         StartContent(
             Modifier.padding(innerPadding),

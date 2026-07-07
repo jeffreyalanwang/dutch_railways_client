@@ -108,7 +108,7 @@ class Area(
     name: String,
 ) : Place(id, name), Parcelable {
     fun getStations(): List<Station>
-            = BackendApi.stations_in_area(this)
+            = _root_ide_package_.com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi.stations_in_area(this)
     fun getGeom(): PolygonData
             = PolygonData(listOf(
         LatLng(52.3971230, 4.9060153),
@@ -128,7 +128,7 @@ class Station(
     val address: String,
     val geom: LatLng,
 ) : Place(id, name), Parcelable {
-    fun getStops() = BackendApi.get_stops_at_station(this)
+    fun getStops() = _root_ide_package_.com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi.get_stops_at_station(this)
 }
 
 /**
@@ -165,13 +165,13 @@ data class ServiceStop(
 
     fun getStation(): Station {
         if (station == null) {
-            station = BackendApi.get_station_info(stationId)
+            station = _root_ide_package_.com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi.get_station_info(stationId)
         }
         return station!!
     }
     fun getService(): PassService {
         if (passService == null) {
-            passService = BackendApi.get_pass_service(passServiceId)
+            passService = _root_ide_package_.com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi.get_pass_service(passServiceId)
         }
         return passService!!
     }
@@ -184,5 +184,5 @@ data class PassService(
     val trainset: Trainset,
     val amenities: Set<TrainAmenity>,
 ) : Parcelable {
-    fun getStops() = BackendApi.get_stops_of_service(this)
+    fun getStops() = _root_ide_package_.com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi.get_stops_of_service(this)
 }

@@ -49,7 +49,7 @@ import com.google.maps.android.compose.Polygon
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.google.maps.android.compose.rememberUpdatedMarkerState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
-import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Endpoint
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Journey
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
@@ -367,7 +367,6 @@ private fun TripFinderScreen(
     bottomSheetContent: @Composable (BoxScope.() -> Unit)?,
 ) {
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
         topBar = {
             PersistentTopBar(
                 isSubmitQueryAllowed = isSubmitQueryAllowed,

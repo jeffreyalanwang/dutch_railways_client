@@ -26,6 +26,7 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.Geocoding
 import com.jeffreyalanwang.dutchrailwaysandroidclient.replaceAt
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.theme.DutchRailwaysAndroidClientTheme
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.bottomOnly
@@ -37,6 +38,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Composer.setDiagnosticStackTraceMode(ComposeStackTraceMode.SourceInformation)
+        Geocoding.initialize(this.baseContext)
         enableEdgeToEdge()
         setContent {
             DutchRailwaysAndroidClientTheme {

@@ -38,7 +38,7 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="EditPassServiceMutationTest">
+      <SelectionState runConfigName="AreaDetailPreview">
         <option name="selectionMode" value="DROPDOWN" />
         <DropdownSelection timestamp="2026-05-22T17:27:16.762599939Z">
           <Target type="BOOT_WITH_SNAPSHOT">
@@ -50,7 +50,7 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="testDeletePassService()">
+      <SelectionState runConfigName="StationDetailPreview">
         <option name="selectionMode" value="DROPDOWN" />
         <DropdownSelection timestamp="2026-05-22T17:27:16.762599939Z">
           <Target type="BOOT_WITH_SNAPSHOT">
@@ -62,7 +62,7 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="DeletePassServiceTest">
+      <SelectionState runConfigName="ExpandedPositionSelectorPreview">
         <option name="selectionMode" value="DROPDOWN" />
         <DropdownSelection timestamp="2026-05-22T17:27:16.762599939Z">
           <Target type="BOOT_WITH_SNAPSHOT">
@@ -74,14 +74,24 @@
         </DropdownSelection>
         <DialogSelection />
       </SelectionState>
-      <SelectionState runConfigName="modify stops in place()">
+      <SelectionState runConfigName="PositionSelectorPreview">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-05-22T17:27:16.762599939Z">
-          <Target type="BOOT_WITH_SNAPSHOT">
+        <DropdownSelection timestamp="2026-07-07T00:31:39.257686266Z">
+          <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Virtual_Pixel_7.avd" />
+              <DeviceId pluginId="Default" identifier="serial=192.168.240.112:5555;connection=ebba7d3f" />
             </handle>
-            <Snapshot name="snap_2026-05-10_15-50-01" path="$USER_HOME$/.android/avd/Virtual_Pixel_7.avd/snapshots/snap_2026-05-10_15-50-01" />
+          </Target>
+        </DropdownSelection>
+        <DialogSelection />
+      </SelectionState>
+      <SelectionState runConfigName="EditStationPreview">
+        <option name="selectionMode" value="DROPDOWN" />
+        <DropdownSelection timestamp="2026-07-07T00:31:39.257686266Z">
+          <Target type="DEFAULT_BOOT">
+            <handle>
+              <DeviceId pluginId="Default" identifier="serial=192.168.240.112:5555;connection=ebba7d3f" />
+            </handle>
           </Target>
         </DropdownSelection>
         <DialogSelection />

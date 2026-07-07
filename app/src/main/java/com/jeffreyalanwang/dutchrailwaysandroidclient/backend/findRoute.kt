@@ -1,5 +1,14 @@
-package com.jeffreyalanwang.dutchrailwaysandroidclient
+package com.jeffreyalanwang.dutchrailwaysandroidclient.backend
 
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Journey
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
+import com.jeffreyalanwang.dutchrailwaysandroidclient.compareTo
+import com.jeffreyalanwang.dutchrailwaysandroidclient.flattenSorted
+import com.jeffreyalanwang.dutchrailwaysandroidclient.groupByContinuous
+import com.jeffreyalanwang.dutchrailwaysandroidclient.letIf
+import com.jeffreyalanwang.dutchrailwaysandroidclient.minus
+import com.jeffreyalanwang.dutchrailwaysandroidclient.plus
+import com.jeffreyalanwang.dutchrailwaysandroidclient.toKotlinInstant
 import kotlinx.collections.immutable.toImmutableList
 import kotlin.time.Instant
 
@@ -8,7 +17,7 @@ internal fun List<Pair<ServiceStop, ServiceStop>>.edgesWithin(
     earliest: Instant? = null,
     latest: Instant? = null,
 ) = this
-    .letIf (earliest != null) {
+    .letIf(earliest != null) {
         it.filter { (from, to) ->
             from.departure!! >= earliest!!
         }

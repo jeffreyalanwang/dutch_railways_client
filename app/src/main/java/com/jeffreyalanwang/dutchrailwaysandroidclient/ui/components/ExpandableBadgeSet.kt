@@ -293,17 +293,18 @@ internal object ExpandableBadgeSetUtilScope {
      *      - A map of IDs to absolute coordinates for each placeable.
      *      - The total size of the layout.
      */
-    @Suppress("FunctionName")
     fun <K> basicLinearLayout(
         layout: LayoutAxis,
         keyedPlaceables: List<Pair<K, Placeable>>,
         gapPx: Int,
     ): Pair<Map<K, IntOffset>, IntSize> {
         // width-height to axis-crossaxis
+        @Suppress("FunctionName")
         fun xy_to_ac(x: Int, y: Int) = when (layout) {
             LayoutAxis.Row -> arrayOf(x, y)
             LayoutAxis.Column -> arrayOf(y, x)
         }
+        @Suppress("FunctionName")
         fun ac_to_xy(a: Int, c: Int) = xy_to_ac(a, c) // happens to be the same swap
 
         val startPos = 0

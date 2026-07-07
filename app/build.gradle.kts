@@ -45,6 +45,8 @@ android {
         debug {
             isDebuggable = true
             isMinifyEnabled = false
+            enableUnitTestCoverage = true
+            enableAndroidTestCoverage = true
         }
     }
     compileOptions {
@@ -82,7 +84,9 @@ dependencies {
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
+    implementation(libs.androidx.ui.unit)
     implementation(libs.androidx.uiautomator)
+    implementation(libs.foundation.layout)
     implementation(libs.kotlinx.collections.immutable)
     implementation(libs.androidx.appcompat)
     implementation(libs.maps.compose)
@@ -91,6 +95,7 @@ dependencies {
     implementation(libs.kotlinx.datetime)
     implementation(libs.reorderable)
     implementation(libs.ui)
+    implementation(libs.ui.graphics)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     androidTestImplementation(libs.mockkandroid)

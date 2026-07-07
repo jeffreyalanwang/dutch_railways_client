@@ -13,17 +13,22 @@ import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.NavBackButton
 
 @Composable
 fun BaseSearchInputField(
     placeholderText: String,
     textFieldState: TextFieldState,
     searchBarState: SearchBarState,
+    modifier: Modifier = Modifier,
     onEnterKeyPressed: () -> Unit = {},
+    onFocusChanged: (Boolean) -> Unit = {},
     leadingIcon: @Composable (() -> Unit)? = null,
     trailingIcon: @Composable (() -> Unit)? = {
         Icon(
@@ -44,6 +49,7 @@ fun BaseSearchInputField(
         },
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
+        modifier = modifier.onFocusChanged{ onFocusChanged(it.hasFocus) }
     )
 }
 
@@ -55,21 +61,19 @@ fun ExpandedSearchInputField(
     onClose: () -> Unit,
     onEnterKeyPressed: () -> Unit,
     onClearedText: () -> Unit,
+    onFocusChanged: (Boolean) -> Unit = {},
 ) {
     BaseSearchInputField(
         placeholderText = placeholderText,
         onEnterKeyPressed = onEnterKeyPressed,
         textFieldState = textFieldState,
         searchBarState = searchBarState,
+        onFocusChanged = onFocusChanged,
         leadingIcon = {
-            IconButton(
-                onClick = onClose
-            ) {
-                Icon(
-                    painterResource(R.drawable.ic_back),
-                    contentDescription = "Close search",
-                )
-            }
+            NavBackButton(
+                onClose,
+                contentDescription = "Close search",
+            )
         },
         trailingIcon = {
             IconButton(
@@ -87,6 +91,30 @@ fun ExpandedSearchInputField(
     )
 }
 
+/**
+ * Convenience function that composes a [ExpandedFullScreenSearchBar].
+ * @param results           The list of results, as arbitrary data objects.
+ * @param resultToText      Transforms the user selection from [results]
+ *                          into a string which populates the text field.
+ * @param placeholderText
+ * @param textFieldState
+ * @param searchBarState
+ * @param modifier
+ * @param onClose           Called when the user requests to close the search
+ *                          dialog. Most likely a call to `CoroutineScope.launch
+ *                          { searchBarState.animateToCollapsed() }`.
+ * @param onSelectResult    Handles the user-selected search result.
+ *                          Should not handle populating the text field.
+ *                          Should not handle collapsing the search dialog.
+ * @param onClearedText     Handles all state change when the user clears
+ *                          the text field.
+ * @param inputField
+ * @param searchItem        Transforms data objects from [results] into
+ *                          composables in the UI. Responsible for calling
+ *                          the provided [onClick] lambda when clicked,
+ *                          which references the other parameters of this
+ *                          function.
+ */
 @Composable
 fun <T> ExpandedSearch(
     results: List<T>,
@@ -101,6 +129,7 @@ fun <T> ExpandedSearch(
         textFieldState.clearText()
         onSelectResult(null)
     },
+    onFocusChanged: (Boolean) -> Unit = {},
     inputField: @Composable () -> Unit = {
         ExpandedSearchInputField(
             placeholderText,
@@ -116,14 +145,16 @@ fun <T> ExpandedSearch(
     ExpandedFullScreenSearchBar(
         state = searchBarState,
         inputField = inputField,
-        modifier = modifier,
+        modifier = modifier.onFocusChanged { onFocusChanged(it.hasFocus) },
     ) {
         Column( Modifier.verticalScroll(rememberScrollState()) ) {
             results.forEach {
-                searchItem(it) {
-                    textFieldState.setTextAndPlaceCursorAtEnd(resultToText(it))
-                    onSelectResult(it)
-                    onClose()
+                key(it) {
+                    searchItem(it, { // onClick
+                        textFieldState.setTextAndPlaceCursorAtEnd(resultToText(it))
+                        onSelectResult(it)
+                        onClose()
+                    })
                 }
             }
         }

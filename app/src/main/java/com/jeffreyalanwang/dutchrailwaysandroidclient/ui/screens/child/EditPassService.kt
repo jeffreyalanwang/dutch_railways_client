@@ -19,19 +19,16 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndSelectAll
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -41,7 +38,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -70,7 +66,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
@@ -79,14 +75,17 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Trainset
 import com.jeffreyalanwang.dutchrailwaysandroidclient.joinToString
 import com.jeffreyalanwang.dutchrailwaysandroidclient.toKotlinLocalTime
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.CardContentScaffold
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.EditAmenityBadgeSet
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ElevatingReorderableItem
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.FormField
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.IconWithBadge
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.NavBackButton
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ReorderDragHandle
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.SaveChangesButton
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.TimePickerWithExtras
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.ExpandedSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
@@ -160,7 +159,6 @@ fun NewPassServiceScreen(
             onNavigate(PassServiceDetailNavArgs(id))
         },
         onCancelled = onNavigateBack,
-        modifier = Modifier.padding(vertical = 20.dp)
     )
 }
 
@@ -182,11 +180,12 @@ fun EditPassServiceScreen(
         screenTitle = "Edit train service",
         onFinished = { id ->
             onNavigateBack()
+
+            // Refresh the previous screen by closing + reopening
             onNavigateBack()
             onNavigate(PassServiceDetailNavArgs(id))
         },
         onCancelled = onNavigateBack,
-        modifier = Modifier.padding(vertical = 20.dp)
     )
 }
 
@@ -194,86 +193,64 @@ fun EditPassServiceScreen(
 private fun EditPassServiceScreenBase(
     viewModel: EditPassServiceViewModel,
     screenTitle: String,
-    modifier: Modifier = Modifier,
     onFinished: (Int) -> Unit,
     onCancelled: () -> Unit,
 ) {
     var amenityBadgesBounds by WindowInsets.safeContent.let { remember { mutableStateOf(it) } }
 
-    Scaffold(
+    CardContentScaffold(
         topBar = {
             TopAppBar(
                 title = { Text(screenTitle) },
-                navigationIcon = {
-                    IconButton(onClick = onCancelled) {
-                        Icon(
-                            painterResource(R.drawable.ic_back),
-                            contentDescription = "Back"
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { viewModel.saveChanges()?.let { onFinished(it) } }) {
-                        Icon(
-                            painterResource(R.drawable.ic_done),
-                            contentDescription = "Finish & save"
-                        )
-                    }
-                },
+                navigationIcon = { NavBackButton(onCancelled) },
+                actions = { SaveChangesButton({
+                    val id = viewModel.saveChanges()
+                    id?.let { onFinished(it) }
+                }) },
             )
         },
-        modifier = modifier.fillMaxSize(),
-    ) { innerPadding ->
+        cardModifier = Modifier.providesWindowInsets { amenityBadgesBounds = it }
+    ) {
+        Row(
+            Modifier.padding(start = 10.dp, top = 10.dp),
+            verticalAlignment = Alignment.Bottom
+        ) {
+            EditRollingStockIcon(
+                viewModel.trainsetSelection,
+                !viewModel.trainsetValid,
+            ) { viewModel.trainsetSelection = it }
 
-        Box(Modifier.verticalScroll(rememberScrollState())) {
-            Card(
-                Modifier
-                    .padding(innerPadding + PaddingValues(10.dp))
-                    .fillMaxSize()
-                    .providesWindowInsets { amenityBadgesBounds = it }
-            ) {
-                Row(
-                    Modifier.padding(start = 10.dp, top = 10.dp),
-                    verticalAlignment = Alignment.Bottom
-                ) {
-                    EditRollingStockIcon(
-                        viewModel.trainsetSelection,
-                        !viewModel.trainsetValid,
-                    ) { viewModel.trainsetSelection = it }
-
-                    var areAmenitiesExpanded by remember { mutableStateOf(false) }
-                    EditAmenityBadgeSet(
-                        viewModel.amenitiesMultiSelection,
-                        containerModifier = Modifier
-                            .offset(x = -7.5.dp, y = -10.dp)
-                            .testTag("amenity_badges"),
-                        isExpanded = areAmenitiesExpanded,
-                        onSetExpanded = { areAmenitiesExpanded = it },
-                        onModify = { viewModel.amenitiesMultiSelection = it },
-                        windowInsets = amenityBadgesBounds,
-                    )
-                }
-
-                // Name
-                Text(
-                    viewModel.title,
-                    style = MaterialTheme.typography.displaySmall,
-                    modifier = Modifier
-                        .padding(horizontal = 10.dp)
-                        .testTag("screen_title_text")
-                )
-
-                Spacer(Modifier.height(10.dp))
-
-                // Stops (arrive; depart; station)
-                EditStops(
-                    viewModel,
-                    Modifier.padding(horizontal = 4.dp)
-                )
-
-                Spacer(Modifier.height(10.dp))
-            }
+            var areAmenitiesExpanded by remember { mutableStateOf(false) }
+            EditAmenityBadgeSet(
+                viewModel.amenitiesMultiSelection,
+                containerModifier = Modifier
+                    .offset(x = -7.5.dp, y = -10.dp)
+                    .testTag("amenity_badges"),
+                isExpanded = areAmenitiesExpanded,
+                onSetExpanded = { areAmenitiesExpanded = it },
+                onModify = { viewModel.amenitiesMultiSelection = it },
+                windowInsets = amenityBadgesBounds,
+            )
         }
+
+        // Name
+        Text(
+            viewModel.title,
+            style = MaterialTheme.typography.displaySmall,
+            modifier = Modifier
+                .padding(horizontal = 10.dp)
+                .testTag("screen_title_text")
+        )
+
+        Spacer(Modifier.height(10.dp))
+
+        // Stops (arrive; depart; station)
+        EditStops(
+            viewModel,
+            Modifier.padding(horizontal = 4.dp)
+        )
+
+        Spacer(Modifier.height(10.dp))
 
     }
 }
@@ -291,7 +268,7 @@ private fun EditRollingStockIcon(
         AnimatedContent(
             if (isDropdownOpen) trainsetSelection else null,
             Modifier
-                .sizeIn(maxHeight = 0.dp)
+                .heightIn(max = 0.dp)
                 .wrapContentHeight(unbounded = true)
                 .padding(bottom = 4.dp),
             transitionSpec = {

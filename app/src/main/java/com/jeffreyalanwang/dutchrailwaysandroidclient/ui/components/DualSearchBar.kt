@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.widthIn
@@ -96,21 +95,15 @@ private fun DualSearchBarPreview() {
     }
 
     Scaffold(
-        modifier = Modifier.fillMaxSize(),
         topBar = {
             AppBarWithDualSearch(
                 dualSearchBarState,
                 leadingIcon = {
-                    IconButton(
-                        onClick = { scope.launch {
+                    NavBackButton({
+                        scope.launch {
                             snackbarHostState.showSnackbar("Leading icon pushed")
-                        } }
-                    ) {
-                        Icon(
-                            painter = painterResource(R.drawable.ic_back),
-                            contentDescription = "Back",
-                        )
-                    }
+                        }
+                    })
                 },
                 actionIcon = {
                     IconButton(

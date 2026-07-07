@@ -18,7 +18,7 @@ import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
 import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
-import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy.Companion.predictiveBackDialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.TimePicker
@@ -215,12 +215,16 @@ fun appEntries(
                     }
                     entry<EditStationNavArgs> { navArgs ->
                         EditStationScreen(
-                            id = navArgs.id
+                            id = navArgs.id,
+                            onNavigate = { backstack.add(it) },
+                            onNavigateBack = { backstack.removeLast() },
                         )
                     }
                     entry<EditAreaNavArgs> { navArgs ->
                         EditAreaScreen(
-                            id = navArgs.id
+                            id = navArgs.id,
+                            onNavigate = { backstack.add(it) },
+                            onNavigateBack = { backstack.removeLast() },
                         )
                     }
 
@@ -228,7 +232,7 @@ fun appEntries(
                         NewPassServiceScreen(
                             navArgs.basedOnId
                                 ?.let { BackendApi.get_pass_service(it) },
-                            onNavigate = { newNavArgs -> backstack.add(newNavArgs) },
+                            onNavigate = { backstack.add(it) },
                             onNavigateBack = { backstack.removeLast() },
                         )
                     }

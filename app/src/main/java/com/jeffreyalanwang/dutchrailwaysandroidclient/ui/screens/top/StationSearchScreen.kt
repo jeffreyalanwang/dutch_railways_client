@@ -1,7 +1,6 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -9,9 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AppBarWithSearch
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
@@ -20,6 +17,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -35,13 +33,14 @@ import androidx.compose.ui.unit.dp
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.CardContentScaffold
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.StationDetail
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.BaseSearchInputField
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.ExpandedSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.STATION_SEARCH_PLACEHOLDER
 import kotlinx.coroutines.launch
 
-@Preview
+@Preview(heightDp = 500)
 @Composable
 private fun StationSearchScreenPreview() {
     val snackbarHostState = remember { SnackbarHostState() }
@@ -62,52 +61,52 @@ private fun StationSearchScreenPreview() {
 
 @Composable
 fun StationSearchScreen(onNavigate: (PassServiceDetailNavArgs)->Unit) {
+    var station by rememberSaveable { mutableStateOf<Station?>(null) }
+    val contentScrollState = key(station?.id) { rememberScrollState () }
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
-    var stationState by rememberSaveable { mutableStateOf<Station?>(null) }
     val scope = rememberCoroutineScope()
 
-    Scaffold(
-        topBar = {
-            AppBarWithSearch(
-                state = searchBarState,
-                inputField = {
-                    BaseSearchInputField(STATION_SEARCH_PLACEHOLDER, textFieldState, searchBarState)
-                }
-            )
-            ExpandedSearch<Station>(
-                textFieldState,
-                searchBarState,
-                onClose = { scope.launch { searchBarState.animateToCollapsed() } },
-                onSelectResult = {
-                    stationState = it
-                },
-            )
-        },
-        modifier = Modifier.fillMaxSize()
-    ) { innerPadding ->
-        if (stationState == null)
-            NoStationDetail(Modifier.padding(innerPadding))
-        else Box(
-                Modifier
-                    .fillMaxSize()
-                    .verticalScroll(rememberScrollState())
-            ) {
-                Card(
-                    Modifier
-                        .padding(innerPadding)
-                        .padding(10.dp)
-                ) {
-                    StationDetail(
-                        stationState!!,
-                        onNavigate = onNavigate,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 20.dp),
-                    )
-                }
+    val topBar = @Composable {
+        AppBarWithSearch(
+            state = searchBarState,
+            inputField = {
+                BaseSearchInputField(
+                    STATION_SEARCH_PLACEHOLDER,
+                    textFieldState,
+                    searchBarState
+                )
             }
+        )
     }
+
+    if (station == null) {
+        Scaffold(
+            topBar = topBar,
+        ) { innerPadding ->
+            NoStationDetail(Modifier.padding(innerPadding))
+        }
+    } else {
+        CardContentScaffold(
+            topBar = topBar,
+            scrollState = contentScrollState,
+        ) {
+            StationDetail(
+                station!!,
+                onNavigate = onNavigate,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 20.dp),
+            )
+        }
+    }
+
+    ExpandedSearch<Station>(
+        textFieldState,
+        searchBarState,
+        onClose = { scope.launch { searchBarState.animateToCollapsed() } },
+        onSelectResult = { station = it },
+    )
 }
 
 @Composable

@@ -1,17 +1,7 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components
 
 import android.os.IBinder
-import androidx.activity.compose.PredictiveBackHandler
-import androidx.compose.animation.core.Animatable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.TransformOrigin
-import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.compose.ui.window.SecureFlagPolicy
@@ -20,10 +10,7 @@ import androidx.navigation3.scene.OverlayScene
 import androidx.navigation3.scene.Scene
 import androidx.navigation3.scene.SceneStrategy
 import androidx.navigation3.scene.SceneStrategyScope
-import androidx.navigationevent.NavigationEvent
-import androidx.navigationevent.NavigationEvent.Companion.EDGE_NONE
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy.Companion.predictiveBackDialog
-import kotlinx.coroutines.CancellationException
 
 fun DialogProperties.copy(
     dismissOnBackPress: Boolean = this.dismissOnBackPress,
@@ -59,35 +46,9 @@ fun PredictiveBackDialog(
         onDismissRequest = onDismissRequest,
         properties = properties.copy(dismissOnBackPress = false), // We will override anyways, if it was true
     ) {
-        val predictiveBackProgress = remember { Animatable(initialValue = 0f) }
-        var swipeEdge by remember { mutableIntStateOf(EDGE_NONE) }
-
-        PredictiveBackHandler(
+        PredictiveBackBox(
             enabled = properties.dismissOnBackPress,
-        ) { progress ->
-            try {
-                progress.collect { backEvent ->
-                    predictiveBackProgress.snapTo(backEvent.progress)
-                    swipeEdge = backEvent.swipeEdge
-                }
-                onDismissRequest() // Responsible for making the Dialog's scrim fade away
-            } catch (e: CancellationException) {
-                predictiveBackProgress.animateTo(0f)
-            }
-        }
-
-        Box(
-            Modifier.graphicsLayer {
-                val transformOriginX = when (swipeEdge) {
-                    NavigationEvent.EDGE_LEFT -> 1f
-                    NavigationEvent.EDGE_RIGHT -> 0f
-                    else -> 0.5f
-                }
-                alpha = 1 - predictiveBackProgress.value
-                scaleX = 1 - predictiveBackProgress.value
-                scaleY = 1 - predictiveBackProgress.value
-                transformOrigin = TransformOrigin(transformOriginX, 0.5f)
-            }
+            onDismissRequest = onDismissRequest, // Responsible for making the Dialog's scrim fade away
         ) {
             content()
         }

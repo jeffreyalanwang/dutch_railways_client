@@ -6,7 +6,6 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,9 +13,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
@@ -25,13 +24,9 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -51,16 +46,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import com.jeffreyalanwang.dutchrailwaysandroidclient.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
-import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getCurrStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.AmenityBadgeSet
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.CardContentScaffold
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.LineSegmentWithPoint
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.NavBackButton
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ScrollableScaffold
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly
@@ -105,34 +102,20 @@ fun PassServiceDetailScreen(
     onNavigateBack: () -> Unit,
     actionsSlot: @Composable (RowScope.() -> Unit)? = null,
 ) {
-    Scaffold(
+    CardContentScaffold(
         topBar = {
             TopAppBar(
                 title = { Text("Train") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            painterResource(R.drawable.ic_back),
-                            contentDescription = "Back"
-                        )
-                    }
-                },
+                navigationIcon = { NavBackButton(onNavigateBack) },
                 actions = actionsSlot ?: {},
             )
         },
-        modifier = Modifier.fillMaxSize(),
-    ) { innerPadding ->
-
-        Box(Modifier.verticalScroll(rememberScrollState())) {
-            Card(Modifier.padding(innerPadding + PaddingValues(10.dp))) {
-                PassServiceDetail(
-                    service,
-                    onNavigate,
-                    Modifier.padding(vertical = 20.dp)
-                )
-            }
-        }
-
+    ) {
+        PassServiceDetail(
+            service,
+            onNavigate,
+            Modifier.padding(vertical = 20.dp)
+        )
     }
 }
 
@@ -156,7 +139,7 @@ fun PassServiceDetail(
                 AnimatedVisibility (
                     isHeaderExpanded,
                     Modifier
-                        .sizeIn(maxHeight = 0.dp)
+                        .heightIn(max = 0.dp)
                         .wrapContentHeight(unbounded = true)
                         .padding(bottom = 4.dp),
                     fadeIn() + slideInVertically { it / 2 },

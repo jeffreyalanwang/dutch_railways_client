@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.sizeIn
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -67,7 +68,7 @@ fun LineSegmentPoint(
     modifier: Modifier = Modifier,
 ) = Box(
     modifier = modifier
-        .sizeIn(minWidth = 1.5 * lineWidth)
+        .widthIn(min = 1.5 * lineWidth)
         .drawBehind {
             if (highlight) {
                 drawCircle(

@@ -1,8 +1,15 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient
 
+import android.location.Address
+import androidx.compose.runtime.Stable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.util.fastRoundToInt
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
 import kotlinx.collections.immutable.PersistentList
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.updateAndGet
 import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toJavaLocalDateTime
@@ -11,6 +18,7 @@ import kotlinx.datetime.toKotlinLocalDateTime
 import kotlinx.datetime.toLocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
+import kotlin.properties.ReadOnlyProperty
 import kotlin.properties.ReadWriteProperty
 import kotlin.reflect.KProperty
 import kotlin.time.Clock
@@ -19,6 +27,9 @@ import kotlin.time.Instant
 import kotlin.time.toJavaDuration
 import kotlin.time.toJavaInstant
 import kotlin.time.toKotlinInstant
+
+fun <T> checkAll(values: Iterable<T>, block: (T) -> Boolean)
+    = values.forEach { check(block(it)) }
 
 infix fun <T: Comparable<U>, U> T?.geBothElvis(other: U?): Boolean? {
     return if (this == null || other == null) null
@@ -30,16 +41,25 @@ infix fun <T: Any, U: Any> T?.toBothElvis(that: U?): Pair<T, U>? {
         else this to that
 }
 
-fun <T: Any, U: Any, R> Pair<T?, U?>.letBothElvis(block: (T, U) -> R): R? {
+fun <T: Any, U: Any, R> Pair<T?, U?>.letBothElvis(block: (Pair<T, U>) -> R): R? {
     val (a, b) = this
     return (
         if (a == null || b == null) null
-        else block(a, b)
+        else block(a to b)
     )
 }
 
+fun <A, B, C, D> Pair<Pair<A, B>, Pair<C, D>>.transpose()
+    = (first.first to second.first) to (first.second to second.second)
+
+fun <A, B, R, S> Pair<Pair<A, A>, Pair<B, B>>.transpose(block: (Pair<A, B>) -> Pair<R, S>)
+    = block(first.first to second.first) to block(first.second to second.second)
+
 fun <T, R> Pair<T, T>.map(block: (T) -> R): Pair<R, R>
     = block(first) to block(second)
+
+fun <T, R> Triple<T, T, T>.map(block: (T) -> R): Triple<R, R, R>
+        = Triple(block(first), block(second), block(third))
 
 fun <T, U, R> Pair<T, T>.zip(other: Pair<U, U>, block: (T, U) -> R): Pair<R, R>
     = block(first, other.first) to block(second, other.second)
@@ -523,6 +543,11 @@ infix fun <T, U> Iterable<T>.zipIndexed(other: Iterable<U>): List<Triple<Int, T,
     return list
 }
 
+fun <E> MutableList<E>.addNotNull(element: E?) = element?.let { add(it) }
+fun <E> MutableList<E>.addAllNotNull(elements: Collection<E?>) = addAll(elements.filterNotNull())
+
+fun Iterable<Boolean>.all() = all { it }
+
 fun <K, V> Collection<K>.associateWithIndexed(
     valueSelector: (Int, K) -> V
 ) = LinkedHashMap<K, V>(
@@ -564,13 +589,16 @@ inline fun <T, U, R> T.letWith(receiver: U, block: U.(T) -> R): R
 
 inline fun <T, R> T.letIf(
     condition: (T) -> Boolean,
-    otherwise: (T) -> R,
     then: (T) -> R,
+    otherwise: (T) -> R,
 ): R = if (condition(this)) then(this)
     else otherwise(this)
 
+inline fun <T: R, R> T.letIf(condition: (T) -> Boolean, then: (T)->R): R
+    = this.letIf(condition, then) { this }
+
 inline fun <T> T.letIf(condition: Boolean, then: (T)->T): T
-    = this.letIf({ condition }, { this }, then)
+    = this.letIf({ condition }, then)
 
 fun List<ServiceStop>.lastStationName() = this.lastOrNull()?.getStation()?.name
 
@@ -606,15 +634,33 @@ operator fun ZonedDateTime.compareTo(other: Instant)
     = this.toKotlinInstant().compareTo(other)
 
 
-operator fun Instant.compareTo(other: ZonedDateTime)
+infix operator fun Instant.compareTo(other: ZonedDateTime)
     = this.compareTo(other.toKotlinInstant())
 
-class ReadOnlyLateInit<T> : ReadWriteProperty<Any?, T> {
+fun <T> Pair<T, T>.equalOn(selector: (T) -> Any?): Boolean
+    = map { selector(it) } .run { first == second }
+
+/**
+ * Stores a value provided on initialization.
+ * Otherwise, calculates a value using a provided code block.
+ */
+class ValueOrLazy<T>(
+    private var field: T? = null,
+    private val block: () -> T,
+) : ReadOnlyProperty<Any?, T> {
+
+    override fun getValue(thisRef: Any?, property: KProperty<*>): T {
+        return field ?: block().also { field = it }
+    }
+
+}
+
+class ReadOnlyLateInit<T> : ReadWriteProperty<Any, T> {
     private var value: T? = null
     var isInitialized = false
         private set
 
-    override fun getValue(thisRef: Any?, property: KProperty<*>): T {
+    override fun getValue(thisRef: Any, property: KProperty<*>): T {
         if (!isInitialized) {
             throw UninitializedPropertyAccessException(
                 "Property ${property.name} has not been initialized."
@@ -623,7 +669,7 @@ class ReadOnlyLateInit<T> : ReadWriteProperty<Any?, T> {
         return value!!
     }
 
-    override fun setValue(thisRef: Any?, property: KProperty<*>, value: T) {
+    override fun setValue(thisRef: Any, property: KProperty<*>, value: T) {
         if (isInitialized) {
             throw IllegalStateException(
                 "Property ${property.name} is already initialized,"
@@ -634,6 +680,36 @@ class ReadOnlyLateInit<T> : ReadWriteProperty<Any?, T> {
         isInitialized = true
     }
 }
+
+/**
+ * A [Lazy] property delegate whose [setValue] method is a suspending function.
+ * Because of this asynchronous condition, this cannot be used as a normal
+ *  property delegate.
+ */
+@Stable
+class SuspendLazy<T: Any?>(
+    private val block: suspend () -> T,
+) {
+    // Using a MutableStateFlow makes the class [Stable]
+    // and allows atomicity that ensures only one coroutine
+    // initializes the value.
+    private val valueFlow = MutableStateFlow<Pair<Boolean, T?>>(false to null)
+
+    @Suppress("UNCHECKED_CAST")
+    suspend fun getValue(): T {
+        val (initialized, value) = valueFlow
+            .updateAndGet { (initialized, value) ->
+                true to
+                    if (initialized) value
+                    else block()
+            }
+        return value as T
+    }
+}
+
+val Address.latLng get() = LatLng(latitude, longitude)
+val Address.addressLines get() = (0..maxAddressLineIndex).map { i -> getAddressLine(i) }
+val Address.addressString get() = addressLines.joinToString(", ")
 
 fun List<LatLng>.calculateBounds()
     = this
@@ -676,4 +752,69 @@ fun getCurrStop(stops: List<ServiceStop>): IndexedValue<ServiceStop> {
 
     return IndexedValue(stops.size-1, stops.last())
 }
+
+infix fun Float.interpolates(
+    keypoints: Triple<Int, Int, Int>,
+) = if (this < .5f) ( this        * 2) interpolates (keypoints.first  to keypoints.second)
+    else            ((this - .5f) * 2) interpolates (keypoints.second to keypoints.third )
+
+infix fun Float.interpolates(
+    keypoints: Triple<Float, Float, Float>,
+) = if (this < .5f) ( this        * 2) interpolates (keypoints.first  to keypoints.second)
+    else            ((this - .5f) * 2) interpolates (keypoints.second to keypoints.third )
+
+infix fun Float.interpolates(
+    bounds: Pair<Float, Float>,
+) = when (this) {
+    0f -> bounds.first
+    1f -> bounds.second
+    else -> bounds.first + (bounds.second - bounds.first) * this
+}
+
+infix fun Float.interpolates(
+    bounds: Pair<Int, Int>,
+) = when (this) {
+    0f -> bounds.first
+    1f -> bounds.second
+    else -> bounds.first + ((bounds.second - bounds.first) * this).fastRoundToInt()
+}
+
+fun <T: Comparable<T>> T.compareTo(range: ClosedRange<T>): Int {
+    compareTo(range.start)
+        .let { if (it < 0) return it }
+    compareTo(range.endInclusive)
+        .let { if (it > 0) return it }
+    return 0
+}
+
+fun <T: Comparable<T>> T.compareTo(range: OpenEndRange<T>): Int {
+    compareTo(range.start)
+        .let { if (it < 0) return it }
+    compareTo(range.endExclusive)
+        .let { if (it >= 0) return it }
+    return 0
+}
+
+fun <T: Comparable<T>> ClosedRange<T>.compareTo(value: T): Int
+  = -value.compareTo(this)
+
+fun <T: Comparable<T>> OpenEndRange<T>.compareTo(value: T): Int
+  = -value.compareTo(this)
+
+fun Float.toIntPercent() = (this * 100).toInt()
+
+fun Double.isWholeNumber() = (this == toInt().toDouble())
+fun Double.toParts() = toInt().let { it to (this - it) }
+
+private const val FANCY_LEFT_DOUBLE_QUOTE = '\u201C'
+private const val FANCY_RIGHT_DOUBLE_QUOTE = '\u201D'
+private const val FANCY_LEFT_SINGLE_QUOTE = '\u2018'
+private const val FANCY_RIGHT_SINGLE_QUOTE = '\u2019'
+private const val NORMAL_DOUBLE_QUOTE = '"'
+private const val NORMAL_SINGLE_QUOTE = '\''
+
+fun CharSequence.unfancyQuotes(): String
+    = this
+        .replace("[$FANCY_LEFT_DOUBLE_QUOTE$FANCY_RIGHT_DOUBLE_QUOTE]".toRegex() , "$NORMAL_DOUBLE_QUOTE")
+        .replace("[$FANCY_LEFT_SINGLE_QUOTE$FANCY_RIGHT_SINGLE_QUOTE]".toRegex() , "$NORMAL_SINGLE_QUOTE")
 
