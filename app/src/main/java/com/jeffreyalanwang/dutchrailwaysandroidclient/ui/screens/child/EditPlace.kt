@@ -210,6 +210,7 @@ private fun ColumnScope.LocationSelector(
                 else { { result = LatLngResult(it) } },
             markerTitle = stationName,
             onMapShortClick = { if (!isExpanded) isExpanded = true },
+            contentDescription = "Station on map",
             contentPadding =
                 PaddingValues(horizontal = horizontalContentPadding) +
                 if (!isExpanded) PaddingValues(0.dp)
@@ -323,6 +324,7 @@ private fun EditableMarkerMap(
     onMapShortClick: () -> Unit,
     markerTitle: String,
     modifier: Modifier = Modifier,
+    contentDescription: String? = null,
     contentPadding: PaddingValues,
 ) {
     val onLocationSelected by rememberUpdatedState(onLocationSelected)
@@ -359,7 +361,7 @@ private fun EditableMarkerMap(
         onMapClick = { onMapShortClick() },
         onMapLongClick = { onLocationSelected?.invoke(it) },
         onMapLoaded = { isMapInitialized = true },
-        contentDescription = "Station on map",
+        contentDescription = contentDescription,
         modifier = modifier,
         contentPadding = contentPadding,
     ) {
