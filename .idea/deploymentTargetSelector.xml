@@ -75,21 +75,10 @@
       </SelectionState>
       <SelectionState runConfigName="EditStationPreview">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-07-07T02:58:53.154840680Z">
+        <DropdownSelection timestamp="2026-07-07T00:31:39.257686266Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Pixel_7_GApps.avd" />
-            </handle>
-          </Target>
-        </DropdownSelection>
-        <DialogSelection />
-      </SelectionState>
-      <SelectionState runConfigName="EditAreaPreview">
-        <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-07-07T02:58:53.154840680Z">
-          <Target type="DEFAULT_BOOT">
-            <handle>
-              <DeviceId pluginId="LocalEmulator" identifier="path=/home/jeffw/.android/avd/Pixel_7_GApps.avd" />
+              <DeviceId pluginId="Default" identifier="serial=192.168.240.112:5555;connection=ebba7d3f" />
             </handle>
           </Target>
         </DropdownSelection>

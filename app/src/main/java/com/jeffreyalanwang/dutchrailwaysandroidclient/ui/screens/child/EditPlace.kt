@@ -1,19 +1,12 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.SharedTransitionLayout
-import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.SharedTransitionScope.ResizeMode.Companion.RemeasureToBounds
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -23,7 +16,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -31,6 +26,7 @@ import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SearchBarDefaults
@@ -76,6 +72,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.Geocoding
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AreaDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.CardContentScaffold
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ExpandingHeroBox
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.NavBackButton
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.SaveChangesButton
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.ON_MAP_SHADOW_ELEVATION
@@ -98,12 +95,6 @@ typealias StationLocation = Pair<LatLng, String>
 @Preview
 @Composable
 private fun EditStationPreview() {
-    LocalContext.current.let { context ->
-        LaunchedEffect(Unit) {
-            Geocoding.initialize(context)
-        }
-    }
-
     EditStationScreen(361, {}, {})
 }
 
@@ -118,13 +109,11 @@ fun EditStationScreen(
     id: Int,
     onNavigate: (StationDetailNavArgs) -> Unit,
     onNavigateBack: () -> Unit,
-) = SharedTransitionLayout {
-
+) {
     val station = BackendApi.get_station_info(id)
     val nameState = rememberTextFieldState(station.name)
     val isNameValid by remember { derivedStateOf { nameState.text.isEmpty() } }
-    var location: StationLocation by rememberSaveable { mutableStateOf( station.run { geom to address } ) } // TODO use a viewmodel instead
-    var isLocationSelectorExpanded by remember { mutableStateOf(false) }
+    var location: StationLocation by rememberSaveable { mutableStateOf( station.run { geom to address } ) }
 
     CardContentScaffold(
         topBar = {
@@ -158,93 +147,74 @@ fun EditStationScreen(
             modifier = Modifier.padding(horizontal = 10.dp)
         )
 
-        Spacer(Modifier.height(10.dp))
-
-        LocationSelectorCaption(
-            latLng = location.first,
-            address = location.second,
-            Modifier
-                .clickable { isLocationSelectorExpanded = true }
-                .padding(all = 10.dp),
-        )
-
-        HorizontalDivider(thickness = Dp.Hairline)
-        AnimatedVisibility(true) {
-            Box(
-                Modifier.sharedBounds(
-                    rememberSharedContentState("map"),
-                    this@AnimatedVisibility,
-                    resizeMode = RemeasureToBounds,
-                    enter = fadeIn() + scaleIn(),
-                    exit = fadeOut() + scaleOut(),
-                )
-            ) {
-                EditableMarkerMap(
-                    location = location.first,
-                    onLocationSelected = null, // make it non-interactive TODO just borrow the map from StationDetail.kt
-                    markerTitle = location.second,
-                    onTap = { isLocationSelectorExpanded = true },
-                    contentDescription = "Station on map (tap to select a new location)",
-                    contentPadding = PaddingValues(horizontal = 10.dp),
-                    modifier = Modifier.heightIn(200.dp, 400.dp),
-                )
-            }
-        }
-        HorizontalDivider(thickness = Dp.Hairline)
-
-        Spacer(Modifier.height(20.dp))
-    }
-
-    AnimatedVisibility (isLocationSelectorExpanded) {
-        FullScreenLocationSelector(
+        LocationSelector(
             station.name,
             location,
             onNewSelection = { location = it },
-            onDismissRequest = { isLocationSelectorExpanded = false },
-            modifier = Modifier.sharedBounds(
-                rememberSharedContentState("map"),
-                this@AnimatedVisibility,
-                resizeMode = RemeasureToBounds,
-                enter = fadeIn() + scaleIn(),
-                exit = fadeOut() + scaleOut(),
-            ),
+            modifier = Modifier.heightIn(200.dp, 400.dp),
+            horizontalContentPadding = 10.dp
         )
+
+        Spacer(Modifier.height(20.dp))
     }
 }
 
 @Composable
-context(sharedTransitionScope: SharedTransitionScope, animatedVisibilityScope: AnimatedVisibilityScope)
-private fun FullScreenLocationSelector(
+private fun ColumnScope.LocationSelector(
     stationName: String,
     initialLocation: StationLocation,
     onNewSelection: (StationLocation) -> Unit,
-    onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
-) = with (sharedTransitionScope) {
+    horizontalContentPadding: Dp = 0.dp,
+) {
     val scope = rememberCoroutineScope()
-    val textFieldState = rememberTextFieldState()
-    val searchBarState = rememberSearchBarState()
+    LocalContext.current.let { context ->
+        LaunchedEffect(Unit) {
+            Geocoding.initialize(context)
+        }
+    }
 
     var result by remember { mutableStateOf<LocationResult?>(
-        // [AddressResult] will not require a call to the geocoder
         initialLocation.run { AddressResult(first, second) }
     ) }
+    val textFieldState = rememberTextFieldState()
+    val searchBarState = rememberSearchBarState()
     val value by rememberUpdatedGeocoderResult(result, searchBarState, textFieldState)
+
     value?.let {
         LaunchedEffect(it) { onNewSelection(it) }
     }
 
-    Box(modifier) {
+    var isExpanded by remember { mutableStateOf(false) }
+
+    LocationSelectorCaption(
+        latLng = value?.first ?: initialLocation.first,
+        address = value?.second ?: initialLocation.second,
+        onExpandRequest = { isExpanded = true },
+        Modifier.padding(all = horizontalContentPadding),
+    )
+
+    HorizontalDivider(thickness = Dp.Hairline)
+    ExpandingHeroBox(
+        isExpanded = isExpanded,
+        onDismissRequest = { isExpanded = false },
+        modifier = modifier,
+    ) {
         var appBarHeight by remember { mutableIntStateOf(0) }
 
         EditableMarkerMap(
             location = value?.first, // use of [value] instead of [result] means no
                                      // pan until the geocoder successfully resolves
-            onLocationSelected = { result = LatLngResult(it) },
+            onLocationSelected =
+                if (!isExpanded) null
+                else { { result = LatLngResult(it) } },
             markerTitle = stationName,
-            contentDescription = "Select station location on map",
+            onMapShortClick = { if (!isExpanded) isExpanded = true },
+            contentDescription = "Station on map",
             contentPadding =
-                ScaffoldDefaults.contentWindowInsets
+                PaddingValues(horizontal = horizontalContentPadding) +
+                if (!isExpanded) PaddingValues(0.dp)
+                else ScaffoldDefaults.contentWindowInsets
                     .asPaddingValues()
                     .copy(
                         top = with(LocalDensity.current) { appBarHeight.toDp() }
@@ -252,7 +222,7 @@ private fun FullScreenLocationSelector(
         )
 
         AnimatedVisibility(
-            visible = true, //TODO fix
+            visible = isExpanded,
             enter = with(MaterialTheme.motionScheme) {
                 fadeIn(
                     defaultEffectsSpec()
@@ -280,7 +250,7 @@ private fun FullScreenLocationSelector(
                         searchBarState,
                         modifier = Modifier.fillMaxWidth(),
                         leadingIcon = {
-                            NavBackButton({ onDismissRequest() })
+                            NavBackButton({ isExpanded = false })
                         },
                     )
                 },
@@ -300,17 +270,18 @@ private fun FullScreenLocationSelector(
                                 // retain the previous location when saving changes
         )
     }
+    HorizontalDivider(thickness = Dp.Hairline)
 }
 
 @Composable
 private fun LocationSelectorCaption(
     latLng: LatLng,
     address: String,
+    onExpandRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier
-            .padding(horizontal = 5.dp)
             .height(IntrinsicSize.Min),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -330,10 +301,15 @@ private fun LocationSelectorCaption(
                 softWrap = false,
             )
         }
-        Icon(
-            painterResource(R.drawable.ic_edit),
-            contentDescription = "Edit",
-        )
+        IconButton(
+            onClick = { onExpandRequest() },
+            shape = CircleShape,
+        ) {
+            Icon(
+                painterResource(R.drawable.ic_edit),
+                contentDescription = "Edit",
+            )
+        }
     }
 }
 
@@ -345,9 +321,9 @@ private fun LocationSelectorCaption(
 private fun EditableMarkerMap(
     location: LatLng?,
     onLocationSelected: ((LatLng) -> Unit)?,
+    onMapShortClick: () -> Unit,
     markerTitle: String,
     modifier: Modifier = Modifier,
-    onTap: (() -> Unit)? = null,
     contentDescription: String? = null,
     contentPadding: PaddingValues,
 ) {
@@ -380,22 +356,20 @@ private fun EditableMarkerMap(
         }
     }
 
-    Column {
-        GoogleMap(
-            cameraPositionState = cameraPositionState,
-            onMapClick = { onTap?.invoke() },
-            onMapLongClick = { onLocationSelected?.invoke(it) },
-            onMapLoaded = { isMapInitialized = true },
-            contentDescription = contentDescription,
-            modifier = modifier,
-            contentPadding = contentPadding,
-        ) {
-            Marker(
-                markerState,
-                title = markerTitle,
-                draggable = onLocationSelected != null,
-            )
-        }
+    GoogleMap(
+        cameraPositionState = cameraPositionState,
+        onMapClick = { onMapShortClick() },
+        onMapLongClick = { onLocationSelected?.invoke(it) },
+        onMapLoaded = { isMapInitialized = true },
+        contentDescription = contentDescription,
+        modifier = modifier,
+        contentPadding = contentPadding,
+    ) {
+        Marker(
+            markerState,
+            title = markerTitle,
+            draggable = onLocationSelected != null,
+        )
     }
 }
 
@@ -446,8 +420,6 @@ fun EditAreaScreen(
             placeholder = "Area name",
             modifier = Modifier.padding(horizontal = 10.dp)
         )
-
-        Spacer(Modifier.height(10.dp))
 
         HorizontalDivider(thickness = Dp.Hairline)
         AreaOnMap(
