@@ -37,6 +37,8 @@ uiautomator = "2.3.0"
 uiGraphicsVersion = "1.11.4"
 uiUnitVersion = "1.11.4"
 androidxFoundationLayout = "1.11.4"
+androidxUi = "1.11.4"
+animationVersion = "1.11.4"
 
 [libraries]
 androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "appcompat" }
@@ -86,6 +88,8 @@ androidx-uiautomator = { group = "androidx.test.uiautomator", name = "uiautomato
 ui-graphics = { group = "androidx.compose.ui", name = "ui-graphics", version.ref = "uiGraphicsVersion" }
 androidx-ui-unit = { group = "androidx.compose.ui", name = "ui-unit", version.ref = "uiUnitVersion" }
 foundation-layout = { group = "androidx.compose.foundation", name = "foundation-layout", version.ref = "androidxFoundationLayout" }
+androidx-compose-ui-ui = { group = "androidx.compose.ui", name = "ui", version.ref = "androidxUi" }
+androidx-animation = { group = "androidx.compose.animation", name = "animation", version.ref = "animationVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
