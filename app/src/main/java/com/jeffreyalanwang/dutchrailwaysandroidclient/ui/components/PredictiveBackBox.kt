@@ -33,7 +33,11 @@ fun PredictiveBackBox(
 
     PredictiveBackBox(
         snapBackProgressTo = { backProgress.snapTo(it) },
-        animateBackProgressTo = { backProgress.animateTo(it) },
+        animateBackProgressTo = {
+            backProgress.animateTo(
+                if (it) 1f else 0f,
+            )
+        },
         content,
         backHandlingEnabled = enabled,
         onDismissRequest = onDismissRequest,
@@ -71,7 +75,7 @@ fun PredictiveBackBox(
 @Composable
 fun PredictiveBackBox(
     snapBackProgressTo: suspend (Float) -> Unit,
-    animateBackProgressTo: suspend (Float) -> Unit,
+    animateBackProgressTo: suspend (backComplete: Boolean) -> Unit,
     content: @Composable () -> Unit,
     onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
@@ -88,11 +92,11 @@ fun PredictiveBackBox(
                 snapBackProgressTo(backEvent.progress)
                 swipeEdge = backEvent.swipeEdge
             }
-            animateBackProgressTo(1f)
+            animateBackProgressTo(true)
             swipeEdge = EDGE_NONE
             onDismissRequest()
         } catch (e: CancellationException) {
-            animateBackProgressTo(0f)
+            animateBackProgressTo(false)
             swipeEdge = EDGE_NONE
         }
     }

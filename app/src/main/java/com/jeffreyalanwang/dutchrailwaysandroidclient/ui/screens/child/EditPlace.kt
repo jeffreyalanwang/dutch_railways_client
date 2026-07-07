@@ -1,12 +1,8 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -18,7 +14,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -26,7 +21,6 @@ import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SearchBarDefaults
@@ -42,7 +36,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -52,6 +45,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.boundsInRoot
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.layout.onLayoutRectChanged
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
@@ -59,7 +54,9 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.roundToIntRect
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.maps.android.compose.GoogleMap
@@ -69,6 +66,7 @@ import com.google.maps.android.compose.rememberCameraPositionState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.Geocoding
+import com.jeffreyalanwang.dutchrailwaysandroidclient.letWith
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AreaDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.CardContentScaffold
@@ -110,10 +108,19 @@ fun EditStationScreen(
     onNavigate: (StationDetailNavArgs) -> Unit,
     onNavigateBack: () -> Unit,
 ) {
+    LocalContext.current.let { context ->
+        LaunchedEffect(Unit) {
+            Geocoding.initialize(context)
+        }
+    }
+
     val station = BackendApi.get_station_info(id)
     val nameState = rememberTextFieldState(station.name)
     val isNameValid by remember { derivedStateOf { nameState.text.isEmpty() } }
     var location: StationLocation by rememberSaveable { mutableStateOf( station.run { geom to address } ) }
+
+    var isLocationPickerExpanded by remember { mutableStateOf(false) }
+    var collapsedLocationPickerBounds by remember { mutableStateOf(IntRect.Zero) }
 
     CardContentScaffold(
         topBar = {
@@ -147,32 +154,63 @@ fun EditStationScreen(
             modifier = Modifier.padding(horizontal = 10.dp)
         )
 
-        LocationSelector(
-            station.name,
-            location,
-            onNewSelection = { location = it },
-            modifier = Modifier.heightIn(200.dp, 400.dp),
-            horizontalContentPadding = 10.dp
+        Spacer(Modifier.height(20.dp))
+
+        LocationSelectorCaption(
+            latLng = location.first,
+            address = location.second,
+            Modifier
+                .clickable { isLocationPickerExpanded = true }
+                .padding(all = 10.dp),
         )
+        HorizontalDivider(thickness = Dp.Hairline)
+        EditableMarkerMap(
+            location = location.first,
+            markerTitle = location.second,
+            onLocationSelected = null,
+            onMapClick = { isLocationPickerExpanded = true },
+            contentDescription = "Station on map (click to edit)",
+            contentPadding = PaddingValues(horizontal = 10.dp),
+            modifier = Modifier
+                .onGloballyPositioned {
+                    collapsedLocationPickerBounds =
+                        it.boundsInRoot().roundToIntRect()
+                }
+                .heightIn(200.dp, 400.dp),
+        )
+        HorizontalDivider(thickness = Dp.Hairline)
 
         Spacer(Modifier.height(20.dp))
+    }
+
+    ExpandingHeroBox(
+        isVisible = isLocationPickerExpanded,
+        onDismissRequest = { isLocationPickerExpanded = false },
+        collapsedBounds = { collapsedLocationPickerBounds },
+    ) {
+        ExpandedLocationSelector(
+            stationName = station.name,
+            initialLocation = location,
+            onNewSelection = { location = it },
+            horizontalContentPadding = 10.dp,
+            onDismissRequest = { isLocationPickerExpanded = false },
+        )
     }
 }
 
 @Composable
-private fun ColumnScope.LocationSelector(
+private fun ExpandedLocationSelector(
     stationName: String,
     initialLocation: StationLocation,
     onNewSelection: (StationLocation) -> Unit,
+    onDismissRequest: () -> Unit,
     modifier: Modifier = Modifier,
     horizontalContentPadding: Dp = 0.dp,
-) {
+) = Box(modifier) {
+
     val scope = rememberCoroutineScope()
-    LocalContext.current.let { context ->
-        LaunchedEffect(Unit) {
-            Geocoding.initialize(context)
-        }
-    }
+    val density = LocalDensity.current
+    var appBarHeight by remember { mutableStateOf(0.dp) }
 
     var result by remember { mutableStateOf<LocationResult?>(
         initialLocation.run { AddressResult(first, second) }
@@ -185,103 +223,67 @@ private fun ColumnScope.LocationSelector(
         LaunchedEffect(it) { onNewSelection(it) }
     }
 
-    var isExpanded by remember { mutableStateOf(false) }
-
-    LocationSelectorCaption(
-        latLng = value?.first ?: initialLocation.first,
-        address = value?.second ?: initialLocation.second,
-        onExpandRequest = { isExpanded = true },
-        Modifier.padding(all = horizontalContentPadding),
+    EditableMarkerMap(
+        location = value?.first, // use of [value] instead of [result] means no
+                                 // pan until the geocoder successfully resolves
+        onLocationSelected = { result = LatLngResult(it) },
+        markerTitle = stationName,
+        contentDescription = "Station on map",
+        contentPadding =
+            PaddingValues(horizontal = horizontalContentPadding) +
+            ScaffoldDefaults.contentWindowInsets
+                .asPaddingValues()
+                .copy(top = appBarHeight),
     )
 
-    HorizontalDivider(thickness = Dp.Hairline)
-    ExpandingHeroBox(
-        isExpanded = isExpanded,
-        onDismissRequest = { isExpanded = false },
-        modifier = modifier,
-    ) {
-        var appBarHeight by remember { mutableIntStateOf(0) }
-
-        EditableMarkerMap(
-            location = value?.first, // use of [value] instead of [result] means no
-                                     // pan until the geocoder successfully resolves
-            onLocationSelected =
-                if (!isExpanded) null
-                else { { result = LatLngResult(it) } },
-            markerTitle = stationName,
-            onMapShortClick = { if (!isExpanded) isExpanded = true },
-            contentDescription = "Station on map",
-            contentPadding =
-                PaddingValues(horizontal = horizontalContentPadding) +
-                if (!isExpanded) PaddingValues(0.dp)
-                else ScaffoldDefaults.contentWindowInsets
-                    .asPaddingValues()
-                    .copy(
-                        top = with(LocalDensity.current) { appBarHeight.toDp() }
-                    ),
-        )
-
-        AnimatedVisibility(
-            visible = isExpanded,
-            enter = with(MaterialTheme.motionScheme) {
-                fadeIn(
-                    defaultEffectsSpec()
-                ) + slideInVertically(defaultSpatialSpec())
+    AppBarWithSearch(
+        searchBarState,
+        colors = SearchBarDefaults.appBarWithSearchColors(
+            appBarContainerColor = Color.Transparent
+        ),
+        shadowElevation = ON_MAP_SHADOW_ELEVATION,
+        modifier = Modifier
+            .onLayoutRectChanged {
+                appBarHeight = it.height
+                    .letWith(density) { h -> h.toDp() }
             },
-            exit = with(MaterialTheme.motionScheme) {
-                fadeOut(
-                    defaultEffectsSpec()
-                ) + slideOutVertically(defaultSpatialSpec())
-            },
-        ) {
-            AppBarWithSearch(
+        inputField = {
+            BaseSearchInputField(
+                LOCATION_SEARCH_PLACEHOLDER,
+                textFieldState,
                 searchBarState,
-                colors = SearchBarDefaults.appBarWithSearchColors(
-                    appBarContainerColor = Color.Transparent
-                ),
-                shadowElevation = ON_MAP_SHADOW_ELEVATION,
-                modifier = Modifier.onLayoutRectChanged {
-                    appBarHeight = it.height
-                },
-                inputField = {
-                    BaseSearchInputField(
-                        LOCATION_SEARCH_PLACEHOLDER,
-                        textFieldState,
-                        searchBarState,
-                        modifier = Modifier.fillMaxWidth(),
-                        leadingIcon = {
-                            NavBackButton({ isExpanded = false })
-                        },
-                    )
+                modifier = Modifier.fillMaxWidth(),
+                leadingIcon = {
+                    NavBackButton(onDismissRequest)
                 },
             )
-        }
+        },
+    )
 
-        ExpandedSearch<LocationResult>(
-            textFieldState,
-            searchBarState,
-            onClose = { scope.launch { searchBarState.animateToCollapsed() } },
-            onSelectResult = {
-                it?.let {
-                    result = it
-                }
-            },
-            onClearedText = {}, // The UI does change in this situation, but we
-                                // retain the previous location when saving changes
-        )
-    }
-    HorizontalDivider(thickness = Dp.Hairline)
+    ExpandedSearch<LocationResult>(
+        textFieldState,
+        searchBarState,
+        onClose = { scope.launch { searchBarState.animateToCollapsed() } },
+        onSelectResult = {
+            it?.let {
+                result = it
+            }
+        },
+        onClearedText = {}, // The UI does change in this situation, but we
+                            // retain the previous location when saving changes
+    )
+
 }
 
 @Composable
 private fun LocationSelectorCaption(
     latLng: LatLng,
     address: String,
-    onExpandRequest: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     Row(
         modifier
+            .padding(5.dp)
             .height(IntrinsicSize.Min),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -301,19 +303,17 @@ private fun LocationSelectorCaption(
                 softWrap = false,
             )
         }
-        IconButton(
-            onClick = { onExpandRequest() },
-            shape = CircleShape,
-        ) {
-            Icon(
-                painterResource(R.drawable.ic_edit),
-                contentDescription = "Edit",
-            )
-        }
+        Icon(
+            painterResource(R.drawable.ic_edit),
+            contentDescription = "Edit",
+        )
     }
 }
 
 /**
+ * A [GoogleMap] which allows the user to select a location, and also
+ * updates camera area and marker location via a [LaunchedEffect].
+ *
  * @param onLocationSelected    Set to null to disable interactions
  *                              that select a location.
  */
@@ -321,10 +321,10 @@ private fun LocationSelectorCaption(
 private fun EditableMarkerMap(
     location: LatLng?,
     onLocationSelected: ((LatLng) -> Unit)?,
-    onMapShortClick: () -> Unit,
     markerTitle: String,
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
+    onMapClick: (() -> Unit)? = null,
     contentPadding: PaddingValues,
 ) {
     val onLocationSelected by rememberUpdatedState(onLocationSelected)
@@ -358,7 +358,7 @@ private fun EditableMarkerMap(
 
     GoogleMap(
         cameraPositionState = cameraPositionState,
-        onMapClick = { onMapShortClick() },
+        onMapClick = { onMapClick?.invoke() },
         onMapLongClick = { onLocationSelected?.invoke(it) },
         onMapLoaded = { isMapInitialized = true },
         contentDescription = contentDescription,

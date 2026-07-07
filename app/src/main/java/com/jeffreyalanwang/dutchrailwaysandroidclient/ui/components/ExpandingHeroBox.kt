@@ -1,7 +1,17 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components
 
 import androidx.annotation.FloatRange
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.EnterTransition
+import androidx.compose.animation.ExitTransition
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.SeekableTransitionState
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.animateIntOffset
+import androidx.compose.animation.core.animateIntSize
+import androidx.compose.animation.core.keyframes
+import androidx.compose.animation.core.rememberTransition
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +28,7 @@ import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.round
 import androidx.navigationevent.NavigationEvent
@@ -46,8 +57,8 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.interpolates
  * @param expandedZIndex    Set to ensure this composable is drawn above
  *                          other items when it is expanded; when collapsed,
  *                          it defaults to 0f.
- *                          Note: zIndex only applies relatively to the nearest
- *                          ancestor Layout composable.
+ *                          Constraint: zIndex only applies relatively to the
+ *                          nearest ancestor Layout composable.
  */
 @Composable
 fun ExpandingHeroBox(
@@ -93,48 +104,47 @@ fun ExpandingHeroBox(
     PredictiveBackBox(
         content = content,
         snapBackProgressTo = progressState::snapTo,
-        animateBackProgressTo = progressState::animateTo,
+        animateBackProgressTo = { progressState.animateTo( if (it) 1f else 0f ) },
         backHandlingEnabled = isExpanded,
         onDismissRequest = onDismissRequest,
-        modifier =
-            modifier
-                .onGloballyPositioned {
-                    // This modifier element is applied to the outer node,
-                    // which is sized as collapsed even when the child layout
-                    // node (below) overrides size + offset.
-                    expandedOffset = it.positionInWindow().round().unaryMinus()
-                }
-                .layout { measurable, constraints ->
-                    val progressValue by progressState.asState()
+        modifier = modifier
+            .onGloballyPositioned {
+                // This modifier element is applied to the outer node,
+                // which is sized as collapsed even when the child layout
+                // node (below) overrides size + offset.
+                expandedOffset = it.positionInWindow().round().unaryMinus()
+            }
+            .layout { measurable, constraints ->
+                val progressValue by progressState.asState()
 
-                    // Here, we animate the hero popout/hide.
-                    // This code only animates values for [progressValue > .5].
+                // Here, we animate the hero popout/hide.
+                // This code only animates values for [progressValue > .5].
 
-                    val (width, height) =
-                        collapsedSize(constraints)
-                            .let {
-                                progressValue interpolates
-                                        Triple(expandedSize, expandedSize, it)
-                            }
-                            .also {
-                                collapsedSizeCached = it
-                            }
-
-                    val placeable =
-                        measurable.measure(Constraints.fixed(width, height))
-                    layout(width, height) {
-
-                        placeable.place(
+                val (width, height) =
+                    collapsedSize(constraints)
+                        .let {
                             progressValue interpolates
-                                    Triple(
-                                        expandedOffset,
-                                        expandedOffset,
-                                        collapsedOffset
-                                    ),
-                            zIndex = if (isExpanded) expandedZIndex else 0f,
-                        )
-                    }
+                                    Triple(expandedSize, expandedSize, it)
+                        }
+                        .also {
+                            collapsedSizeCached = it
+                        }
+
+                val placeable =
+                    measurable.measure(Constraints.fixed(width, height))
+                layout(width, height) {
+
+                    placeable.place(
+                        progressValue interpolates
+                                Triple(
+                                    expandedOffset,
+                                    expandedOffset,
+                                    collapsedOffset,
+                                ),
+                        zIndex = if (isExpanded) expandedZIndex else 0f,
+                    )
                 }
+            }
     ) { swipeEdge ->
         val progressValue by progressState.asState()
 
@@ -165,5 +175,136 @@ fun ExpandingHeroBox(
                 clip = true
                 shape = RoundedCornerShape(percent = it.toIntPercent() / 2)
             }
+    }
+}
+
+/**
+ * This overload only displays the expanded version of the content,
+ * but animates towards where it is told that the collapsed content is.
+ *
+ * This composable should be placed at the highest z-index,
+ * aligned with the top-left of the root composable.
+ *
+ * @param collapsedBounds   The offset and size, relative to the root
+ *                          composable, of the element which displays the
+ *                          collapsed version of this [ExpandingHeroBox].
+ */
+@Composable
+fun ExpandingHeroBox(
+    isVisible: Boolean,
+    onDismissRequest: () -> Unit,
+    collapsedBounds: () -> IntRect,
+    modifier: Modifier = Modifier,
+    expandedZIndex: Float = 100f,
+    @FloatRange(0.0, 1.0) collapsedCornerRounding: Float = 0f,
+    content: @Composable AnimatedVisibilityScope.() -> Unit,
+) {
+    val visibleState = remember { SeekableTransitionState(isVisible) }
+    val visibleTransition = rememberTransition(visibleState)
+
+    LaunchedEffect(isVisible) {
+        visibleState.animateTo(isVisible)
+    }
+
+    // Offsets are from root composable.
+    val expandedSize = LocalResources.current.displaySize
+    val expandedOffset = IntOffset.Zero
+    val collapsedOffset by remember { derivedStateOf { collapsedBounds().topLeft } }
+    val collapsedSize by remember { derivedStateOf { collapsedBounds().size } }
+
+    val minScale = remember(collapsedSize) {
+        maxOf(
+            .5f,
+            .8f * collapsedSize.width / expandedSize.width,
+            .8f * collapsedSize.height / expandedSize.height,
+        )
+    }
+
+    val animSize by visibleTransition.animateIntSize({
+            keyframes { expandedSize atFraction .5f }
+        }) { isVisible ->
+            if (isVisible) expandedSize
+            else           collapsedSize
+        }
+    val animOffset by visibleTransition.animateIntOffset({
+            keyframes { expandedOffset atFraction .5f }
+        }) { isVisible ->
+            if (isVisible) expandedOffset
+            else           collapsedOffset
+        }
+    val animPivotFracX = visibleTransition.animateFloat({
+            keyframes { 0f atFraction .5f }
+        }) { isVisible ->
+            if (isVisible) 0f
+            else           .5f
+        }
+    val animScale = visibleTransition.animateFloat({
+            keyframes { minScale atFraction .5f }
+        }) { isVisible ->
+            if (isVisible) 1f
+            else           1f
+        }
+    val animCornerRounding = visibleTransition.animateFloat({
+            keyframes { .5f atFraction .5f }
+        }) { isVisible ->
+            if (isVisible) 0f
+            else           collapsedCornerRounding
+        }
+
+    visibleTransition.AnimatedVisibility(
+        visible = { it },
+        enter = EnterTransition.None,
+        exit = ExitTransition.None,
+    ) {
+        PredictiveBackBox(
+            content = { content() },
+            snapBackProgressTo = { backProgress ->
+                visibleState.seekTo(backProgress, false)
+            },
+            animateBackProgressTo = { backCompleted -> visibleState.animateTo(!backCompleted) },
+            onDismissRequest = onDismissRequest,
+            modifier = modifier
+                .layout { measurable, _ ->
+
+                    val (width, height) = animSize
+
+                    val placeable =
+                        measurable.measure(Constraints.fixed(width, height))
+                    layout(width, height) {
+
+                        placeable.place(animOffset, expandedZIndex)
+                    }
+                }
+        ) { swipeEdge ->
+            val animPivotFracX by animPivotFracX
+            val animScale by animScale
+            val animCornerRounding by animCornerRounding
+
+            transformOrigin = TransformOrigin(
+                pivotFractionX =
+                    when (swipeEdge) {
+                        NavigationEvent.EDGE_LEFT -> // 1f or .5f
+                            1 - animPivotFracX
+
+                        NavigationEvent.EDGE_RIGHT -> // 0f or .5f
+                            animPivotFracX
+
+                        else -> 0.5f
+                    },
+                pivotFractionY = 0.5f,
+            )
+
+            animScale
+                .let {
+                    scaleX = it
+                    scaleY = it
+                }
+
+            animCornerRounding
+                .let {
+                    clip = true
+                    shape = RoundedCornerShape(percent = it.toIntPercent() / 2)
+                }
+        }
     }
 }
