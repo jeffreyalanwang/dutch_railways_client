@@ -107,12 +107,12 @@ private fun EditAreaPreview() {
 @Composable
 fun EditStationScreen(
     id: Int,
-    onNavigate: (StationDetailNavArgs) -> Unit,
-    onNavigateBack: () -> Unit,
+    onCancelRequest: () -> Unit,
+    onSaveFinished: () -> Unit,
 ) = EditStationScreen(
         viewModel = viewModel<EditStationViewModel> { EditStationViewModel(id) },
-        onNavigate = onNavigate,
-        onNavigateBack = onNavigateBack,
+        onCancelRequest = onCancelRequest,
+        onSaveFinished = onSaveFinished,
     )
 
 
@@ -126,8 +126,8 @@ fun EditStationScreen(
 @Composable
 fun EditAreaScreen(
     id: Int,
-    onNavigate: (AreaDetailNavArgs) -> Unit,
-    onNavigateBack: () -> Unit,
+    onCancelRequest: () -> Unit,
+    onSaveFinished: () -> Unit,
 ) {
     val area = BackendApi.get_area_info(id)
     val nameState = rememberTextFieldState(area.name)
@@ -137,15 +137,11 @@ fun EditAreaScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Edit area: ${area.name}", softWrap = false, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = { NavBackButton(onNavigateBack) },
+                navigationIcon = { NavBackButton(onCancelRequest) },
                 actions = { SaveChangesButton({
                     if (isNameValid) {
                         BackendApi.edit_area(id, nameState.text.toString())
-                        onNavigateBack()
-
-                        // Refresh the previous screen by closing + reopening
-                        onNavigateBack()
-                        onNavigate(AreaDetailNavArgs(id))
+                        onSaveFinished()
                     }
                 }) },
             )
@@ -182,8 +178,8 @@ fun EditAreaScreen(
 @Composable
 fun EditStationScreen(
     viewModel: EditStationViewModel,
-    onNavigate: (StationDetailNavArgs) -> Unit,
-    onNavigateBack: () -> Unit,
+    onCancelRequest: () -> Unit,
+    onSaveFinished: () -> Unit,
     horizontalContentPadding: Dp = 10.dp,
 ) {
     var collapsedLocationSelectorBounds by remember { mutableStateOf(IntRect.Zero) }
@@ -195,16 +191,10 @@ fun EditStationScreen(
         currentCoords = viewModel.currGeom,
         currentAddress = viewModel.currAddress,
 
-        onNavigateBack = onNavigateBack,
+        onCancelRequest = onCancelRequest,
         onSaveRequest = {
-            viewModel.saveChanges {
-                onNavigateBack()
-
-                // Pop + re-add the route
-                val route = StationDetailNavArgs(viewModel.stationId)
-                onNavigateBack()
-                onNavigate(route)
-            }
+            viewModel.saveChanges()
+                ?.let { onSaveFinished() }
         },
 
         horizontalContentPadding = horizontalContentPadding,
@@ -233,8 +223,8 @@ fun EditStationScreen(
     currentCoords: LatLng,
     currentAddress: String,
 
+    onCancelRequest: () -> Unit,
     onSaveRequest: () -> Unit,
-    onNavigateBack: () -> Unit,
 
     horizontalContentPadding: Dp = 10.dp,
 
@@ -254,7 +244,7 @@ fun EditStationScreen(
         topBar = {
             TopAppBar(
                 title = { Text("Edit station: $oldName", softWrap = false, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = { NavBackButton(onNavigateBack) },
+                navigationIcon = { NavBackButton(onCancelRequest) },
                 actions = { SaveChangesButton(onSaveRequest) },
             )
         }

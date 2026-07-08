@@ -11,6 +11,7 @@ import io.mockk.mockk
 import io.mockk.mockkObject
 import io.mockk.unmockkAll
 import io.mockk.verify
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.delay
@@ -23,6 +24,7 @@ import kotlinx.coroutines.test.setMain
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -52,14 +54,15 @@ class LocationPickerModelTest {
         val newGeom = LatLng(10.0, 20.0)
         val newAddress = "New Address"
 
+        val addressJob = CompletableDeferred<String>()
         every { result.latLng } returns newGeom
-        coEvery { result.getAddress() } returns newAddress
-
+        coEvery { result.getAddress() } coAnswers { addressJob.await() }
         model.updateLocation(result)
 
         // Verify loading state
         assertNull(model.displayString)
 
+        addressJob.complete(newAddress)
         advanceUntilIdle()
 
         assertEquals(newGeom, model.geom)
@@ -170,12 +173,11 @@ class EditStationViewModelTest {
         every { BackendApi.edit_station(any(), any(), any(), any()) } returns Unit
         
         val viewModel = EditStationViewModel(station)
-        var successCalled = false
 
-        viewModel.saveChanges { successCalled = true }
+        val result = viewModel.saveChanges()
+        assertNotNull(result)
 
         verify { BackendApi.edit_station(1, "Name", "Addr", LatLng(0.0, 0.0)) }
-        assertTrue(successCalled)
     }
 
     @Test
@@ -186,11 +188,10 @@ class EditStationViewModelTest {
         val viewModel = EditStationViewModel(station)
         viewModel.nameFieldState.setTextAndPlaceCursorAtEnd("") // Invalid
 
-        var successCalled = false
-        viewModel.saveChanges { successCalled = true }
+        val result = viewModel.saveChanges()
+        assertNull(result)
 
         verify(exactly = 0) { BackendApi.edit_station(any(), any(), any(), any()) }
-        assertFalse(successCalled)
     }
 }
 
@@ -250,7 +251,7 @@ class EditStationViewModelIntegrationTest {
         viewModel.locationPickerDelegate.updateLocation(result)
         advanceUntilIdle()
 
-        viewModel.saveChanges { }
+        viewModel.saveChanges()
 
         verify { BackendApi.edit_station(1, "Name", "New Addr", LatLng(5.0, 5.0)) }
     }

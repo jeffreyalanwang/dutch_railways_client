@@ -15,6 +15,7 @@ import androidx.navigation3.runtime.NavEntry
 import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
+import androidx.navigation3.runtime.result.LocalResultEventBus
 import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
 import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
@@ -34,7 +35,10 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditActions
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.StationSearchScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.TripFinderScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.RefreshResult
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.RefreshResultEffect
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.clearToInitial
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.refreshKeyByResultEffect
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.rememberNavBackStack
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.TripFinderViewModel
 import kotlinx.datetime.LocalTime
@@ -137,8 +141,7 @@ fun appEntries(
                     is TimePickerNavArgs<*> -> NavEntry(
                         key = key,
                         metadata = predictiveBackDialog(),
-                    ) { key ->
-                        key as TimePickerNavArgs<*>
+                    ) {
                         TimePicker(key) { viewModel.popBack() }
                     }
 
@@ -149,7 +152,7 @@ fun appEntries(
                         // means we use the same SinglePaneScene, thus same
                         // TripFinderScreen
                         contentKey = true,
-                    ) { key ->
+                    ) {
                         TripFinderScreen(
                             key,
                             viewModel,
@@ -197,6 +200,7 @@ fun appEntries(
                 entryDecorators = listOf(
                     rememberSaveableStateHolderNavEntryDecorator(),
                     rememberViewModelStoreNavEntryDecorator(), // ensure separate ViewModelStore for each edit screen
+                    rememberResultEventBusNavEntryDecorator(), // allow edit screens to trigger refresh on the previous info screen
                 ),
                 entryProvider = entryProvider {
                     entry<EditStartNavArgs> { navArgs ->
@@ -204,55 +208,78 @@ fun appEntries(
                             onNavigate = { newNavArgs -> backstack.add(newNavArgs) }
                         )
                     }
-                    commonChildEntries(
-                        onNavigate = { backstack.add(it) },
-                        onNavigateBack = { backstack.removeAt(backstack.lastIndex) },
-                    ) { navArgs ->
-                        EditActions(
-                            navArgs,
-                            onNavigate = { backstack.add(it) }
-                        )
-                    }
+
                     entry<EditStationNavArgs> { navArgs ->
+                        val resultEventBus = LocalResultEventBus.current
                         EditStationScreen(
                             id = navArgs.id,
-                            onNavigate = { backstack.add(it) },
-                            onNavigateBack = { backstack.removeLast() },
+                            onCancelRequest = { backstack.removeLast() },
+                            onSaveFinished = {
+                                backstack.removeLast()
+                                resultEventBus.sendResult(RefreshResult)
+                            },
                         )
                     }
                     entry<EditAreaNavArgs> { navArgs ->
+                        val resultEventBus = LocalResultEventBus.current
                         EditAreaScreen(
                             id = navArgs.id,
-                            onNavigate = { backstack.add(it) },
-                            onNavigateBack = { backstack.removeLast() },
+                            onCancelRequest = { backstack.removeLast() },
+                            onSaveFinished = {
+                                backstack.removeLast()
+                                resultEventBus.sendResult(RefreshResult)
+                            },
                         )
                     }
 
                     entry<NewPassServiceNavArgs> { navArgs ->
+                        val resultEventBus = LocalResultEventBus.current
                         NewPassServiceScreen(
                             navArgs.basedOnId
                                 ?.let { BackendApi.get_pass_service(it) },
-                            onNavigate = { backstack.add(it) },
-                            onNavigateBack = { backstack.removeLast() },
+                            onCancelRequest = { backstack.removeLast() },
+                            onSaveFinished = {
+                                backstack.removeLast()
+                                resultEventBus.sendResult(RefreshResult)
+                            },
                         )
                     }
                     entry<EditPassServiceNavArgs> { navArgs ->
+                        val resultEventBus = LocalResultEventBus.current
                         EditPassServiceScreen(
                             navArgs.id,
-                            onNavigate = { newNavArgs -> backstack.add(newNavArgs) },
-                            onNavigateBack = { backstack.removeLast() },
+                            onCancelRequest = { backstack.removeLast() },
+                            onSaveFinished = {
+                                backstack.removeLast()
+                                resultEventBus.sendResult(RefreshResult)
+                            },
                         )
                     }
                     entry<ConfirmDeletePassServiceNavArgs>(
                         metadata = predictiveBackDialog()
                     ) { navArgs ->
-                        // Also has the responsibility of executing the deletion.
+                        val resultEventBus = LocalResultEventBus.current
                         val service = BackendApi.get_pass_service(navArgs.id)
                         ConfirmDeletePassService(
                             service.id,
                             service.title,
-                            onNavigateBack = { backstack.removeLast() },
-                            onClearStack = { backstack.clearToInitial() }
+                            onCancelRequest = { backstack.removeLast() },
+                            onDeleteFinished = {
+                                backstack.removeLast()
+                                backstack.removeLast()
+                                resultEventBus.sendResult(RefreshResult) // TODO here?
+                            },
+                        )
+                    }
+
+                    commonChildEntries(
+                        onNavigate = { backstack.add(it) },
+                        onNavigateBack = { backstack.removeAt(backstack.lastIndex) },
+                    ) { navArgs ->
+                        // Actions bar content
+                        EditActions(
+                            navArgs,
+                            onNavigate = { backstack.add(it) },
                         )
                     }
                 }
@@ -261,9 +288,14 @@ fun appEntries(
     }
 
 }
+
 /**
  * Returns navigation entries for pages which may be opened by
  * (thus pushed on top of) top-level pages in the back stack.
+ *
+ * Entries which are more recent on the back stack may return a
+ * result of type [RefreshResult] to reload one of these
+ * parent entries.
  *
  * [T] must be a superclass of [CommonChildNavArgs].
  *
@@ -281,29 +313,51 @@ fun <T: AppNavArgs> EntryProviderScope<T>.commonChildEntries(
     this as EntryProviderScope<CommonChildNavArgs>
 
     entry<AreaDetailNavArgs> { navArgs ->
-        AreaDetailScreen(
-            rememberSaveable(navArgs.id) { BackendApi.get_area_info(navArgs.id) },
-            onNavigate = onNavigate,
-            onNavigateBack = onNavigateBack,
-            actionsSlot = actions?.let{ { it(navArgs) } },
-        )
+        key(navArgs) {
+            val refreshKey by refreshKeyByResultEffect()
+            val area =
+                rememberSaveable(navArgs.id, refreshKey) {
+                    BackendApi.get_area_info(navArgs.id)
+                }
+            AreaDetailScreen(
+                area,
+                onNavigate = onNavigate,
+                onNavigateBack = onNavigateBack,
+                actionsSlot = actions?.let { { it(navArgs) } },
+            )
+        }
     }
     entry<StationDetailNavArgs> { navArgs ->
-        StationDetailScreen(
-            rememberSaveable(navArgs.id) { BackendApi.get_station_info(navArgs.id) },
-            onNavigate = onNavigate,
-            onNavigateBack = onNavigateBack,
-            actionsSlot = actions?.let{ { it(navArgs) } },
-        )
+        key(navArgs) {
+            val refreshKey by refreshKeyByResultEffect()
+            val station =
+                rememberSaveable(navArgs.id, refreshKey) {
+                    BackendApi.get_station_info(navArgs.id)
+                }
+            StationDetailScreen(
+                station,
+                onNavigate = onNavigate,
+                onNavigateBack = onNavigateBack,
+                actionsSlot = actions?.let { { it(navArgs) } },
+            )
+        }
     }
     entry<PassServiceDetailNavArgs> { navArgs ->
-        PassServiceDetailScreen(
-            rememberSaveable(navArgs.id) { BackendApi.get_pass_service(navArgs.id) },
-            onNavigate = onNavigate,
-            onNavigateBack = onNavigateBack,
-            actionsSlot = actions?.let{ { it(navArgs) } },
-        )
+        val refreshKey by refreshKeyByResultEffect()
+        val passService =
+            rememberSaveable(navArgs.id, refreshKey) {
+                BackendApi.get_pass_service(navArgs.id)
+            }
+        key(navArgs) {
+            PassServiceDetailScreen(
+                passService,
+                onNavigate = onNavigate,
+                onNavigateBack = onNavigateBack,
+                actionsSlot = actions?.let { { it(navArgs) } },
+            )
+        }
     }
+
     entry<TimePickerNavArgs<*>>(
         metadata = predictiveBackDialog(),
     ) { navArgs ->

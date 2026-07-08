@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.IconWithBadge
 import kotlinx.coroutines.launch
 
@@ -47,8 +48,8 @@ private fun ConfirmDeletePassServicePreview(serviceId: Int = 119) {
         ConfirmDeletePassService(
             id = service.id,
             serviceName = service.title,
-            onNavigateBack = { notify("Back") },
-            onClearStack = { notify("Clear stack") },
+            onCancelRequest = { notify("Back") },
+            onDeleteFinished = { notify("Delete finished") },
         )
     }
     Box(Modifier.fillMaxSize()) {
@@ -63,8 +64,8 @@ private fun ConfirmDeletePassServicePreview(serviceId: Int = 119) {
 fun ConfirmDeletePassService(
     id: Int,
     serviceName: String,
-    onNavigateBack: () -> Unit,
-    onClearStack: () -> Unit,
+    onCancelRequest: () -> Unit,
+    onDeleteFinished: () -> Unit,
 ) {
     Card(shape = MaterialTheme.shapes.large) {
         Column(
@@ -108,12 +109,12 @@ fun ConfirmDeletePassService(
                     shape = MaterialTheme.shapes.medium,
                     onClick = {
                         BackendApi.delete_pass_service(id)
-                        onClearStack()
+                        onDeleteFinished()
                     },
                 ) { Text("Yes") }
                 TextButton(
                     shape = MaterialTheme.shapes.medium,
-                    onClick = { onNavigateBack() },
+                    onClick = onCancelRequest,
                 ) { Text("No") }
             }
         }

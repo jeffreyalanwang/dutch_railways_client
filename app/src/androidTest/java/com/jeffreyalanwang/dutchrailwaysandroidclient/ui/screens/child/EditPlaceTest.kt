@@ -51,7 +51,11 @@ class EditPlaceTest {
         every { BackendApi.get_station_info(1) } returns station
 
         setContent {
-            EditStationScreen(id = 1, onNavigate = {}, onNavigateBack = {})
+            EditStationScreen(
+                id = 1,
+                onCancelRequest = {},
+                onSaveFinished = {},
+            )
         }
 
         onNodeWithText("Edit station: Amsterdam Centraal").assertIsDisplayed()
@@ -66,7 +70,11 @@ class EditPlaceTest {
         every { BackendApi.edit_station(any(), any(), any(), any()) } returns Unit
 
         setContent {
-            EditStationScreen(id = 1, onNavigate = {}, onNavigateBack = {})
+            EditStationScreen(
+                id = 1,
+                onCancelRequest = {},
+                onSaveFinished = {},
+            )
         }
 
         onNodeWithText("S").performTextClearance()
@@ -83,7 +91,11 @@ class EditPlaceTest {
         every { BackendApi.get_station_info(1) } returns station
 
         setContent {
-            EditStationScreen(id = 1, onNavigate = {}, onNavigateBack = {})
+            EditStationScreen(
+                id = 1,
+                onCancelRequest = {},
+                onSaveFinished = {},
+            )
         }
 
         onNodeWithTag("location_selector_caption").performClick()
@@ -105,7 +117,11 @@ class EditPlaceTest {
         every { BackendApi.get_area_info(1) } returns area
 
         setContent {
-            EditAreaScreen(id = 1, onNavigate = {}, onNavigateBack = {})
+            EditAreaScreen(
+                id = 1,
+                onCancelRequest = {},
+                onSaveFinished = {},
+            )
         }
 
         onNodeWithText("Edit area: Nederland").assertIsDisplayed()
@@ -119,7 +135,11 @@ class EditPlaceTest {
         every { BackendApi.edit_area(any(), any()) } returns Unit
 
         setContent {
-            EditAreaScreen(id = 1, onNavigate = {}, onNavigateBack = {})
+            EditAreaScreen(
+                id = 1,
+                onCancelRequest = {},
+                onSaveFinished = {},
+            )
         }
 
         onNodeWithText("Nederland").performTextClearance()

@@ -77,15 +77,20 @@ class EditStationViewModel(
         locationPickerDelegate.isExpanded = true
     }
 
-    fun saveChanges(onSuccess: () -> Unit) {
-        if (isNameValid) {
-            BackendApi.edit_station(
-                stationId,
-                currentName,
-                currAddress,
-                currGeom,
-            )
-            onSuccess()
-        }
+    /**
+     * Odd return value allows us to mirror the behavior of [EditPassServiceViewModel].
+     * @return `null` if data is invalid; otherwise, `Unit` (indicates saved successfully).
+     * @see EditPassServiceViewModel.saveChanges
+     */
+    fun saveChanges(): Unit? {
+        if (!isNameValid) return null
+
+        BackendApi.edit_station(
+            stationId,
+            currentName,
+            currAddress,
+            currGeom,
+        )
+        return Unit
     }
 }

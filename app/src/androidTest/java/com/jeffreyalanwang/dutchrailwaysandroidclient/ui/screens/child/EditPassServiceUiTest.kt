@@ -56,12 +56,12 @@ class EditPassServiceUiTest {
             // Mock add_pass_service to return a dummy service
             every { BackendApi.add_pass_service(any(), any(), any(), any()) } returns PassService(123, "New Service", Trainset.SLT, emptySet())
     
-            var navigatedId: Int? = null
+            var idToNavigate: Int? = null
     
             setContent {
                 NewPassServiceScreen(
-                    onNavigateBack = {},
-                    onNavigate = { navigatedId = it.id }
+                    onCancelRequest = {},
+                    onSaveFinished = { idToNavigate = it }
                 )
             }
     
@@ -102,7 +102,7 @@ class EditPassServiceUiTest {
             
             // Verify navigation called with mocked ID
             waitForIdle()
-            assertEquals(123, navigatedId)
+            assertEquals(123, idToNavigate)
         }
 
     @Test
@@ -118,8 +118,8 @@ class EditPassServiceUiTest {
         setContent {
             EditPassServiceScreen(
                 id = 119,
-                onNavigateBack = {},
-                onNavigate = {}
+                onCancelRequest = {},
+                onSaveFinished = {}
             )
         }
 
@@ -145,8 +145,8 @@ class EditPassServiceUiTest {
         setContent {
             EditPassServiceScreen(
                 id = 119,
-                onNavigateBack = {},
-                onNavigate = {}
+                onCancelRequest = {},
+                onSaveFinished = {}
             )
         }
 

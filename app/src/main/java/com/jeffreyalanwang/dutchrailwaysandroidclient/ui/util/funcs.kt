@@ -209,24 +209,6 @@ fun Place.boundsForDisplay()
         else -> throw NotImplementedError()
     }
 
-@Composable
-inline fun <reified T: AppNavArgs> rememberNavBackStack(
-    vararg elements: T,
-): NavBackStack<T> {
-    return rememberSerializable(
-        // Take advantage of the fact that [AppNavArgs] is a subclass of [NavKey]
-        serializer = NavBackStackSerializer(NavKeySerializer()),
-    ) {
-        NavBackStack(*elements)
-    }
-}
-
-fun <T: NavKey> NavBackStack<T>.clearToInitial() {
-    while (size > 1) {
-        removeAt(size - 1)
-    }
-}
-
 /** A version of [produceState] that uses the return value of the callback. */
 @Composable
 fun <T, K> producedStateFrom(
@@ -452,3 +434,24 @@ fun OnChangeEffect(key: Any?, block: suspend CoroutineScope.() -> Unit) {
 
 val Resources.displaySize: IntSize
     get() =  displayMetrics.run { IntSize(widthPixels, heightPixels) }
+
+/**
+ * This overload exists for improved integration with the Kotlin type checker.
+ */
+@Composable
+inline fun <reified T: AppNavArgs> rememberNavBackStack(
+    vararg elements: T,
+): NavBackStack<T> {
+    return rememberSerializable(
+        // Take advantage of the fact that [AppNavArgs] is a subclass of [NavKey]
+        serializer = NavBackStackSerializer(NavKeySerializer()),
+    ) {
+        NavBackStack(*elements)
+    }
+}
+
+fun <T: NavKey> NavBackStack<T>.clearToInitial() {
+    while (size > 1) {
+        removeAt(size - 1)
+    }
+}

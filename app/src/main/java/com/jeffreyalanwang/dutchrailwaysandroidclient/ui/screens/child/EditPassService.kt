@@ -24,7 +24,6 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
 import androidx.compose.foundation.text.input.rememberTextFieldState
@@ -141,8 +140,8 @@ private fun EditPassServiceScreenPreview(serviceId: Int = 119) {
 @Composable
 fun NewPassServiceScreen(
     basedOnService: PassService? = null,
-    onNavigateBack: () -> Unit,
-    onNavigate: (PassServiceDetailNavArgs) -> Unit,
+    onCancelRequest: () -> Unit,
+    onSaveFinished: (createdId: Int) -> Unit,
 ) {
     val viewModel: EditPassServiceViewModel = viewModel {
         EditPassServiceViewModel(
@@ -155,18 +154,17 @@ fun NewPassServiceScreen(
         viewModel = viewModel,
         screenTitle = "New train service",
         onFinished = { id ->
-            onNavigateBack()
-            onNavigate(PassServiceDetailNavArgs(id))
+            onSaveFinished(id)
         },
-        onCancelled = onNavigateBack,
+        onCancelled = onCancelRequest,
     )
 }
 
 @Composable
 fun EditPassServiceScreen(
     id: Int,
-    onNavigateBack: () -> Unit,
-    onNavigate: (PassServiceDetailNavArgs) -> Unit,
+    onCancelRequest: () -> Unit,
+    onSaveFinished: () -> Unit,
 ) {
     val service = BackendApi.get_pass_service(id)
     val viewModel: EditPassServiceViewModel = viewModel {
@@ -178,14 +176,11 @@ fun EditPassServiceScreen(
     EditPassServiceScreenBase(
         viewModel = viewModel,
         screenTitle = "Edit train service",
-        onFinished = { id ->
-            onNavigateBack()
-
+        onFinished = {
             // Refresh the previous screen by closing + reopening
-            onNavigateBack()
-            onNavigate(PassServiceDetailNavArgs(id))
+            onSaveFinished()
         },
-        onCancelled = onNavigateBack,
+        onCancelled = onCancelRequest,
     )
 }
 
