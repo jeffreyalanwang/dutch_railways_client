@@ -125,11 +125,11 @@ fun <T: LocationResult> ExpandedSearch(
     searchBarState: SearchBarState,
     onClose: () -> Unit,
     onSelectResult: (LocationResult?) -> Unit,
+    modifier: Modifier = Modifier,
     onClearedText: () -> Unit = {
         textFieldState.clearText()
         onSelectResult(null)
     },
-    modifier: Modifier = Modifier,
 ) {
     val addressResults by produceState(emptyList(), textFieldState.text) {
         value = textFieldState.text

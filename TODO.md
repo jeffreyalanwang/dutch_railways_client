@@ -1,7 +1,6 @@
 * C/U/D functionality: in BackendApi and in new tab Composable
   * edit places 
     * edit stations
-      * incorporate viewmodel
       * edit location point
       -> latlng or address: search placeholder token + expandedsearchbar
       -> transitionable between edit station screen + fullscreen GoogleMap (with movableContentOf?)

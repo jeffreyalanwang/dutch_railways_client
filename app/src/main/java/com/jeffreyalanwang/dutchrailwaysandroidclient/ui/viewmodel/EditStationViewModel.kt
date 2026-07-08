@@ -3,14 +3,11 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.material3.SearchBarState
 import androidx.compose.material3.SearchBarValue
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.State
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.foundation.text.input.clearText
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -18,64 +15,77 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.android.gms.maps.model.LatLng
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.AddressResult
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.LocationResult
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.StationLocation
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
 
-class EditStationViewModel(
-    val stationId: Int
-) : ViewModel() {
-    private val station = BackendApi.get_station_info(stationId)
+class LocationPickerModel(
+    private val viewModelScope: CoroutineScope,
+    initialGeom: LatLng,
+    initialAddress: String,
+) {
+    var isExpanded by mutableStateOf(false)
+        internal set
 
-    val nameState = TextFieldState(station.name)
-    val isNameValid by derivedStateOf { nameState.text.isNotEmpty() }
-
-    var location: StationLocation by mutableStateOf(station.geom to station.address)
+    var geom by mutableStateOf(initialGeom)
+        private set
+    var address by mutableStateOf(initialAddress)
         private set
 
-    var isLocationPickerExpanded by mutableStateOf(false)
+    /** Null if loading. */
+    var displayString by mutableStateOf<String?>(address)
         private set
-
-    val searchTextFieldState = TextFieldState()
 
     private var geocodeJob: Job? = null
-
-    fun updateLocation(result: LocationResult?, searchBarState: SearchBarState) {
+    fun updateLocation(result: LocationResult?) {
         if (result == null) return
-
-        val isSearchBarExpanding = searchBarState.targetValue != SearchBarValue.Collapsed
-        if (isSearchBarExpanding) return
 
         geocodeJob?.cancel()
         geocodeJob = viewModelScope.launch {
-            searchTextFieldState.setTextAndPlaceCursorAtEnd("Loading...")
+            this@LocationPickerModel.displayString = null
             val latLng = result.latLng
-            val address = result.getAddress()
-            if (address != null) {
-                searchTextFieldState.setTextAndPlaceCursorAtEnd(address)
-                location = latLng to address
-            } else {
-                searchTextFieldState.clearText()
-            }
+            val address = result.getAddress() // this line may suspend
+                ?: return@launch
+            this@LocationPickerModel.geom = latLng
+            this@LocationPickerModel.address = address
+            this@LocationPickerModel.displayString = address
         }
+    }
+}
+
+class EditStationViewModel(
+    initialStationDetails: Station,
+) : ViewModel() {
+
+    constructor(stationId: Int)
+        : this( BackendApi.get_station_info(stationId) )
+
+    val stationId = initialStationDetails.id
+
+    val initialName = initialStationDetails.name
+    val nameFieldState = TextFieldState(initialName)
+    val currentName get() = nameFieldState.text.toString()
+    val isNameValid by derivedStateOf { nameFieldState.text.isNotEmpty() }
+
+    val locationPickerDelegate = LocationPickerModel(viewModelScope, initialStationDetails.geom, initialStationDetails.address)
+    val currGeom get() = locationPickerDelegate.geom
+    val currAddress get() = locationPickerDelegate.address
+    fun onExpandLocationPicker() {
+        locationPickerDelegate.isExpanded = true
     }
 
     fun saveChanges(onSuccess: () -> Unit) {
         if (isNameValid) {
             BackendApi.edit_station(
                 stationId,
-                nameState.text.toString(),
-                location.second,
-                location.first
+                currentName,
+                currAddress,
+                currGeom,
             )
             onSuccess()
         }
-    }
-
-    fun updateLocationPickerExpanded(expanded: Boolean) {
-        isLocationPickerExpanded = expanded
     }
 }
