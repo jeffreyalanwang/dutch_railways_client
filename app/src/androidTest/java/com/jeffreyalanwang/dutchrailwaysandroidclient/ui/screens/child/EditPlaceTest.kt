@@ -2,10 +2,10 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child
 
 import androidx.compose.ui.test.ExperimentalTestApi
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.hasAnyAncestor
+import androidx.compose.ui.test.filterToOne
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasTestTag
-import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onChildren
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
@@ -18,6 +18,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.Geocoding
+import com.jeffreyalanwang.dutchrailwaysandroidclient.onNodeAfterExactlyOneExists
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockkObject
@@ -99,16 +100,14 @@ class EditPlaceTest {
         }
 
         onNodeWithTag("location_selector_caption").performClick()
-        
-        // Wait for the animation to finish or at least for the search bar to appear
-        waitUntil(timeoutMillis = 5000L) {
-            onAllNodesWithTag("location_search_input").fetchSemanticsNodes().isNotEmpty()
-        }
-        
-        onNodeWithTag("location_search_input").assertIsDisplayed()
-        // The back button should be there (leading icon of search input)
-        onNode(hasContentDescription("Back") and hasAnyAncestor(hasTestTag("location_search_bar")))
+
+        onNodeAfterExactlyOneExists(hasTestTag("location_search_input"))
+            // Wait for search bar to appear
             .assertIsDisplayed()
+
+            // The back button should be there (leading icon of search input)
+            .onChildren().filterToOne(hasContentDescription("Back"))
+                .assertIsDisplayed()
     }
 
     @Test

@@ -1,6 +1,17 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui
 
-import androidx.compose.ui.test.*
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasSetTextAction
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.onAllNodesWithTag
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onFirst
+import androidx.compose.ui.test.onNodeWithContentDescription
+import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
+import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.v2.runComposeUiTest
 import com.google.android.gms.maps.model.LatLng
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
@@ -11,8 +22,11 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Trainset
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.Geocoding
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.theme.DutchRailwaysAndroidClientTheme
-import io.mockk.*
+import com.jeffreyalanwang.dutchrailwaysandroidclient.onNodeAfterExactlyOneExists
+import io.mockk.coEvery
+import io.mockk.every
+import io.mockk.mockkObject
+import io.mockk.unmockkAll
 import org.junit.After
 import org.junit.Before
 import org.junit.Test
@@ -46,27 +60,24 @@ class NavigationRefreshTest {
         every { BackendApi.edit_station(any(), any(), any(), any()) } returns Unit
 
         setContent {
-            DutchRailwaysAndroidClientTheme {
-                DutchRailwaysAndroidClientApp()
-            }
+            DutchRailwaysAndroidClientApp()
         }
 
         onNodeWithText("Edit").performClick()
-        
-        onNodeWithTag("edit_screen_search_input").performTextInput("Initial")
-        waitUntil(timeoutMillis = 5000) {
-            onAllNodesWithText("Initial Name").fetchSemanticsNodes().isNotEmpty()
-        }
-        onAllNodesWithText("Initial Name").filterToOne(!hasSetTextAction()).performClick()
+
+        onAllNodesWithTag("search_input").onFirst()
+            .performTextInput("Initial")
+        onNodeAfterExactlyOneExists(hasText("Initial Name") and !hasSetTextAction(), timeoutMillis = 5000)
+            .performClick()
 
         onNodeWithText("Station").assertIsDisplayed()
         onNodeWithText("Initial Name").assertIsDisplayed()
 
         onNodeWithContentDescription("Edit").performClick()
-        
-        onNodeWithTag("name_field").assertIsDisplayed()
-        onNodeWithTag("name_field").performTextClearance()
-        onNodeWithTag("name_field").performTextInput("Updated Name")
+
+        onNodeWithContentDescription("Text field: set name").assertIsDisplayed()
+        onNodeWithContentDescription("Text field: set name").performTextClearance()
+        onNodeWithContentDescription("Text field: set name").performTextInput("Updated Name")
         onNodeWithContentDescription("Finish & save").performClick()
 
         // Wait for the detail screen to reappear with updated info
@@ -88,34 +99,29 @@ class NavigationRefreshTest {
         every { BackendApi.edit_area(any(), any()) } returns Unit
 
         setContent {
-            DutchRailwaysAndroidClientTheme {
-                DutchRailwaysAndroidClientApp()
-            }
+            DutchRailwaysAndroidClientApp()
         }
 
         onNodeWithText("Edit").performClick()
-        onNodeWithTag("edit_screen_search_input").performTextInput("Initial")
-        waitUntil(timeoutMillis = 5000) {
-            onAllNodesWithText("Initial Area").fetchSemanticsNodes().isNotEmpty()
-        }
-        onAllNodesWithText("Initial Area").filterToOne(!hasSetTextAction()).performClick()
+        onAllNodesWithTag("search_input").onFirst()
+            .performTextInput("Initial")
+        onNodeAfterExactlyOneExists(hasText("Initial Area") and !hasSetTextAction(), timeoutMillis = 5000)
+            .performClick()
 
         onNodeWithText("Area").assertIsDisplayed()
         onNodeWithText("Initial Area").assertIsDisplayed()
 
         onNodeWithContentDescription("Edit").performClick()
         
-        onNodeWithTag("name_field").assertIsDisplayed()
-        onNodeWithTag("name_field").performTextClearance()
-        onNodeWithTag("name_field").performTextInput("Updated Area")
+        onNodeWithContentDescription("Text field: set name").assertIsDisplayed()
+        onNodeWithContentDescription("Text field: set name").performTextClearance()
+        onNodeWithContentDescription("Text field: set name").performTextInput("Updated Area")
         onNodeWithContentDescription("Finish & save").performClick()
 
         // Wait for the detail screen to reappear with updated info
-        waitUntil(timeoutMillis = 5000) {
-            onAllNodesWithText("Updated Area").fetchSemanticsNodes().isNotEmpty()
-        }
+        onNodeAfterExactlyOneExists(hasText("Updated Area"), timeoutMillis = 5000)
+            .assertIsDisplayed()
         onNodeWithText("Area").assertIsDisplayed()
-        onNodeWithText("Updated Area").assertIsDisplayed()
     }
 
     @Test
@@ -137,31 +143,25 @@ class NavigationRefreshTest {
         every { BackendApi.get_station_info(any()) } returns Station(1, "S", "A", LatLng(0.0, 0.0))
 
         setContent {
-            DutchRailwaysAndroidClientTheme {
-                DutchRailwaysAndroidClientApp()
-            }
+            DutchRailwaysAndroidClientApp()
         }
 
         onNodeWithText("Edit").performClick()
-        onNodeWithTag("edit_screen_search_input").performTextInput("Initial")
-        waitUntil(timeoutMillis = 5000) {
-            onAllNodesWithText("Initial Service").fetchSemanticsNodes().isNotEmpty()
-        }
-        onAllNodesWithText("Initial Service").filterToOne(!hasSetTextAction()).performClick()
+        onAllNodesWithTag("search_input").onFirst()
+            .performTextInput("Initial")
 
-        onNodeWithText("Train").assertIsDisplayed()
+        onNodeAfterExactlyOneExists(hasText("Initial Service") and !hasSetTextAction(), timeoutMillis = 5000)
+            .performScrollTo()
+            .performClick()
+
         onNodeWithText("Initial Service").assertIsDisplayed()
 
         onNodeWithContentDescription("Edit").performClick()
-        
-        waitForIdle()
         onNodeWithContentDescription("Finish & save").performClick()
 
         // Wait for the detail screen to reappear with updated info
-        waitUntil(timeoutMillis = 5000) {
-            onAllNodesWithText("Updated Service").fetchSemanticsNodes().isNotEmpty()
-        }
-        onNodeWithText("Train").assertIsDisplayed()
+        onNodeAfterExactlyOneExists(hasText("Updated Service"), timeoutMillis = 5000)
+            .assertIsDisplayed()
         onNodeWithText("Updated Service").assertIsDisplayed()
     }
 }

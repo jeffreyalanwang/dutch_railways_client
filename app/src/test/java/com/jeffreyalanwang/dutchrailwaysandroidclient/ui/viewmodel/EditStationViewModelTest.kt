@@ -6,6 +6,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.LocationResult
 import io.mockk.coEvery
+import io.mockk.coVerify
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject
@@ -19,6 +20,7 @@ import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -29,6 +31,7 @@ import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
+import kotlin.time.Duration.Companion.seconds
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LocationPickerModelTest {
@@ -57,10 +60,13 @@ class LocationPickerModelTest {
         val addressJob = CompletableDeferred<String>()
         every { result.latLng } returns newGeom
         coEvery { result.getAddress() } coAnswers { addressJob.await() }
-        model.updateLocation(result)
 
-        // Verify loading state
-        assertNull(model.displayString)
+        model.updateLocation(result)
+        runCurrent()
+
+        verify { result.latLng }
+        coVerify { result.getAddress() }
+        assertNull("Model should be in loading state", model.displayString)
 
         addressJob.complete(newAddress)
         advanceUntilIdle()
@@ -83,13 +89,15 @@ class LocationPickerModelTest {
     fun `updateLocation handles null address from geocoder`() = testScope.runTest {
         val model = LocationPickerModel(this, LatLng(0.0, 0.0), "Old")
         val result = mockk<LocationResult>()
+
+        val job = CompletableDeferred<String?>()
         every { result.latLng } returns LatLng(10.0, 20.0)
-        coEvery { result.getAddress() } returns null
+        coEvery { result.getAddress() } coAnswers { job.await() }
 
         model.updateLocation(result)
-        assertNull(model.displayString) // Loading state
-
         advanceUntilIdle()
+        assertNull(model.displayString) // Loading state
+        job.complete(null)
 
         // Address and geom should NOT have updated if getAddress returns null
         assertEquals(LatLng(0.0, 0.0), model.geom)
@@ -105,7 +113,7 @@ class LocationPickerModelTest {
 
         every { result1.latLng } returns LatLng(1.0, 1.0)
         coEvery { result1.getAddress() } coAnswers {
-            delay(1000)
+            delay(1.seconds)
             "Address 1"
         }
 

@@ -157,7 +157,7 @@ private fun StartContent(
         ) {
             Icon(
                 painterResource(R.drawable.ic_edit),
-                "Station icon",
+                "Edit icon",
                 Modifier
                     .alpha(.7f)
                     .size(96.dp)

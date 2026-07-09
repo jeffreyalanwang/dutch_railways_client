@@ -36,9 +36,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.StationSearchScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.TripFinderScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.RefreshResult
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.RefreshResultEffect
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.clearToInitial
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.refreshKeyByResultEffect
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.RefreshesOnResult
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.rememberNavBackStack
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.TripFinderViewModel
 import kotlinx.datetime.LocalTime
@@ -215,8 +213,8 @@ fun appEntries(
                             id = navArgs.id,
                             onCancelRequest = { backstack.removeLast() },
                             onSaveFinished = {
-                                backstack.removeLast()
                                 resultEventBus.sendResult(RefreshResult)
+                                backstack.removeLast()
                             },
                         )
                     }
@@ -226,8 +224,8 @@ fun appEntries(
                             id = navArgs.id,
                             onCancelRequest = { backstack.removeLast() },
                             onSaveFinished = {
-                                backstack.removeLast()
                                 resultEventBus.sendResult(RefreshResult)
+                                backstack.removeLast()
                             },
                         )
                     }
@@ -239,8 +237,8 @@ fun appEntries(
                                 ?.let { BackendApi.get_pass_service(it) },
                             onCancelRequest = { backstack.removeLast() },
                             onSaveFinished = {
-                                backstack.removeLast()
                                 resultEventBus.sendResult(RefreshResult)
+                                backstack.removeLast()
                             },
                         )
                     }
@@ -250,8 +248,8 @@ fun appEntries(
                             navArgs.id,
                             onCancelRequest = { backstack.removeLast() },
                             onSaveFinished = {
-                                backstack.removeLast()
                                 resultEventBus.sendResult(RefreshResult)
+                                backstack.removeLast()
                             },
                         )
                     }
@@ -267,7 +265,7 @@ fun appEntries(
                             onDeleteFinished = {
                                 backstack.removeLast()
                                 backstack.removeLast()
-                                resultEventBus.sendResult(RefreshResult) // TODO here?
+                                resultEventBus.sendResult(RefreshResult)
                             },
                         )
                     }
@@ -313,12 +311,9 @@ fun <T: AppNavArgs> EntryProviderScope<T>.commonChildEntries(
     this as EntryProviderScope<CommonChildNavArgs>
 
     entry<AreaDetailNavArgs> { navArgs ->
-        key(navArgs) {
-            val refreshKey by refreshKeyByResultEffect()
+        RefreshesOnResult {
             val area =
-                rememberSaveable(navArgs.id, refreshKey) {
-                    BackendApi.get_area_info(navArgs.id)
-                }
+                rememberSaveable { BackendApi.get_area_info(navArgs.id) }
             AreaDetailScreen(
                 area,
                 onNavigate = onNavigate,
@@ -328,12 +323,9 @@ fun <T: AppNavArgs> EntryProviderScope<T>.commonChildEntries(
         }
     }
     entry<StationDetailNavArgs> { navArgs ->
-        key(navArgs) {
-            val refreshKey by refreshKeyByResultEffect()
+        RefreshesOnResult {
             val station =
-                rememberSaveable(navArgs.id, refreshKey) {
-                    BackendApi.get_station_info(navArgs.id)
-                }
+                rememberSaveable { BackendApi.get_station_info(navArgs.id) }
             StationDetailScreen(
                 station,
                 onNavigate = onNavigate,
@@ -343,18 +335,20 @@ fun <T: AppNavArgs> EntryProviderScope<T>.commonChildEntries(
         }
     }
     entry<PassServiceDetailNavArgs> { navArgs ->
-        val refreshKey by refreshKeyByResultEffect()
-        val passService =
-            rememberSaveable(navArgs.id, refreshKey) {
-                BackendApi.get_pass_service(navArgs.id)
+        // We need to refresh the entire composable because
+        // recompose would be triggered by changes in the [passService]
+        // but not by any stops.
+        RefreshesOnResult {
+            val passService =
+                rememberSaveable { BackendApi.get_pass_service(navArgs.id) }
+            key(navArgs) {
+                PassServiceDetailScreen(
+                    passService,
+                    onNavigate = onNavigate,
+                    onNavigateBack = onNavigateBack,
+                    actionsSlot = actions?.let { { it(navArgs) } },
+                )
             }
-        key(navArgs) {
-            PassServiceDetailScreen(
-                passService,
-                onNavigate = onNavigate,
-                onNavigateBack = onNavigateBack,
-                actionsSlot = actions?.let { { it(navArgs) } },
-            )
         }
     }
 

@@ -7,6 +7,7 @@ import androidx.compose.ui.test.filterToOne
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasContentDescription
+import androidx.compose.ui.test.hasNoClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
@@ -23,6 +24,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Trainset
+import com.jeffreyalanwang.dutchrailwaysandroidclient.onNodeAfterExactlyOneExists
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.MainActivity
 import org.junit.Test
 
@@ -35,41 +37,47 @@ class EditPassServiceMutationTest {
         waitForIdle()
 
         // 2. Search for a PassService
-        onAllNodes(hasSetTextAction()).onFirst().performClick()
-        waitForIdle()
-
         onAllNodes(hasSetTextAction()).onLast().performTextInput("2263")
 
         // 3. Select the search result
-        waitUntil("Search result to appear", 20000) {
-            onAllNodesWithText("2263", substring = true).filter(!hasSetTextAction()).fetchSemanticsNodes().isNotEmpty()
-        }
-        onAllNodesWithText("2263", substring = true).filterToOne(!hasSetTextAction())
+        onNodeAfterExactlyOneExists(hasText("2263", substring = true) and !hasSetTextAction())
             .performScrollTo()
             .performClick()
 
         // 4. Click the "Duplicate" icon
-        waitUntil("Duplicate icon to appear", 20000) {
+        waitUntil("Duplicate icon to appear", 5000) {
             onAllNodesWithContentDescription("Duplicate").fetchSemanticsNodes().isNotEmpty()
         }
         onNodeWithContentDescription("Duplicate").performClick()
 
         // 5. Change trainset to SLT
-        waitUntil("Trainset selector to appear", 20000) {
-            onAllNodesWithTag("trainset_selector").fetchSemanticsNodes().isNotEmpty()
-        }
-        onNodeWithTag("trainset_selector").performClick()
-        onNodeWithText(Trainset.SLT.name).performClick()
+        onNodeAfterExactlyOneExists(hasTestTag("trainset_selector"), 5000)
+            .performClick()
+        onNodeWithText(Trainset.SLT.name)
+            .performScrollTo()
+            .performClick()
+
+        onNodeWithTag("trainset_selector")
+            .performClick()
+        onAllNodesWithText(Trainset.SLT.name)
+            .filterToOne(hasNoClickAction())
+            .assertExists()
 
         // 6. Save changes
         onNodeWithContentDescription("Finish & save").performClick()
 
-        // 7. Assert navigation back to PassServiceDetailScreen with new data
-        waitUntil("Train icon to appear", 20000) {
-            onAllNodesWithContentDescription("Train icon").fetchSemanticsNodes().isNotEmpty()
-        }
-        
-        onNodeWithContentDescription("Train icon").performClick()
+        // 7. Navigate to duplicated PassService
+        onAllNodes(hasSetTextAction()).onLast().performTextInput("2263")
+
+        // 3. Select the search result
+        onNodeAfterExactlyOneExists(hasText("2263", substring = true) and !hasSetTextAction())
+            .performScrollTo()
+            .performClick()
+
+        // 8. Assert navigation back to PassServiceDetailScreen with new data
+        onNodeAfterExactlyOneExists(hasContentDescription("Train icon"), 5000)
+            .performClick()
+
         onNodeWithText(Trainset.SLT.name).assertExists()
     }
 
@@ -86,7 +94,7 @@ class EditPassServiceMutationTest {
         onAllNodes(hasSetTextAction()).onLast().performTextInput("2263")
 
         // 3. Select the search result
-        waitUntil("Search result to appear", 20000) {
+        waitUntil("Search result to appear", 5000) {
             onAllNodesWithText("2263", substring = true).filter(!hasSetTextAction()).fetchSemanticsNodes().isNotEmpty()
         }
         onAllNodesWithText("2263", substring = true).filterToOne(!hasSetTextAction())
@@ -94,13 +102,13 @@ class EditPassServiceMutationTest {
             .performClick()
 
         // 4. Click the "Edit" icon
-        waitUntil("Edit icon to appear", 20000) {
+        waitUntil("Edit icon to appear", 5000) {
             onAllNodesWithContentDescription("Edit").filter(hasClickAction()).fetchSemanticsNodes().isNotEmpty()
         }
         onNode(hasContentDescription("Edit") and hasClickAction()).performClick()
 
         // 5. Modify stops
-        waitUntil("Stop station selector to appear", 20000) {
+        waitUntil("Stop station selector to appear", 5000) {
             onAllNodesWithTag("stop_station_1").fetchSemanticsNodes().isNotEmpty()
         }
         // Delete last stop (Rotterdam Centraal)
@@ -114,7 +122,7 @@ class EditPassServiceMutationTest {
         onNodeWithContentDescription("Finish & save").performClick()
 
         // 7. Assert navigation back
-        waitUntil("Train icon to appear", 20000) {
+        waitUntil("Train icon to appear", 5000) {
             onAllNodesWithContentDescription("Train icon").fetchSemanticsNodes().isNotEmpty()
         }
 

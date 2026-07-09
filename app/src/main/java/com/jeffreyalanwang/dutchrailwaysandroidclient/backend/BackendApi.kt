@@ -4,6 +4,7 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient.backend
 import android.content.res.Resources
 import android.util.Log
 import com.google.android.gms.maps.model.LatLng
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.compareTo
 import com.jeffreyalanwang.dutchrailwaysandroidclient.lastStationName
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
@@ -313,10 +314,10 @@ object BackendApi {
     fun edit_area(id: Int, name: String? = null) {
         Log.d("BackendApi", "SAVING: edit_area: id=$id, name=$name")
         val index = dummyAreas.indexOfFirst { it.id == id }
-        require(index > 0)
+        require(index >= 0)
         val old = dummyAreas[index]
         dummyAreas[index] =
-            _root_ide_package_.com.jeffreyalanwang.dutchrailwaysandroidclient.Area(
+            Area(
                 id = id,
                 name = name ?: old.name
             )

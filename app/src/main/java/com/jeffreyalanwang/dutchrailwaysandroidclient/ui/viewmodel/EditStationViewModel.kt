@@ -1,13 +1,6 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel
 
 import androidx.compose.foundation.text.input.TextFieldState
-import androidx.compose.material3.SearchBarState
-import androidx.compose.material3.SearchBarValue
-import androidx.compose.foundation.text.input.clearText
-import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +45,12 @@ class LocationPickerModel(
             this@LocationPickerModel.geom = latLng
             this@LocationPickerModel.address = address
             this@LocationPickerModel.displayString = address
+        }.apply {
+            this.invokeOnCompletion {
+                if (displayString == null) {
+                    displayString = address // restore if cancelled
+                }
+            }
         }
     }
 }

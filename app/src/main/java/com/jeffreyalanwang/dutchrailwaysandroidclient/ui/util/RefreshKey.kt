@@ -3,8 +3,10 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.retain.retain
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import androidx.navigation3.runtime.result.ResultEffect
 import androidx.navigation3.runtime.result.ResultEventBus
@@ -32,7 +34,14 @@ private constructor(
 }
 
 @Composable
-fun rememberRefreshKeyState() = rememberSaveable { RefreshKeyState() }
+fun retainRefreshKeyState() = retain { RefreshKeyState() }
+// TODO if we need [retain], that implies that we need to
+// change the key even after the item leaves composition
+// (e.g. when it is covered up on the back stack),
+// which means that we are trying to refresh state which
+// is also beging retained in the back stack.
+// But we are not trying to refresh any ViewModels, and I
+// don't think I've called retain() anywhere else yet.
 
 /**
  * To refresh an entry in the back stack, one can modify the content key of any [entry]. TODO confirm this fact
@@ -74,7 +83,17 @@ fun refreshKeyByResultEffect(
     resultEventBus: ResultEventBus = LocalResultEventBus.current,
     additionalKey: RefreshKey? = null,
 ): RefreshKeyState =
-    rememberRefreshKeyState()
+    retainRefreshKeyState()
     .also {
         RefreshResultEffect(it, resultEventBus, additionalKey = additionalKey)
     }
+
+@Composable
+fun RefreshesOnResult(
+    resultEventBus: ResultEventBus = LocalResultEventBus.current,
+    additionalKey: RefreshKey? = null,
+    content: @Composable () -> Unit,
+) {
+    val key by refreshKeyByResultEffect(resultEventBus, additionalKey = additionalKey)
+    key(key) { content() }
+}

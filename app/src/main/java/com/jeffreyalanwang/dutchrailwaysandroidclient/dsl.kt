@@ -3,6 +3,7 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient
 import android.os.Parcelable
 import androidx.compose.runtime.Immutable
 import com.google.android.gms.maps.model.LatLng
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.datetime.toKotlinTimeZone
@@ -81,54 +82,43 @@ operator fun ServiceStop.plus(other: Journey)
         = Journey(other.stops.plusInsert(0, this).toImmutableList())
 
 @Parcelize
-sealed class Place(
-    val id: Int,
-    val name: String
-) : Parcelable {
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is Place) return false
-
-        return this.id == other.id
-    }
-
-    override fun hashCode(): Int
-            = id.hashCode()
-}
-
-@Parcelize
 data class PolygonData(
     val points: List<LatLng>,
     val holes: List<List<LatLng>> = emptyList(),
 ) : Parcelable
 
-@Parcelize
-class Area(
-    id: Int,
-    name: String,
-) : Place(id, name), Parcelable {
-    fun getStations(): List<Station>
-            = _root_ide_package_.com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi.stations_in_area(this)
-    fun getGeom(): PolygonData
-            = PolygonData(listOf(
-        LatLng(52.3971230, 4.9060153),
-        LatLng(52.3935615, 4.8505417),
-        LatLng(52.3582454, 4.8246081),
-        LatLng(52.3381121, 4.8757882),
-        LatLng(52.3460826, 4.9494669),
-        LatLng(52.3841327, 4.9474059),
-        LatLng(52.3971230, 4.9060153),
-    ))
+sealed interface Place : Parcelable {
+    val id: Int
+    val name: String
 }
 
 @Parcelize
-class Station(
-    id: Int,
-    name: String,
+data class Area(
+    override val id: Int,
+    override val name: String,
+) : Place, Parcelable {
+    fun getStations(): List<Station>
+        = BackendApi.stations_in_area(this)
+    fun getGeom(): PolygonData
+        = PolygonData(listOf(
+            LatLng(52.3971230, 4.9060153),
+            LatLng(52.3935615, 4.8505417),
+            LatLng(52.3582454, 4.8246081),
+            LatLng(52.3381121, 4.8757882),
+            LatLng(52.3460826, 4.9494669),
+            LatLng(52.3841327, 4.9474059),
+            LatLng(52.3971230, 4.9060153),
+        ))
+}
+
+@Parcelize
+data class Station(
+    override val id: Int,
+    override val name: String,
     val address: String,
     val geom: LatLng,
-) : Place(id, name), Parcelable {
-    fun getStops() = _root_ide_package_.com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi.get_stops_at_station(this)
+) : Place, Parcelable {
+    fun getStops() = BackendApi.get_stops_at_station(this)
 }
 
 /**
@@ -165,13 +155,13 @@ data class ServiceStop(
 
     fun getStation(): Station {
         if (station == null) {
-            station = _root_ide_package_.com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi.get_station_info(stationId)
+            station = BackendApi.get_station_info(stationId)
         }
         return station!!
     }
     fun getService(): PassService {
         if (passService == null) {
-            passService = _root_ide_package_.com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi.get_pass_service(passServiceId)
+            passService = BackendApi.get_pass_service(passServiceId)
         }
         return passService!!
     }
@@ -184,5 +174,5 @@ data class PassService(
     val trainset: Trainset,
     val amenities: Set<TrainAmenity>,
 ) : Parcelable {
-    fun getStops() = _root_ide_package_.com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi.get_stops_of_service(this)
+    fun getStops() = BackendApi.get_stops_of_service(this)
 }

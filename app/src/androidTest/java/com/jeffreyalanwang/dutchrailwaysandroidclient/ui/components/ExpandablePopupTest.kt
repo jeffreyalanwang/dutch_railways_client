@@ -20,14 +20,12 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.test.espresso.Espresso
-import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry.getInstrumentation
 import androidx.test.uiautomator.UiDevice
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.theme.PurpleGrey40
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import org.junit.runner.RunWith
 
 class ExpandablePopupTest {
 
@@ -179,7 +177,16 @@ class ExpandablePopupTest {
         // So, we manually click somewhere on the screen outside the popup.
         UiDevice.getInstance(getInstrumentation())
             .run {
-                click(600, 600)
+                // Depending on DPI, we will want a different value.
+                // This is kind of fun, but clicking *inside* the popup
+                // does not risk causing some other effect, so that's okay
+                for (i in 1..20) {
+                    for (j in 1..20) {
+                        click(100 * i, 100 * j)
+                        if (collapseCalled) break
+                    }
+                    if (collapseCalled) break
+                }
             }
 
         waitForIdle()

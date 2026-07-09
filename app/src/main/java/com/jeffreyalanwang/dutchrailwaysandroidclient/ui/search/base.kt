@@ -16,6 +16,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
@@ -49,7 +50,9 @@ fun BaseSearchInputField(
         },
         leadingIcon = leadingIcon,
         trailingIcon = trailingIcon,
-        modifier = modifier.onFocusChanged{ onFocusChanged(it.hasFocus) }
+        modifier = modifier
+            .onFocusChanged{ onFocusChanged(it.hasFocus) }
+            .testTag("search_input")
     )
 }
 

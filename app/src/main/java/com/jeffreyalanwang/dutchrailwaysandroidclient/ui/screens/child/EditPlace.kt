@@ -49,6 +49,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
@@ -66,8 +68,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.Geocoding
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letWith
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AreaDetailNavArgs
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.CardContentScaffold
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ExpandingHeroBox
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.NavBackButton
@@ -160,6 +160,8 @@ fun EditAreaScreen(
             placeholder = "Area name",
             modifier = Modifier.padding(horizontal = 10.dp)
         )
+
+        Spacer(Modifier.height(10.dp))
 
         HorizontalDivider(thickness = Dp.Hairline)
         AreaOnMap(
@@ -301,18 +303,21 @@ private fun EditNameField(
     modifier: Modifier = Modifier,
     isError: Boolean = false,
 ) = TextField(
-    state,
-    isError = isError,
-    placeholder = {
-        Text(
-            placeholder,
-            style = MaterialTheme.typography.displaySmall,
-        )
-    },
-    textStyle = MaterialTheme.typography.displaySmall,
-    contentPadding = PaddingValues.Zero,
-    modifier = modifier,
-)
+        state,
+        isError = isError,
+        placeholder = {
+            Text(
+                placeholder,
+                style = MaterialTheme.typography.displaySmall,
+            )
+        },
+        textStyle = MaterialTheme.typography.displaySmall,
+        contentPadding = PaddingValues.Zero,
+        modifier = modifier
+            .semantics {
+                contentDescription = "Text field: set name"
+            },
+    )
 
 @Composable
 fun ExpandingLocationSelector(
