@@ -15,6 +15,7 @@ import androidx.compose.ui.test.performTextInput
 import androidx.compose.ui.test.v2.runAndroidComposeUiTest
 import androidx.compose.ui.test.waitUntilExactlyOneExists
 import androidx.compose.ui.test.waitUntilNodeCount
+import com.jeffreyalanwang.dutchrailwaysandroidclient.onNodeAfterExactlyOneExists
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.MainActivity
 import org.junit.Test
 
@@ -50,10 +51,8 @@ class DeletePassServiceTest {
         onAllNodesWithText("2263", substring = true).filter(!hasSetTextAction())
             .onFirst()
             .performScrollTo().performClick()
-        with(hasContentDescription("Delete")) {
-            waitUntilExactlyOneExists(this)
-            onNode(this).performClick()
-        }
+        onNodeAfterExactlyOneExists(hasContentDescription("Delete"), 5000)
+            .performClick()
 
         waitUntilExactlyOneExists(hasText("Delete", substring = true) and hasText("?", substring = true))
         onNodeWithText("Yes").performClick()

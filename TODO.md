@@ -1,12 +1,5 @@
 * C/U/D functionality: in BackendApi and in new tab Composable
 * edit stations
-  * remove all timeoutmillis
-  * onAllNodes(hasSetTextAction()).onFirst().performClick() in (EditPassServiceMutationTest.kt)
-  * test functionality of refresh of previous screen
-  * search location by distance from point
-  * figure out why the naventries have nested keys + also keys for rememberSaveable
-  * can we refresh the top level tabs using contentkey? and or [refreshkey]
-  * test functionality of: // Refresh the previous screen by closing + reopening
   * search locations in order of distance
   * test: [NavigationRefreshTest.kt] "Initial Service" should be first in list
   * organize ...ui.screens.child

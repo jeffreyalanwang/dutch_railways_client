@@ -19,6 +19,8 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.Geocoding
 import com.jeffreyalanwang.dutchrailwaysandroidclient.onNodeAfterExactlyOneExists
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.edit.EditAreaScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.edit.EditStationScreen
 import io.mockk.coEvery
 import io.mockk.every
 import io.mockk.mockkObject

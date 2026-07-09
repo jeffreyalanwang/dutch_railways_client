@@ -4,8 +4,10 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.rememberViewModelStoreOwner
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -16,6 +18,7 @@ import androidx.navigation3.runtime.NavKey
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.runtime.result.LocalResultEventBus
+import androidx.navigation3.runtime.result.ResultEffect
 import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
 import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
@@ -23,14 +26,14 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy.Companion.predictiveBackDialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.TimePicker
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.AreaDetailScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.ConfirmDeletePassService
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditAreaScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditPassServiceScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.EditStationScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.NewPassServiceScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.PassServiceDetailScreen
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.StationDetailScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.detail.AreaDetailScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.edit.ConfirmDeletePassService
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.edit.EditAreaScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.edit.EditPassServiceScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.edit.EditStationScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.edit.NewPassServiceScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.detail.PassServiceDetailScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.detail.StationDetailScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditActions
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.StationSearchScreen
@@ -264,8 +267,7 @@ fun appEntries(
                             onCancelRequest = { backstack.removeLast() },
                             onDeleteFinished = {
                                 backstack.removeLast()
-                                backstack.removeLast()
-                                resultEventBus.sendResult(RefreshResult)
+                                resultEventBus.sendResult(DeletedResult)
                             },
                         )
                     }
@@ -335,20 +337,28 @@ fun <T: AppNavArgs> EntryProviderScope<T>.commonChildEntries(
         }
     }
     entry<PassServiceDetailNavArgs> { navArgs ->
+        with (LocalResultEventBus.current) {
+            var isDeleted by remember { mutableStateOf(false) }
+            ResultEffect<DeletedResult>(this) {
+                isDeleted = true
+                sendResult(RefreshResult)
+                onNavigateBack()
+            }
+            if (isDeleted) return@entry
+        }
+
         // We need to refresh the entire composable because
         // recompose would be triggered by changes in the [passService]
         // but not by any stops.
         RefreshesOnResult {
             val passService =
                 rememberSaveable { BackendApi.get_pass_service(navArgs.id) }
-            key(navArgs) {
-                PassServiceDetailScreen(
-                    passService,
-                    onNavigate = onNavigate,
-                    onNavigateBack = onNavigateBack,
-                    actionsSlot = actions?.let { { it(navArgs) } },
-                )
-            }
+            PassServiceDetailScreen(
+                passService,
+                onNavigate = onNavigate,
+                onNavigateBack = onNavigateBack,
+                actionsSlot = actions?.let { { it(navArgs) } },
+            )
         }
     }
 
@@ -358,3 +368,9 @@ fun <T: AppNavArgs> EntryProviderScope<T>.commonChildEntries(
         TimePicker(navArgs, onNavigateBack)
     }
 }
+
+/**
+ * Received by a detail screen to indicate that
+ * the content it is intended to display has been deleted.
+ */
+@Serializable data object DeletedResult;

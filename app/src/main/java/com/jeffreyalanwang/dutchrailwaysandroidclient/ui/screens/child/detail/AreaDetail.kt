@@ -1,4 +1,4 @@
-package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child
+package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.detail
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement

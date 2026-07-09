@@ -19,6 +19,8 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Trainset
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.edit.EditPassServiceScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.edit.NewPassServiceScreen
 import io.mockk.every
 import io.mockk.mockk
 import io.mockk.mockkObject

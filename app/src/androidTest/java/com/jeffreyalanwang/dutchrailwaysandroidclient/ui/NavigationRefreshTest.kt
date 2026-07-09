@@ -67,7 +67,7 @@ class NavigationRefreshTest {
 
         onAllNodesWithTag("search_input").onFirst()
             .performTextInput("Initial")
-        onNodeAfterExactlyOneExists(hasText("Initial Name") and !hasSetTextAction(), timeoutMillis = 5000)
+        onNodeAfterExactlyOneExists(hasText("Initial Name") and !hasSetTextAction())
             .performClick()
 
         onNodeWithText("Station").assertIsDisplayed()
@@ -81,11 +81,8 @@ class NavigationRefreshTest {
         onNodeWithContentDescription("Finish & save").performClick()
 
         // Wait for the detail screen to reappear with updated info
-        waitUntil(timeoutMillis = 5000) {
-            onAllNodesWithText("Updated Name").fetchSemanticsNodes().isNotEmpty()
-        }
+        onNodeAfterExactlyOneExists(hasText("Updated Name")).assertIsDisplayed()
         onNodeWithText("Station").assertIsDisplayed()
-        onNodeWithText("Updated Name").assertIsDisplayed()
     }
 
     @Test
@@ -105,7 +102,7 @@ class NavigationRefreshTest {
         onNodeWithText("Edit").performClick()
         onAllNodesWithTag("search_input").onFirst()
             .performTextInput("Initial")
-        onNodeAfterExactlyOneExists(hasText("Initial Area") and !hasSetTextAction(), timeoutMillis = 5000)
+        onNodeAfterExactlyOneExists(hasText("Initial Area") and !hasSetTextAction())
             .performClick()
 
         onNodeWithText("Area").assertIsDisplayed()
@@ -119,7 +116,7 @@ class NavigationRefreshTest {
         onNodeWithContentDescription("Finish & save").performClick()
 
         // Wait for the detail screen to reappear with updated info
-        onNodeAfterExactlyOneExists(hasText("Updated Area"), timeoutMillis = 5000)
+        onNodeAfterExactlyOneExists(hasText("Updated Area"))
             .assertIsDisplayed()
         onNodeWithText("Area").assertIsDisplayed()
     }
@@ -150,7 +147,7 @@ class NavigationRefreshTest {
         onAllNodesWithTag("search_input").onFirst()
             .performTextInput("Initial")
 
-        onNodeAfterExactlyOneExists(hasText("Initial Service") and !hasSetTextAction(), timeoutMillis = 5000)
+        onNodeAfterExactlyOneExists(hasText("Initial Service") and !hasSetTextAction())
             .performScrollTo()
             .performClick()
 
@@ -160,7 +157,7 @@ class NavigationRefreshTest {
         onNodeWithContentDescription("Finish & save").performClick()
 
         // Wait for the detail screen to reappear with updated info
-        onNodeAfterExactlyOneExists(hasText("Updated Service"), timeoutMillis = 5000)
+        onNodeAfterExactlyOneExists(hasText("Updated Service"))
             .assertIsDisplayed()
         onNodeWithText("Updated Service").assertIsDisplayed()
     }

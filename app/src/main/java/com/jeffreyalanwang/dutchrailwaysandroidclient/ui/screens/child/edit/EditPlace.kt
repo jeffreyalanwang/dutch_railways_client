@@ -1,4 +1,4 @@
-package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child
+package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.edit
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.slideInVertically
@@ -72,6 +72,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.CardContentS
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ExpandingHeroBox
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.NavBackButton
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.SaveChangesButton
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.detail.AreaOnMap
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.ON_MAP_SHADOW_ELEVATION
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.BaseSearchInputField
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.ExpandedSearch

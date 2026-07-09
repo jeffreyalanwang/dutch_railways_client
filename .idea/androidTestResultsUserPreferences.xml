@@ -48,6 +48,7 @@
               <option name="preferredColumnWidths">
                 <map>
                   <entry key="Duration" value="90" />
+                  <entry key="Pixel_7_GApps" value="120" />
                   <entry key="Tests" value="360" />
                   <entry key="Waydroid WayDroid x86_64 Device" value="120" />
                 </map>
@@ -74,6 +75,7 @@
               <option name="preferredColumnWidths">
                 <map>
                   <entry key="Duration" value="90" />
+                  <entry key="Pixel_7_GApps" value="120" />
                   <entry key="Tests" value="360" />
                   <entry key="Waydroid WayDroid x86_64 Device" value="120" />
                 </map>
@@ -89,6 +91,19 @@
                   <entry key="Duration" value="90" />
                   <entry key="Tests" value="360" />
                   <entry key="Waydroid WayDroid x86_64 Device" value="120" />
+                </map>
+              </option>
+            </AndroidTestResultsTableState>
+          </value>
+        </entry>
+        <entry key="-487155812">
+          <value>
+            <AndroidTestResultsTableState>
+              <option name="preferredColumnWidths">
+                <map>
+                  <entry key="Duration" value="90" />
+                  <entry key="Pixel_7_GApps" value="120" />
+                  <entry key="Tests" value="360" />
                 </map>
               </option>
             </AndroidTestResultsTableState>
@@ -153,6 +168,7 @@
               <option name="preferredColumnWidths">
                 <map>
                   <entry key="Duration" value="90" />
+                  <entry key="Pixel_7_GApps" value="120" />
                   <entry key="Tests" value="360" />
                   <entry key="Waydroid WayDroid x86_64 Device" value="120" />
                 </map>

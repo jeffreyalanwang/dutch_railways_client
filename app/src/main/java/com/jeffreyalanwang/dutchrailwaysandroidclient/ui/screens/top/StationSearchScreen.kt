@@ -34,7 +34,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.CardContentScaffold
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.StationDetail
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.detail.StationDetail
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.BaseSearchInputField
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.ExpandedSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.STATION_SEARCH_PLACEHOLDER

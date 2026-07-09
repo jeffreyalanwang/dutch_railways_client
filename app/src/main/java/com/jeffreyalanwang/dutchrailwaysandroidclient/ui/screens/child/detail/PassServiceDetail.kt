@@ -1,4 +1,4 @@
-package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child
+package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.detail
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -18,13 +18,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.plus
 import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.sizeIn
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.wrapContentHeight
-import androidx.compose.material3.Card
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
@@ -57,7 +54,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGrid
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.LineSegmentWithPoint
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.NavBackButton
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.ScrollableScaffold
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppIcons
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.AppStringFormats
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.horizontalOnly

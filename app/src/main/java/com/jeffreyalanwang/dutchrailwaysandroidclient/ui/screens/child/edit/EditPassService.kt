@@ -1,4 +1,4 @@
-package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child
+package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.edit
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -73,7 +73,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.StopPoint
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Trainset
 import com.jeffreyalanwang.dutchrailwaysandroidclient.joinToString
 import com.jeffreyalanwang.dutchrailwaysandroidclient.toKotlinLocalTime
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.CardContentScaffold
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridControl
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.DiscreteGridRow

@@ -1,4 +1,4 @@
-package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child
+package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.edit
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -27,7 +27,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.IconWithBadge
 import kotlinx.coroutines.launch
 

@@ -39,12 +39,12 @@ fun retainRefreshKeyState() = retain { RefreshKeyState() }
 // change the key even after the item leaves composition
 // (e.g. when it is covered up on the back stack),
 // which means that we are trying to refresh state which
-// is also beging retained in the back stack.
+// is also being retained in the back stack.
 // But we are not trying to refresh any ViewModels, and I
 // don't think I've called retain() anywhere else yet.
 
 /**
- * To refresh an entry in the back stack, one can modify the content key of any [entry]. TODO confirm this fact
+ * To refresh an entry in the back stack, one can wrap its composable in [key].
  * Alternatively, [refreshableEntry] allows a dialog or other screen to refresh its direct
  * parent in the back stack, by sharing a [ResultEventBus] and sending a [RefreshResult].
  */
