@@ -1,5 +1,7 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top
 
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -23,15 +25,19 @@ import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.material3.rememberTooltipState
+import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
@@ -75,20 +81,66 @@ private fun EditScreenPreview() {
 
 @Composable
 fun EditScreen(onNavigate: (EditGraphNavArgs)->Unit) {
-    Scaffold(
-        topBar = { TopBar(onNavigate) },
-    ) { innerPadding ->
-        StartContent(
-            Modifier.padding(innerPadding),
-            onNavigate = onNavigate,
-        )
+    var locked by remember { mutableStateOf(false) }
+    fun setLocked(value: Boolean) { locked = value }
+
+    AnimatedContent (locked) { locked ->
+        if (locked) {
+            RequireUnlockScreen { setLocked(false) }
+        } else {
+            Scaffold(
+                topBar = { TopBar(onNavigate, { setLocked(true) }) },
+            ) { innerPadding ->
+                StartContent(
+                    Modifier.padding(innerPadding),
+                    onNavigate = onNavigate,
+                )
+            }
+        }
     }
+
 }
+
+@Composable
+fun RequireUnlockScreen(
+    onUnlockRequest: () -> Unit,
+) = Box(
+        Modifier
+            .clickable(
+                interactionSource = null,
+                indication = ripple(color = Color.White, enableHoverIndication = false),
+                onClick = onUnlockRequest,
+            )
+            .fillMaxSize()
+            .alpha(.7f),
+    Alignment.Center
+    ) {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Icon(
+                painterResource(R.drawable.ic_lock),
+                "Lock icon",
+                Modifier.size(96.dp)
+            )
+            Text(
+                "Edit access locked",
+                style = MaterialTheme.typography.displaySmall,
+            )
+            Text(
+                "Tap to unlock",
+            )
+        }
+    }
 
 const val ALL_SEARCH_PLACEHOLDER_TEXT = "Search places or trains"
 
 @Composable
-private fun TopBar(onNavigate: (CommonChildNavArgs) -> Unit) {
+private fun TopBar(
+    onNavigate: (CommonChildNavArgs) -> Unit,
+    onLockRequest: () -> Unit,
+) {
     val searchBarState = rememberSearchBarState()
     val textFieldState = rememberTextFieldState()
     val scope = rememberCoroutineScope()
@@ -101,6 +153,14 @@ private fun TopBar(onNavigate: (CommonChildNavArgs) -> Unit) {
                 textFieldState,
                 searchBarState,
             )
+        },
+        actions = {
+            IconButton(onLockRequest) {
+                Icon(
+                    painterResource(R.drawable.ic_lock_open),
+                    "Lock edit access",
+                )
+            }
         }
     )
 
@@ -142,8 +202,7 @@ private fun TopBar(onNavigate: (CommonChildNavArgs) -> Unit) {
 private fun StartContent(
     modifier: Modifier = Modifier,
     onNavigate: (EditGraphNavArgs) -> Unit,
-) {
-    Box(modifier.fillMaxSize()) {
+) = Box(modifier.fillMaxSize()) {
         Column(
             Modifier.align(Alignment.Center),
             verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -159,7 +218,6 @@ private fun StartContent(
             Text(
                 "No place or service selected",
                 Modifier.alpha(.7f),
-                textAlign = TextAlign.Center,
             )
             TextButton(
                 { onNavigate(NewPassServiceNavArgs()) },
@@ -169,7 +227,6 @@ private fun StartContent(
             }
         }
     }
-}
 
 @Composable
 fun RowScope.EditActions(

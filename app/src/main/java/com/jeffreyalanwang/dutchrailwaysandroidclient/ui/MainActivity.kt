@@ -1,5 +1,6 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui
 
+import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -36,7 +37,6 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.retainRefreshKeySt
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.toMutableStateMap
 
 class MainActivity : ComponentActivity() {
-    @OptIn(ExperimentalComposeApi::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Composer.setDiagnosticStackTraceMode(ComposeStackTraceMode.SourceInformation)
