@@ -97,6 +97,7 @@ dependencies {
     implementation(libs.kotlin.reflect)
     implementation(libs.kotlinx.datetime)
     implementation(libs.reorderable)
+    implementation(libs.runtime)
     implementation(libs.ui)
     implementation(libs.ui.graphics)
     testImplementation(libs.junit)

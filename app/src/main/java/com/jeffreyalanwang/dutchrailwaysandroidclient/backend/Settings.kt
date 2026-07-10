@@ -1,17 +1,24 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.backend
 import android.content.Context
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.Serializer
 import androidx.datastore.core.handlers.ReplaceFileCorruptionHandler
 import androidx.datastore.dataStore
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider.AndroidViewModelFactory.Companion.APPLICATION_KEY
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.asStateWithInitialValueOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -19,7 +26,17 @@ import kotlinx.serialization.json.Json
 import java.io.InputStream
 import java.io.OutputStream
 
-class SettingsViewModel(
+@Composable
+fun AppSettingsProvider(content: @Composable () -> Unit) =
+    CompositionLocalProvider(
+        LocalAppSettings provides viewModel(factory = SettingsViewModel.Factory),
+        content,
+    )
+
+val LocalAppSettings = compositionLocalOf<SettingsViewModel> { throw Exception() }
+
+class SettingsViewModel
+private constructor(
     private val dataStore: DataStore<Settings>,
 ): ViewModel() {
     // This wrapper is incorporated because it provides a [ViewModelScope].
@@ -29,16 +46,32 @@ class SettingsViewModel(
     // This class is defined here, not the `viewmodel` directory,
     // because it does not correspond to a specific screen or composable in the UI.
 
-    private val flow = dataStore.data
+    val stateFlow = dataStore.data
         .asStateWithInitialValueOf(Settings.whileLoadingDefaults)
 
-    val value
-        @Composable get() = flow.collectAsState()
+    val state
+        @Composable get() = stateFlow.collectAsState()
 
-    fun set(
+    @Composable
+    fun <T> stateOf(selector: (Settings) -> T): State<T> {
+        val mappedInitial = remember { selector(stateFlow.value) }
+        val mappedFlow = remember { stateFlow.map { selector(it) } }
+        return mappedFlow.collectAsState(mappedInitial)
+    }
+
+    fun update(
         transform: (Settings) -> Settings,
     ) = viewModelScope.launch {
-        context.settingsDataStore.updateData(transform)
+            dataStore.updateData(transform)
+        }
+
+    companion object {
+        val Factory = viewModelFactory {
+            initializer {
+                val dataStore = get(APPLICATION_KEY)!!.settingsDataStore
+                SettingsViewModel(dataStore)
+            }
+        }
     }
 }
 

@@ -1,6 +1,5 @@
 package com.jeffreyalanwang.dutchrailwaysandroidclient.ui
 
-import android.content.Context
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -17,7 +16,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Composer
-import androidx.compose.runtime.ExperimentalComposeApi
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.tooling.ComposeStackTraceMode
 import androidx.compose.ui.Modifier
@@ -27,24 +26,27 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.AppSettingsProvider
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.Geocoding
-import com.jeffreyalanwang.dutchrailwaysandroidclient.replaceAt
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.LocalAppSettings
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.theme.DutchRailwaysAndroidClientTheme
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.RefreshKeyState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.bottomOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.rememberNavBackStack
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.retainRefreshKeyState
-import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.toMutableStateMap
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Composer.setDiagnosticStackTraceMode(ComposeStackTraceMode.SourceInformation)
+
         Geocoding.initialize(this.baseContext)
+
         enableEdgeToEdge()
         setContent {
-            DutchRailwaysAndroidClientTheme {
-                DutchRailwaysAndroidClientApp()
+            AppSettingsProvider {
+                DutchRailwaysAndroidClientTheme {
+                    DutchRailwaysAndroidClientApp()
+                }
             }
         }
     }
@@ -66,7 +68,7 @@ fun DutchRailwaysAndroidClientApp() {
                 val isSelected = (topBackStack.lastOrNull() == appTab.navKey)
                 NavigationBarItem(
                     icon = { Icon(
-                        painterResource(appTab.icon),
+                        painterResource(appTab.icon()),
                         contentDescription = appTab.label,
                     ) },
                     label = { Text(appTab.label) },
@@ -97,7 +99,7 @@ fun DutchRailwaysAndroidClientApp() {
                 ContentTransform(
                     targetContentEnter = EnterTransition.None,
                     initialContentExit = ExitTransition.None,
-                    sizeTransform = null
+                    sizeTransform = null,
                 )
             }
         )
@@ -106,11 +108,13 @@ fun DutchRailwaysAndroidClientApp() {
 
 private enum class AppDestinations(
     val label: String,
-    val icon: Int,
     val navKey: AppNavArgs,
+    val icon: @Composable () -> Int,
 ) {
-    // TODO HOME
-    TRIP("Trip", R.drawable.ic_directions, TripFinderStartNavArgs),
-    STATIONS("Stations", R.drawable.ic_dr_station, StationSearchStartNavArgs),
-    EDIT("Edit", R.drawable.ic_edit, EditStartNavArgs),
+    TRIP("Trip", TripFinderStartNavArgs, { R.drawable.ic_directions }),
+    STATIONS("Stations", StationSearchStartNavArgs, { R.drawable.ic_dr_station }),
+    EDIT("Edit", EditStartNavArgs, {
+        val isEditLocked by LocalAppSettings.current.stateOf { it.isEditAccessLocked }
+        if (isEditLocked) R.drawable.ic_lock else R.drawable.ic_edit
+    }),
 }

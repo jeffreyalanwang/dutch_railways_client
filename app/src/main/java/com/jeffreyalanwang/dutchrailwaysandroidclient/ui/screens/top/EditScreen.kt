@@ -28,10 +28,8 @@ import androidx.compose.material3.rememberTooltipState
 import androidx.compose.material3.ripple
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -40,12 +38,13 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import backend.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.LocalAppSettings
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AreaDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.CommonChildNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.ConfirmDeletePassServiceNavArgs
@@ -81,8 +80,10 @@ private fun EditScreenPreview() {
 
 @Composable
 fun EditScreen(onNavigate: (EditGraphNavArgs)->Unit) {
-    var locked by remember { mutableStateOf(false) }
-    fun setLocked(value: Boolean) { locked = value }
+    val settings = LocalAppSettings.current
+    val locked by settings.stateOf { it.isEditAccessLocked }
+    fun setLocked(value: Boolean) =
+        settings.update { it.copy(isEditAccessLocked = value) }
 
     AnimatedContent (locked) { locked ->
         if (locked) {
