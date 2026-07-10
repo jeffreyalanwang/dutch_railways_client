@@ -65,14 +65,17 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.from
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getBounds
 import com.jeffreyalanwang.dutchrailwaysandroidclient.interpolates
+import com.jeffreyalanwang.dutchrailwaysandroidclient.latLng
 import com.jeffreyalanwang.dutchrailwaysandroidclient.map
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.AppNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.minus
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.stateIn
 import kotlin.math.max
+import kotlin.math.pow
 
 fun Constraints.copy(
     height: Int? = null,
@@ -170,6 +173,19 @@ fun LatLng.minus(
     latitude: Double = 0.0,
     longitude: Double = 0.0,
 ) = LatLng(this.latitude - latitude, this.longitude - longitude)
+
+operator fun LatLng.minus(other: LatLng)
+  = this.minus(other.latitude, other.longitude)
+
+/** Crude estimate of distance. */
+fun cartesianDistance(coord1: LatLng, coord2: LatLng)
+  = (coord1 - coord2).run { latitude.pow(2) + longitude.pow(2) }
+
+fun LatLngBounds(center: LatLng, radius: Double)
+    = LatLngBounds(
+        center.minus(radius, radius),
+        center.plus(radius, radius),
+    )
 
 /**
  * Create a new [LatLngBounds] in which the receiver [LatLngBounds]

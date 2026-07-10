@@ -7,10 +7,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.platform.LocalContext
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.LatLngBounds
+import com.jeffreyalanwang.dutchrailwaysandroidclient.all
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.StringWithFields.Companion.parseUnsignedDecimalFields
+import com.jeffreyalanwang.dutchrailwaysandroidclient.equalOn
 import com.jeffreyalanwang.dutchrailwaysandroidclient.isWholeNumber
+import com.jeffreyalanwang.dutchrailwaysandroidclient.latLng
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letBothElvis
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letIf
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.LatLngBounds
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.cartesianDistance
 import com.jeffreyalanwang.dutchrailwaysandroidclient.unfancyQuotes
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
@@ -37,22 +42,54 @@ object Geocoding {
 
     suspend fun autocomplete_location(
         query: CharSequence,
+        maxResults: Int = 5,
     ): List<Address> = suspendCancellableCoroutine { c ->
-        geocoder.getFromLocationName(query.toString(), 5) { r -> c.resume(r) }
+        geocoder.getFromLocationName(query.toString(), maxResults)
+            { r -> c.resume(r) }
     }
 
     suspend fun autocomplete_location(
         query: CharSequence,
         bounds: LatLngBounds,
+        maxResults: Int = 5,
     ): List<Address> = suspendCancellableCoroutine { c ->
         geocoder.getFromLocationName(
             query.toString(),
-            5,
+            maxResults,
             bounds.southwest.latitude, // Lower-left latitude
             bounds.southwest.longitude, // Lower-left longitude
             bounds.northeast.latitude, // Upper-right latitude
             bounds.northeast.longitude, // Upper-right longitude
         ) { r -> c.resume(r) }
+    }
+
+    /**
+     * Attempt to provide results in [bounds],
+     * but also provide others if more results
+     * are requested in total.
+     */
+    suspend fun autocomplete_location_closest_first(
+        query: CharSequence,
+        bounds: LatLngBounds,
+        maxResults: Int = 5,
+    ): List<Address> = buildList {
+        val results =
+            autocomplete_location(
+                query,
+                bounds,
+                maxResults,
+            )
+        addAll(results)
+
+        if (size < maxResults) {
+            autocomplete_location(query, maxResults) // use of [maxResults] protects against worst-case: this call returns a superset of the first call
+                .filter { it.latLng !in bounds }
+                .sortedBy { cartesianDistance(it.latLng, bounds.center)  }
+                .take(maxResults - this@buildList.size)
+                .let { addAll(it) }
+        }
+    }.sortedBy {
+        cartesianDistance(it.latLng, bounds.center)
     }
 
     suspend fun closest_address(
@@ -359,3 +396,10 @@ private constructor(
     }
 }
 
+infix fun Address.isEqualAddressTo(other: Address)
+  = (this to other).run {
+        listOf(
+            equalOn { it.latLng },
+            equalOn { it.getAddressLine(0) }
+        )
+    }.all()

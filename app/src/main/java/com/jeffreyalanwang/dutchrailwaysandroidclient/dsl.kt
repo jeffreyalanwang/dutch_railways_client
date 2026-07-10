@@ -2,8 +2,8 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient
 
 import android.os.Parcelable
 import androidx.compose.runtime.Immutable
+import backend.BackendApi
 import com.google.android.gms.maps.model.LatLng
-import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toImmutableList
 import kotlinx.datetime.toKotlinTimeZone

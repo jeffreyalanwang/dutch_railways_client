@@ -44,7 +44,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PolygonData
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
-import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
+import backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getBounds
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.CardContentScaffold

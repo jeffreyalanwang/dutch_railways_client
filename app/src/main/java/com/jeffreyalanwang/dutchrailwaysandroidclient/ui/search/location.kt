@@ -20,6 +20,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.SuspendLazy
 import com.jeffreyalanwang.dutchrailwaysandroidclient.addNotNull
@@ -72,6 +73,8 @@ class AddressResult(
       = other is AddressResult
         && super.equals(other)
         && (this to other).equalOn { it.address }
+
+    override fun hashCode() = super.hashCode()
 }
 
 @Composable
@@ -126,6 +129,7 @@ fun <T: LocationResult> ExpandedSearch(
     onClose: () -> Unit,
     onSelectResult: (LocationResult?) -> Unit,
     modifier: Modifier = Modifier,
+    mapBounds: LatLngBounds? = null,
     onClearedText: () -> Unit = {
         textFieldState.clearText()
         onSelectResult(null)
@@ -133,7 +137,11 @@ fun <T: LocationResult> ExpandedSearch(
 ) {
     val addressResults by produceState(emptyList(), textFieldState.text) {
         value = textFieldState.text
-            .let { query -> Geocoding.autocomplete_location(query) }
+            .let { query ->
+                mapBounds?.let {
+                    Geocoding.autocomplete_location_closest_first(query, mapBounds)
+                }?: Geocoding.autocomplete_location(query)
+            }
             .map { results -> AddressResult(results) }
     }
     val latLngResult =
@@ -146,7 +154,7 @@ fun <T: LocationResult> ExpandedSearch(
             addNotNull(latLngResult)
             addAll(addressResults)
         },
-        resultToText = { "" },
+        resultToText = { "" }, // This must be handled by the parent composable because it is a suspend function
         placeholderText = LOCATION_SEARCH_PLACEHOLDER,
         textFieldState = textFieldState,
         searchBarState = searchBarState,

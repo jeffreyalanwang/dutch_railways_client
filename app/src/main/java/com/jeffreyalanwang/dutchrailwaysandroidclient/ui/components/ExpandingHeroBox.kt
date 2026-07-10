@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.TransformOrigin
 import androidx.compose.ui.layout.layout
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.layout.positionInParent
 import androidx.compose.ui.layout.positionInWindow
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.unit.Constraints
@@ -179,7 +180,9 @@ fun ExpandingHeroBox(
  * This overload requires a placeholder for the collapsed size, on which
  * an [onGloballyPositioned] modifier is applied to provide [collapsedBounds].
  *
- * @param collapsedBounds   Offset is relative to root node, which is also
+ * Rather than fullscreen, it expands to its parent's size.
+ *
+ * @param collapsedBounds   Offset is relative to parent node, which is also
  *                          where this composable should align.
  */
 @Composable
@@ -199,8 +202,8 @@ fun ExpandingHeroBox(
         else progressState.animateTo(1f)
     }
 
-    val expandedSize = LocalResources.current.displaySize
-    var expandedOffset = IntOffset.Zero
+    var expandedSize by remember { mutableStateOf(IntSize.Zero) }
+    val expandedOffset = IntOffset.Zero
     val collapsedSize by remember { derivedStateOf { collapsedBounds().size } }
     val collapsedOffset by remember { derivedStateOf { collapsedBounds().topLeft } }
 
@@ -220,14 +223,9 @@ fun ExpandingHeroBox(
         onDismissRequest = onDismissRequest,
         modifier =
             modifier
-                .onGloballyPositioned {
-                    // This modifier element is applied to the outer node,
-                    // which is sized as collapsed even when the child layout
-                    // node (below) overrides size + offset.
-                    expandedOffset = it.positionInWindow().round().unaryMinus()
-                }
                 .layout { measurable, constraints ->
                     val progressValue by progressState.asState()
+                    expandedSize = constraints.run { IntSize(maxWidth, maxHeight) }
 
                     // Here, we animate the hero popout/hide.
                     // This code only animates values for [progressValue > .5].

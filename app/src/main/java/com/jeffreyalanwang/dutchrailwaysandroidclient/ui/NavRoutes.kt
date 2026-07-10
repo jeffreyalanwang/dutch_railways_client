@@ -22,7 +22,7 @@ import androidx.navigation3.runtime.result.ResultEffect
 import androidx.navigation3.runtime.result.rememberResultEventBusNavEntryDecorator
 import androidx.navigation3.scene.SinglePaneSceneStrategy
 import androidx.navigation3.ui.NavDisplay
-import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
+import backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.PredictiveBackDialogSceneStrategy.Companion.predictiveBackDialog
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.TimePicker
@@ -38,6 +38,8 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditActions
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.EditScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.StationSearchScreen
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.top.TripFinderScreen
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.RefreshKey
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.RefreshKeyState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.RefreshResult
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.RefreshesOnResult
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.rememberNavBackStack
@@ -111,7 +113,7 @@ interface PlaceDetailNavArgs: CommonChildNavArgs { val id: Int }
 fun appEntries(
     // Specific values are meaningless; they simply need to change
     // in order to reset the corresponding top-level tab's state
-    resetKeyState: Map<AppNavArgs, Int>,
+    resetKeyState: Map<AppNavArgs, RefreshKey>,
 ) = entryProvider {
 
     entry<TripFinderStartNavArgs> { initialNavArgs ->

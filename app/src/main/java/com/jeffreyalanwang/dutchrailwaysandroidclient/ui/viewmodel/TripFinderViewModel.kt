@@ -6,7 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
-import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
+import backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Endpoint
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Journey
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place

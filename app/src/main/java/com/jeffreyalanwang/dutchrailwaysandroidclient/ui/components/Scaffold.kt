@@ -18,10 +18,12 @@ import androidx.compose.ui.unit.dp
 @Composable
 inline fun ScrollableScaffold(
     noinline topBar: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
     scrollState: ScrollState = rememberScrollState(),
     crossinline content: @Composable (PaddingValues) -> Unit,
 ) = Scaffold(
         topBar = topBar,
+        modifier = modifier,
     ) { innerPadding ->
         Box(Modifier.verticalScroll(scrollState)) {
             content(innerPadding)
@@ -31,12 +33,14 @@ inline fun ScrollableScaffold(
 @Composable
 fun CardContentScaffold(
     topBar: @Composable () -> Unit,
-    @SuppressLint("ModifierParameter") cardModifier: Modifier = Modifier,
+    modifier: Modifier = Modifier,
+    cardModifier: Modifier = Modifier,
     scrollState: ScrollState = rememberScrollState(),
     content: @Composable ColumnScope.() -> Unit,
 ) = ScrollableScaffold(
         topBar = topBar,
-        scrollState = scrollState
+        modifier = modifier,
+        scrollState = scrollState,
     ) { innerPadding ->
         Card(
             cardModifier

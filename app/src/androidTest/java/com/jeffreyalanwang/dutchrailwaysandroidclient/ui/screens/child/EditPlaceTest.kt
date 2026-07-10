@@ -16,7 +16,7 @@ import androidx.compose.ui.test.v2.runComposeUiTest
 import com.google.android.gms.maps.model.LatLng
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
-import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
+import backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.Geocoding
 import com.jeffreyalanwang.dutchrailwaysandroidclient.onNodeAfterExactlyOneExists
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.edit.EditAreaScreen
@@ -39,7 +39,7 @@ class EditPlaceTest {
         mockkObject(Geocoding)
         every { Geocoding.initialize(any()) } returns Unit
         coEvery { Geocoding.autocomplete_location(any()) } returns emptyList()
-        coEvery { Geocoding.autocomplete_location(any(), any()) } returns emptyList()
+        coEvery { Geocoding.autocomplete_location_closest_first(any(), any()) } returns emptyList()
         coEvery { Geocoding.closest_address(any()) } returns null
     }
 

@@ -4,7 +4,6 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onAllNodesWithTag
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -20,7 +19,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Trainset
-import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
+import backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.Geocoding
 import com.jeffreyalanwang.dutchrailwaysandroidclient.onNodeAfterExactlyOneExists
 import io.mockk.coEvery
@@ -40,7 +39,7 @@ class NavigationRefreshTest {
         mockkObject(Geocoding)
         every { Geocoding.initialize(any()) } returns Unit
         coEvery { Geocoding.autocomplete_location(any()) } returns emptyList()
-        coEvery { Geocoding.autocomplete_location(any(), any()) } returns emptyList()
+        coEvery { Geocoding.autocomplete_location_closest_first(any(), any()) } returns emptyList()
         coEvery { Geocoding.closest_address(any()) } returns null
     }
 

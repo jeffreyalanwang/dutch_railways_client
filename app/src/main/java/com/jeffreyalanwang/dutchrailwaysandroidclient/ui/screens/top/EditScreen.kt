@@ -35,7 +35,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
-import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
+import backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
@@ -106,14 +106,8 @@ private fun TopBar(onNavigate: (CommonChildNavArgs) -> Unit) {
 
     // Search all, but prioritize places
     ExpandedSearch(
-        results = textFieldState
-            .text.toString()
-            .let {
-                with (BackendApi) {
-                    autocomplete_place(Place::class, it) +
-                            autocomplete_pass_service(it)
-                }
-            },
+        results = textFieldState.text.toString()
+            .let { BackendApi.autocomplete_place_or_pass_service(it) },
         resultToText = {
             when (it) {
                 is Place -> it.name
@@ -157,7 +151,7 @@ private fun StartContent(
         ) {
             Icon(
                 painterResource(R.drawable.ic_edit),
-                "Edit icon",
+                "Hero icon",
                 Modifier
                     .alpha(.7f)
                     .size(96.dp)

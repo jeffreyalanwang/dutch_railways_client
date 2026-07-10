@@ -29,8 +29,10 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.Geocoding
 import com.jeffreyalanwang.dutchrailwaysandroidclient.replaceAt
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.theme.DutchRailwaysAndroidClientTheme
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.RefreshKeyState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.bottomOnly
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.rememberNavBackStack
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.retainRefreshKeyState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.toMutableStateMap
 
 class MainActivity : ComponentActivity() {
@@ -53,9 +55,9 @@ class MainActivity : ComponentActivity() {
 fun DutchRailwaysAndroidClientApp() {
     val topBackStack = rememberNavBackStack<AppNavArgs>(AppDestinations.TRIP.navKey)
     val resetKeys = remember {
-        AppDestinations.entries.map { it.navKey }
-            .associateWith { 0 }
-            .toMutableStateMap()
+        AppDestinations.entries
+            .map { it.navKey }
+            .associateWith { RefreshKeyState() }
     }
 
     Scaffold(
@@ -73,7 +75,7 @@ fun DutchRailwaysAndroidClientApp() {
                         if (!isSelected) {
                             topBackStack.add(appTab.navKey)
                         } else {
-                            resetKeys.replaceAt(appTab.navKey) { it!! + 1 }
+                            resetKeys[appTab.navKey]!!.refresh()
                         }
                     },
                 )
@@ -87,7 +89,7 @@ fun DutchRailwaysAndroidClientApp() {
                 rememberSaveableStateHolderNavEntryDecorator(),
                 rememberViewModelStoreNavEntryDecorator(),
             ),
-            entryProvider = appEntries(resetKeys),
+            entryProvider = appEntries(resetKeys.mapValues { (k, v) -> v.value }),
             modifier = Modifier
                 .padding(innerPadding.bottomOnly())
                 .consumeWindowInsets(innerPadding.bottomOnly()),

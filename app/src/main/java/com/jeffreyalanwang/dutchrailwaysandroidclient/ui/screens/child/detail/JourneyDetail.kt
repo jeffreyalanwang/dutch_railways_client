@@ -39,7 +39,7 @@ import com.google.maps.android.compose.rememberUpdatedMarkerState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Journey
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Journey.Companion.byLeg
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
-import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
+import backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.calculateBounds
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getCurrStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.minus

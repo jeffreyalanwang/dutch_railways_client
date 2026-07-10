@@ -10,12 +10,20 @@ import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.captionBar
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeContent
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.safeGestures
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.text.input.rememberTextFieldState
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
@@ -23,7 +31,6 @@ import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.SearchBarDefaults
 import androidx.compose.material3.SearchBarValue
 import androidx.compose.material3.Text
@@ -60,12 +67,13 @@ import androidx.compose.ui.unit.roundToIntRect
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.model.LatLng
+import com.google.android.gms.maps.model.LatLngBounds
 import com.google.maps.android.compose.GoogleMap
 import com.google.maps.android.compose.Marker
 import com.google.maps.android.compose.MarkerState
 import com.google.maps.android.compose.rememberCameraPositionState
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
-import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
+import backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.Geocoding
 import com.jeffreyalanwang.dutchrailwaysandroidclient.letWith
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.CardContentScaffold
@@ -85,6 +93,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.OnChangeEffect
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.boundsForDisplay
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.copy
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.getMapCameraUpdate
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.providesWindowInsets
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.EditStationViewModel
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel.LocationPickerModel
 import kotlinx.coroutines.launch
@@ -186,6 +195,8 @@ fun EditStationScreen(
     horizontalContentPadding: Dp = 10.dp,
 ) {
     var collapsedLocationSelectorBounds by remember { mutableStateOf(IntRect.Zero) }
+    var windowInsets by remember { mutableStateOf<WindowInsets?>(null) }
+
     EditStationScreen(
         oldName = viewModel.initialName,
         nameFieldState = viewModel.nameFieldState,
@@ -215,10 +226,11 @@ fun EditStationScreen(
 }
 
 /**
+ * This overload is missing its map.
  * @param onSaveRequest     Responsible for performing any desired navigation after save.
  */
 @Composable
-fun EditStationScreen(
+private fun EditStationScreen(
     oldName: String,
     nameFieldState: TextFieldState,
     isNameValid: Boolean,
@@ -229,10 +241,12 @@ fun EditStationScreen(
     onCancelRequest: () -> Unit,
     onSaveRequest: () -> Unit,
 
-    horizontalContentPadding: Dp = 10.dp,
-
     onSetLocationPickerExpanded: () -> Unit,
     onCollapsedLocationPickerGloballyPositioned: (IntRect) -> Unit,
+
+    modifier: Modifier = Modifier,
+    horizontalContentPadding: Dp = 10.dp,
+
     expandingLocationSelector: @Composable () -> Unit,
 ) {
     val horizontalContentPadding = PaddingValues(horizontal = horizontalContentPadding)
@@ -250,7 +264,8 @@ fun EditStationScreen(
                 navigationIcon = { NavBackButton(onCancelRequest) },
                 actions = { SaveChangesButton(onSaveRequest) },
             )
-        }
+        },
+        modifier = modifier,
     ) {
         Spacer(Modifier.height(20.dp))
 
@@ -315,9 +330,7 @@ private fun EditNameField(
         textStyle = MaterialTheme.typography.displaySmall,
         contentPadding = PaddingValues.Zero,
         modifier = modifier
-            .semantics {
-                contentDescription = "Text field: set name"
-            },
+            .semantics { contentDescription = "Text field: set name" },
     )
 
 @Composable
@@ -369,6 +382,7 @@ private fun ExpandingLocationSelector(
         val scope = rememberCoroutineScope()
         val density = LocalDensity.current
         var appBarHeight by remember { mutableStateOf(0.dp) }
+        var mapBounds by remember { mutableStateOf<LatLngBounds?>(null) }
 
         val searchBarState = rememberSearchBarState()
         val collapsedTextFieldState = rememberTextFieldState()
@@ -398,13 +412,12 @@ private fun ExpandingLocationSelector(
                 else {
                     { onSetExpanded(true) }
                 },
+            onMapSettle = { mapBounds = it },
             markerTitle = stationName(),
             contentDescription = "Select station location on map",
             contentPadding =
-                if (isExpanded) ScaffoldDefaults.contentWindowInsets
-                            .asPaddingValues()
-                            .copy(top = appBarHeight)
-                else PaddingValues(horizontal = horizontalContentPadding),
+                if (!isExpanded) PaddingValues(horizontal = horizontalContentPadding)
+                else             PaddingValues(top = appBarHeight)
         )
 
         AnimatedVisibility(
@@ -443,6 +456,7 @@ private fun ExpandingLocationSelector(
         ExpandedSearch<LocationResult>(
             expandedTextFieldState,
             searchBarState,
+            mapBounds = mapBounds,
             onClose = { scope.launch { searchBarState.animateToCollapsed() } },
             onSelectResult = onSelectSearchResult,
             onClearedText = {}, // The text in the text box does change, but we
@@ -501,6 +515,7 @@ private fun EditableMarkerMap(
     modifier: Modifier = Modifier,
     contentDescription: String? = null,
     onMapClick: (() -> Unit)? = null,
+    onMapSettle: ((LatLngBounds) -> Unit)? = null,
     contentPadding: PaddingValues,
 ) {
     val onLocationSelected by rememberUpdatedState(onLocationSelected)
@@ -529,6 +544,14 @@ private fun EditableMarkerMap(
             // Animate to location, no zoom change
             val cameraUpdate = CameraUpdateFactory.newLatLng(location)
             cameraPositionState.animate(cameraUpdate)
+        }
+    }
+
+    cameraPositionState.run {
+        LaunchedEffect(isMoving) {
+            if (!isMoving) projection?.run {
+                onMapSettle?.invoke(visibleRegion.latLngBounds)
+            }
         }
     }
 

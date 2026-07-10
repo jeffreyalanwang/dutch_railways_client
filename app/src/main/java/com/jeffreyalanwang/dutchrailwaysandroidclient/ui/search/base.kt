@@ -22,6 +22,9 @@ import androidx.compose.ui.semantics.clearAndSetSemantics
 import com.jeffreyalanwang.dutchrailwaysandroidclient.R
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.NavBackButton
 
+/**
+ * @see ExpandedSearchInputField
+ */
 @Composable
 fun BaseSearchInputField(
     placeholderText: String,
@@ -56,6 +59,10 @@ fun BaseSearchInputField(
     )
 }
 
+/**
+ * @see BaseSearchInputField
+ * @see ExpandedSearch
+ */
 @Composable
 fun ExpandedSearchInputField(
     placeholderText: String,

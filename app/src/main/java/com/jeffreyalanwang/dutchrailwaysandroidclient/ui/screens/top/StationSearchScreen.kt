@@ -120,7 +120,7 @@ private fun NoStationDetail(modifier: Modifier = Modifier) {
     ) {
         Icon(
             painterResource(R.drawable.ic_dr_station),
-            "Station icon",
+            "Hero icon",
             Modifier
                 .size(96.dp)
                 .padding(bottom = 12.dp)
