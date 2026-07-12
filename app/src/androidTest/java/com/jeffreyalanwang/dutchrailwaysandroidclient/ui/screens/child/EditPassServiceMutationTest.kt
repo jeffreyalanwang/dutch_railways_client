@@ -12,6 +12,7 @@ import androidx.compose.ui.test.hasNoClickAction
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
@@ -36,7 +37,8 @@ class EditPassServiceMutationTest {
     fun `duplicate and mutate a PassService`() = runAndroidComposeUiTest<MainActivity> {
         // 1. Navigate to the Edit tab
         onNodeWithText("Edit").performClick()
-        waitForIdle()
+        onNodeWithText("Tap to unlock")
+            .run { if ( isDisplayed() ) performClick() }
 
         // 2. Search for a PassService
         onAllNodes(hasSetTextAction()).onFirst().performTextInput("2263")
@@ -91,12 +93,12 @@ class EditPassServiceMutationTest {
     fun `modify stops in place`() = runAndroidComposeUiTest<MainActivity> {
         // 1. Navigate to the Edit tab
         onNodeWithText("Edit").performClick()
-        waitForIdle()
+        onNodeWithText("Tap to unlock")
+            .run { if ( isDisplayed() ) performClick() }
 
         // 2. Search for a PassService
         onAllNodes(hasSetTextAction()).onFirst().performClick()
-        waitForIdle()
-        
+
         onAllNodes(hasSetTextAction()).onLast().performTextInput("2263")
 
         // 3. Select the search result

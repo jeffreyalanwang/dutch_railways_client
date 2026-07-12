@@ -9,13 +9,14 @@ import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.text.input.rememberTextFieldState
-import androidx.compose.material3.AppBarWithSearch
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.PlainTooltip
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SearchBar
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
@@ -23,6 +24,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TooltipAnchorPosition
 import androidx.compose.material3.TooltipBox
 import androidx.compose.material3.TooltipDefaults
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.rememberSearchBarState
 import androidx.compose.material3.rememberTooltipState
 import androidx.compose.material3.ripple
@@ -38,7 +40,7 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import backend.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
@@ -55,6 +57,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.EditStationNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.NewPassServiceNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.PassServiceDetailNavArgs
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.StationDetailNavArgs
+import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.components.MarginButtonsBox
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.BaseSearchInputField
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.ExpandedSearch
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.SearchResult
@@ -90,7 +93,9 @@ fun EditScreen(onNavigate: (EditGraphNavArgs)->Unit) {
             RequireUnlockScreen { setLocked(false) }
         } else {
             Scaffold(
-                topBar = { TopBar(onNavigate, { setLocked(true) }) },
+                topBar = {
+                    TopBar(onNavigate, { setLocked(true) })
+                },
             ) { innerPadding ->
                 StartContent(
                     Modifier.padding(innerPadding),
@@ -146,24 +151,29 @@ private fun TopBar(
     val textFieldState = rememberTextFieldState()
     val scope = rememberCoroutineScope()
 
-    AppBarWithSearch(
-        state = searchBarState,
-        inputField = {
-            BaseSearchInputField(
-                ALL_SEARCH_PLACEHOLDER_TEXT,
-                textFieldState,
-                searchBarState,
-            )
-        },
-        actions = {
+    MarginButtonsBox(
+        Modifier
+            .windowInsetsPadding(TopAppBarDefaults.windowInsets),
+        right = {
             IconButton(onLockRequest) {
                 Icon(
                     painterResource(R.drawable.ic_lock_open),
-                    "Lock edit access",
+                    contentDescription = "Click to lock edit access",
                 )
             }
-        }
-    )
+        },
+    ) {
+        SearchBar(
+            state = searchBarState,
+            inputField = {
+                BaseSearchInputField(
+                    ALL_SEARCH_PLACEHOLDER_TEXT,
+                    textFieldState,
+                    searchBarState,
+                )
+            },
+        )
+    }
 
     // Search all, but prioritize places
     ExpandedSearch(

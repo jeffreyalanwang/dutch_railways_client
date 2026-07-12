@@ -3,7 +3,7 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient.ui.viewmodel
 import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import com.google.android.gms.maps.model.LatLng
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
-import backend.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.search.LocationResult
 import io.mockk.coEvery
 import io.mockk.coVerify

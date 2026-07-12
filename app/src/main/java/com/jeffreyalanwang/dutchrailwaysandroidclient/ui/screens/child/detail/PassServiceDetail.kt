@@ -43,7 +43,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import backend.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.PassService
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.getCurrStop

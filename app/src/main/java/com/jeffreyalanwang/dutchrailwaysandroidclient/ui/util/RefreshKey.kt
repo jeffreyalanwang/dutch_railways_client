@@ -6,7 +6,7 @@ import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.retain.retain
+import androidx.compose.runtime.remember
 import androidx.navigation3.runtime.result.LocalResultEventBus
 import androidx.navigation3.runtime.result.ResultEffect
 import androidx.navigation3.runtime.result.ResultEventBus
@@ -34,14 +34,7 @@ private constructor(
 }
 
 @Composable
-fun retainRefreshKeyState() = retain { RefreshKeyState() }
-// TODO if we need [retain], that implies that we need to
-// change the key even after the item leaves composition
-// (e.g. when it is covered up on the back stack),
-// which means that we are trying to refresh state which
-// is also being retained in the back stack.
-// But we are not trying to refresh any ViewModels, and I
-// don't think I've called retain() anywhere else yet.
+fun rememberRefreshKeyState() = remember { RefreshKeyState() }
 
 /**
  * To refresh an entry in the back stack, one can wrap its composable in [key].
@@ -83,7 +76,7 @@ fun refreshKeyByResultEffect(
     resultEventBus: ResultEventBus = LocalResultEventBus.current,
     additionalKey: RefreshKey? = null,
 ): RefreshKeyState =
-    retainRefreshKeyState()
+    rememberRefreshKeyState()
     .also {
         RefreshResultEffect(it, resultEventBus, additionalKey = additionalKey)
     }

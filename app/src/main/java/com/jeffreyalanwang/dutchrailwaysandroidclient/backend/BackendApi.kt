@@ -1,6 +1,6 @@
 @file:Suppress("FunctionName") // use underscores for BackendApi methods
 
-package backend
+package com.jeffreyalanwang.dutchrailwaysandroidclient.backend
 import android.content.res.Resources
 import android.util.Log
 import ca.solostudios.fuzzykt.FuzzyKt

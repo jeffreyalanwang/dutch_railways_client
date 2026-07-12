@@ -3,6 +3,7 @@ package com.jeffreyalanwang.dutchrailwaysandroidclient.ui
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -19,7 +20,7 @@ import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ServiceStop
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Trainset
-import backend.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.Geocoding
 import com.jeffreyalanwang.dutchrailwaysandroidclient.onNodeAfterExactlyOneExists
 import io.mockk.coEvery
@@ -64,6 +65,8 @@ class NavigationRefreshTest {
 
         onNodeWithText("Edit").performClick()
 
+        onNodeWithText("Tap to unlock")
+            .run { if ( isDisplayed() ) performClick() }
         onAllNodesWithTag("search_input").onFirst()
             .performTextInput("Initial")
         onNodeAfterExactlyOneExists(hasText("Initial Name") and !hasSetTextAction())
@@ -99,6 +102,8 @@ class NavigationRefreshTest {
         }
 
         onNodeWithText("Edit").performClick()
+        onNodeWithText("Tap to unlock")
+            .run { if ( isDisplayed() ) performClick() }
         onAllNodesWithTag("search_input").onFirst()
             .performTextInput("Initial")
         onNodeAfterExactlyOneExists(hasText("Initial Area") and !hasSetTextAction())
@@ -143,6 +148,8 @@ class NavigationRefreshTest {
         }
 
         onNodeWithText("Edit").performClick()
+        onNodeWithText("Tap to unlock")
+            .run { if ( isDisplayed() ) performClick() }
         onAllNodesWithTag("search_input").onFirst()
             .performTextInput("Initial")
 

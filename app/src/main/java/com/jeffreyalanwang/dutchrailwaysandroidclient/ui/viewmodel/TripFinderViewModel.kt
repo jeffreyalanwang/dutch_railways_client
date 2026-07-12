@@ -6,7 +6,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
-import backend.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Endpoint
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Journey
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Place
@@ -29,7 +29,6 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.time.Clock
-import kotlin.time.ExperimentalTime
 import kotlin.time.Instant
 
 data class DataState(

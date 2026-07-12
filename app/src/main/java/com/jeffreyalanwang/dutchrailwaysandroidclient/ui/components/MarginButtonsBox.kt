@@ -17,9 +17,9 @@ import kotlin.math.max
  */
 @Composable
 fun MarginButtonsBox(
-    left: @Composable (() -> Unit)?,
-    right: @Composable (() -> Unit)?,
     modifier: Modifier = Modifier,
+    left: @Composable (() -> Unit)? = null,
+    right: @Composable (() -> Unit)? = null,
     content: @Composable () -> Unit,
 ) = Layout(
         content = { left?.invoke(); content(); right?.invoke() },

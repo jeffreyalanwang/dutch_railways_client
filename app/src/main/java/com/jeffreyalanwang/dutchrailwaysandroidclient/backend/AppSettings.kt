@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.State
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.staticCompositionLocalOf
 import androidx.datastore.core.CorruptionException
 import androidx.datastore.core.DataStore
 import androidx.datastore.core.Serializer
@@ -18,7 +18,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.util.asStateWithInitialValueOf
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.SerializationException
@@ -27,27 +31,17 @@ import java.io.InputStream
 import java.io.OutputStream
 
 @Composable
-fun AppSettingsProvider(content: @Composable () -> Unit) =
-    CompositionLocalProvider(
-        LocalAppSettings provides viewModel(factory = SettingsViewModel.Factory),
-        content,
-    )
+fun AppSettingsProvider(
+    value: SettingsViewModel = viewModel<SettingsViewModelImpl>(factory = SettingsViewModelImpl.Factory),
+    content: @Composable () -> Unit,
+) = CompositionLocalProvider(LocalAppSettings provides value, content)
 
-val LocalAppSettings = compositionLocalOf<SettingsViewModel> { throw Exception() }
+val LocalAppSettings = staticCompositionLocalOf<SettingsViewModel> { SettingsViewModelDummy() }
 
-class SettingsViewModel
-private constructor(
-    private val dataStore: DataStore<Settings>,
-): ViewModel() {
-    // This wrapper is incorporated because it provides a [ViewModelScope].
-    // Without this, we would need to use a UI-bound [CoroutineScope] to
-    // call [DataStore.updateData].
-    //
-    // This class is defined here, not the `viewmodel` directory,
-    // because it does not correspond to a specific screen or composable in the UI.
+abstract class SettingsViewModel: ViewModel() {
+    abstract fun update(transform: (Settings) -> Settings)
 
-    val stateFlow = dataStore.data
-        .asStateWithInitialValueOf(Settings.whileLoadingDefaults)
+    protected abstract val stateFlow: StateFlow<Settings>
 
     val state
         @Composable get() = stateFlow.collectAsState()
@@ -58,18 +52,42 @@ private constructor(
         val mappedFlow = remember { stateFlow.map { selector(it) } }
         return mappedFlow.collectAsState(mappedInitial)
     }
+}
 
-    fun update(
+class SettingsViewModelDummy: SettingsViewModel() {
+    private val field = MutableStateFlow(Settings.dataStoreDefaults)
+
+    override val stateFlow = field.asStateFlow()
+    override fun update(transform: (Settings) -> Settings) = field.update(transform)
+}
+
+class SettingsViewModelImpl
+private constructor(
+    private val dataStore: DataStore<Settings>,
+): SettingsViewModel() {
+    // This wrapper is incorporated because it provides a [ViewModelScope].
+    // Without this, we would need to use a UI-bound [CoroutineScope] to
+    // call [DataStore.updateData].
+    //
+    // This class is defined here, not the `viewmodel` directory,
+    // because it does not correspond to a specific screen or composable in the UI.
+
+    override val stateFlow = dataStore.data
+        .asStateWithInitialValueOf(Settings.whileLoadingDefaults)
+
+    override fun update(
         transform: (Settings) -> Settings,
-    ) = viewModelScope.launch {
+    ) {
+        viewModelScope.launch {
             dataStore.updateData(transform)
         }
+    }
 
     companion object {
         val Factory = viewModelFactory {
             initializer {
                 val dataStore = get(APPLICATION_KEY)!!.settingsDataStore
-                SettingsViewModel(dataStore)
+                SettingsViewModelImpl(dataStore)
             }
         }
     }
@@ -88,9 +106,12 @@ data class Settings(
     companion object {
         val dataStoreDefaults =
             Settings(
-                isEditAccessLocked = false,
+                isEditAccessLocked = true,
             )
-        val whileLoadingDefaults = dataStoreDefaults
+        val whileLoadingDefaults =
+            Settings(
+                isEditAccessLocked = true,
+            )
     }
 }
 

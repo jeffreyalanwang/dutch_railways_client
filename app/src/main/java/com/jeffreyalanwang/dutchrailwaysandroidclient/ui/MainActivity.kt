@@ -38,8 +38,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         Composer.setDiagnosticStackTraceMode(ComposeStackTraceMode.SourceInformation)
-
-        Geocoding.initialize(this.baseContext)
+        Geocoding.initialize(this)
 
         enableEdgeToEdge()
         setContent {

@@ -19,7 +19,6 @@ import androidx.compose.foundation.text.input.setTextAndPlaceCursorAtEnd
 import androidx.compose.material3.AppBarWithSearchColors
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExpandedFullScreenSearchBar
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -251,23 +250,24 @@ fun AppBarWithDualSearch(
                     }
                 }
             },
-        ) {
-            DualSearchBar(
-                state = state,
-                inputField1 = inputField1,
-                inputField2 = inputField2,
-                expandedSearch1 = expandedSearch1,
-                expandedSearch2 = expandedSearch2,
-                divider = divider,
-                modifier = Modifier
-                    .padding(vertical = 4.dp)
-                    .widthIn(min = 360.dp, max = 720.dp),
-                shape = shape,
-                colors = colors.searchBarColors,
-                tonalElevation = tonalElevation,
-                shadowElevation = shadowElevation,
-            )
-        }
+            {
+                DualSearchBar(
+                    state = state,
+                    inputField1 = inputField1,
+                    inputField2 = inputField2,
+                    expandedSearch1 = expandedSearch1,
+                    expandedSearch2 = expandedSearch2,
+                    divider = divider,
+                    modifier = Modifier
+                        .padding(vertical = 4.dp)
+                        .widthIn(min = 360.dp, max = 720.dp),
+                    shape = shape,
+                    colors = colors.searchBarColors,
+                    tonalElevation = tonalElevation,
+                    shadowElevation = shadowElevation,
+                )
+            },
+        )
     }
 }
 

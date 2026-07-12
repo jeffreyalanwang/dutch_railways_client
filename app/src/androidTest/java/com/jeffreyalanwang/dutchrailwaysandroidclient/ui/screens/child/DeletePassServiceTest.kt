@@ -4,6 +4,7 @@ import androidx.compose.ui.test.filter
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasSetTextAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDisplayed
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onFirst
 import androidx.compose.ui.test.onLast
@@ -26,6 +27,8 @@ class DeletePassServiceTest {
 
         // 1. Search for a PassService
         onNodeWithText("Edit").performClick()
+        onNodeWithText("Tap to unlock")
+            .run { if ( isDisplayed() ) performClick() }
         onAllNodes(hasSetTextAction()).onFirst().performClick()
         onAllNodes(hasSetTextAction()).onLast().performTextInput("2263")
         with(hasText("2263", substring = true) and !hasSetTextAction()) {

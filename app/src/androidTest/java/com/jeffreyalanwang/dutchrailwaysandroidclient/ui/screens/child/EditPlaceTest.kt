@@ -16,7 +16,7 @@ import androidx.compose.ui.test.v2.runComposeUiTest
 import com.google.android.gms.maps.model.LatLng
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Area
 import com.jeffreyalanwang.dutchrailwaysandroidclient.Station
-import backend.BackendApi
+import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.BackendApi
 import com.jeffreyalanwang.dutchrailwaysandroidclient.backend.Geocoding
 import com.jeffreyalanwang.dutchrailwaysandroidclient.onNodeAfterExactlyOneExists
 import com.jeffreyalanwang.dutchrailwaysandroidclient.ui.screens.child.edit.EditAreaScreen
